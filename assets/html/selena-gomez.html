@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona LLC · Rare Impact Fund · 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --cream: #ede7d4;
+    --teal: #1a5c6b;
+    --teal-light: #2a7a8c;
+    --gold: #b8922a;
+    --gold-light: #d4aa45;
+    --rust: #8b3a2a;
+    --mist: #e8e0d0;
+    --chain-bg: #0f1f25;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  /* ─── MASTHEAD ─── */
+  .masthead {
+    background: var(--chain-bg);
+    padding: 4rem 2rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .masthead::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(26,92,107,0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 100%, rgba(184,146,42,0.15) 0%, transparent 60%);
+  }
+  .masthead-inner { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; }
+  .masthead-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .masthead h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 300;
+    color: #f0ebe0;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+  .masthead h1 em {
+    font-style: italic;
+    color: var(--gold-light);
+  }
+  .masthead-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-style: italic;
+    color: rgba(240,235,224,0.65);
+    margin-bottom: 2.5rem;
+  }
+  .masthead-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: rgba(240,235,224,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .meta-item strong {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--gold-light);
+    font-weight: 400;
+    margin-top: 0.2rem;
+  }
+
+  /* ─── INVARIANT CHAIN HERO ─── */
+  .chain-section {
+    background: var(--chain-bg);
+    padding: 0 2rem 4rem;
+  }
+  .chain-label {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.3em;
+    color: rgba(240,235,224,0.35);
+    text-transform: uppercase;
+    padding-bottom: 1.5rem;
+  }
+  .chain-container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+  .chain-node {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(26,92,107,0.3);
+    border-right: none;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    position: relative;
+    transition: background 0.3s, transform 0.3s;
+    cursor: default;
+  }
+  .chain-node:last-child { border-right: 1px solid rgba(26,92,107,0.3); }
+  .chain-node:hover {
+    background: rgba(26,92,107,0.2);
+    transform: translateY(-3px);
+    z-index: 2;
+  }
+  .chain-node::after {
+    content: '→';
+    position: absolute;
+    right: -0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--gold);
+    z-index: 3;
+  }
+  .chain-node:last-child::after { display: none; }
+  .node-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.4rem;
+  }
+  .node-sym {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem;
+    font-weight: 300;
+    color: #f0ebe0;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+  .node-sym span {
+    font-size: 0.9rem;
+    vertical-align: super;
+    color: var(--teal-light);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .node-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  .node-desc {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 0.7rem;
+    color: rgba(240,235,224,0.5);
+    line-height: 1.4;
+    font-style: italic;
+  }
+  .chain-equation {
+    text-align: center;
+    margin-top: 1.8rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    color: rgba(240,235,224,0.5);
+    letter-spacing: 0.12em;
+    font-style: italic;
+  }
+  .chain-equation strong {
+    color: var(--gold-light);
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1.7rem;
+  }
+  .chain-caption {
+    text-align: center;
+    margin-top: 0.8rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: rgba(240,235,224,0.3);
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    background: var(--cream);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav ul {
+    display: flex;
+    list-style: none;
+    max-width: 1000px;
+    margin: 0 auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 1rem;
+  }
+  nav ul::-webkit-scrollbar { display: none; }
+  nav li a {
+    display: block;
+    padding: 0.75rem 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  nav li a:hover {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  /* ─── CONTENT ─── */
+  .content-wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  section {
+    padding: 4rem 0;
+    border-bottom: 1px solid var(--mist);
+  }
+  section:last-child { border-bottom: none; }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1.2rem;
+    margin-bottom: 2.5rem;
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    flex-shrink: 0;
+  }
+  h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--teal);
+    line-height: 1.2;
+  }
+  h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 2rem 0 0.8rem;
+    border-left: 3px solid var(--gold);
+    padding-left: 0.75rem;
+  }
+  h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--teal-light);
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  p { margin-bottom: 1.1rem; color: #1a1a1a; }
+  p:last-child { margin-bottom: 0; }
+
+  ul, ol {
+    margin: 0.8rem 0 1.2rem 0;
+    padding-left: 1.5rem;
+  }
+  li { margin-bottom: 0.4rem; color: #1a1a1a; }
+
+  /* ─── LOI ─── */
+  .loi-block {
+    background: white;
+    border: 1px solid var(--mist);
+    border-left: 4px solid var(--teal);
+    padding: 2.5rem 2.5rem 2rem;
+    font-size: 0.97rem;
+    line-height: 1.8;
+    position: relative;
+  }
+  .loi-block::before {
+    content: 'LETTER OF INTENT';
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+  .loi-sig {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--mist);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #555;
+    line-height: 1.9;
+  }
+  .sig-placeholder {
+    display: inline-block;
+    background: rgba(184,146,42,0.12);
+    border: 1px dashed var(--gold);
+    padding: 0 0.5rem;
+    border-radius: 2px;
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  /* ─── CALLOUT ─── */
+  .callout {
+    background: var(--chain-bg);
+    color: #f0ebe0;
+    padding: 1.8rem 2rem;
+    margin: 2rem 0;
+    border-left: 4px solid var(--gold);
+    position: relative;
+  }
+  .callout p {
+    color: rgba(240,235,224,0.9);
+    font-size: 1.05rem;
+    font-style: italic;
+    margin: 0;
+  }
+  .callout-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  /* ─── THEORY OF CHANGE ─── */
+  .toc-chain {
+    display: flex;
+    gap: 0;
+    margin: 2rem 0;
+    overflow-x: auto;
+  }
+  .toc-node {
+    flex: 1;
+    min-width: 120px;
+    border: 1px solid var(--mist);
+    border-right: none;
+    padding: 1.2rem 0.8rem;
+    text-align: center;
+  }
+  .toc-node:last-child { border-right: 1px solid var(--mist); }
+  .toc-node-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.5rem;
+  }
+  .toc-node-arrow {
+    font-size: 1.2rem;
+    color: var(--gold);
+    margin: 0.4rem 0;
+  }
+  .toc-items {
+    font-size: 0.75rem;
+    color: #444;
+    line-height: 1.5;
+    text-align: left;
+  }
+  .toc-items li {
+    font-size: 0.72rem;
+    margin-bottom: 0.3rem;
+    list-style: disc;
+    padding-left: 0.2rem;
+  }
+
+  /* ─── PILLARS TABLE ─── */
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: var(--mist);
+    border: 1px solid var(--mist);
+    margin: 1.5rem 0;
+  }
+  .pillar-row {
+    display: grid;
+    grid-template-columns: 2fr 2fr 3fr;
+    background: white;
+    gap: 0;
+  }
+  .pillar-row.header {
+    background: var(--chain-bg);
+  }
+  .pillar-cell {
+    padding: 1rem 1.2rem;
+    border-right: 1px solid var(--mist);
+    font-size: 0.87rem;
+    vertical-align: top;
+  }
+  .pillar-cell:last-child { border-right: none; }
+  .pillar-row.header .pillar-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    border-right-color: rgba(255,255,255,0.08);
+  }
+  .pillar-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    background: var(--teal);
+    color: white;
+    padding: 0.15rem 0.4rem;
+    border-radius: 2px;
+    display: inline-block;
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* ─── KPI TABLE ─── */
+  .kpi-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.84rem;
+  }
+  .kpi-table thead tr {
+    background: var(--chain-bg);
+  }
+  .kpi-table thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-weight: 400;
+  }
+  .kpi-table tbody tr:nth-child(odd) { background: white; }
+  .kpi-table tbody tr:nth-child(even) { background: var(--cream); }
+  .kpi-table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--mist);
+    line-height: 1.4;
+  }
+  .kpi-table tbody td:first-child { font-size: 0.82rem; color: #333; }
+  .target-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--teal);
+  }
+
+  /* ─── ARCH CHAIN TABLE ─── */
+  .arch-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.84rem;
+  }
+  .arch-table thead tr { background: var(--chain-bg); }
+  .arch-table thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    padding: 0.7rem 0.9rem;
+    text-align: left;
+    font-weight: 400;
+  }
+  .arch-table tbody tr:nth-child(odd) { background: white; }
+  .arch-table tbody tr:nth-child(even) { background: #f0f6f8; }
+  .arch-table tbody td {
+    padding: 0.85rem 0.9rem;
+    border-bottom: 1px solid var(--mist);
+    line-height: 1.45;
+    font-size: 0.82rem;
+  }
+  .node-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+  }
+  .sym-cell {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--teal);
+  }
+
+  /* ─── BUDGET ─── */
+  .budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+  .budget-table thead tr { background: var(--chain-bg); }
+  .budget-table thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-weight: 400;
+  }
+  .budget-table tbody tr:nth-child(odd) { background: white; }
+  .budget-table tbody tr:nth-child(even) { background: var(--cream); }
+  .budget-table tbody tr:last-child { background: var(--chain-bg); }
+  .budget-table tbody tr:last-child td {
+    color: var(--gold-light);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+  .budget-table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--mist);
+    line-height: 1.4;
+  }
+  .amount-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--teal);
+    white-space: nowrap;
+  }
+  .budget-bar-wrap {
+    height: 4px;
+    background: var(--mist);
+    border-radius: 2px;
+    margin-top: 4px;
+  }
+  .budget-bar {
+    height: 4px;
+    background: var(--teal);
+    border-radius: 2px;
+  }
+
+  /* ─── PHASES ─── */
+  .phases {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--mist);
+    margin: 1.5rem 0;
+  }
+  .phase {
+    background: white;
+    padding: 1.5rem;
+  }
+  .phase-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.4rem;
+  }
+  .phase-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--teal);
+    margin-bottom: 0.3rem;
+    line-height: 1.3;
+  }
+  .phase-months {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: #888;
+    margin-bottom: 1rem;
+  }
+  .phase ul {
+    margin: 0;
+    padding-left: 1rem;
+  }
+  .phase li { font-size: 0.78rem; margin-bottom: 0.35rem; color: #333; }
+
+  /* ─── QUOTE BLOCK ─── */
+  .quote-block {
+    border-left: 4px solid var(--gold);
+    margin: 2rem 0;
+    padding: 1rem 1.5rem;
+    background: var(--cream);
+  }
+  blockquote {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--teal);
+    line-height: 1.6;
+  }
+  cite {
+    display: block;
+    margin-top: 0.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-style: normal;
+    letter-spacing: 0.12em;
+    color: #777;
+    text-transform: uppercase;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--chain-bg);
+    color: rgba(240,235,224,0.45);
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+  footer .footer-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #f0ebe0;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.08em;
+  }
+  footer .footer-eq {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+  footer p {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: rgba(240,235,224,0.3);
+    margin-bottom: 0.3rem;
+  }
+  footer p { color: rgba(240,235,224,0.3); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 640px) {
+    .chain-container { flex-direction: column; }
+    .chain-node { border-right: 1px solid rgba(26,92,107,0.3); border-bottom: none; }
+    .chain-node:last-child { border-bottom: 1px solid rgba(26,92,107,0.3); }
+    .chain-node::after { content: '↓'; right: auto; bottom: -0.7rem; top: auto; left: 50%; transform: translateX(-50%); }
+    .chain-node:last-child::after { display: none; }
+    .phases { grid-template-columns: 1fr; }
+    .pillar-row { grid-template-columns: 1fr; }
+    .pillar-row.header { display: none; }
+  }
+
+  /* Print */
+  @media print {
+    nav, .chain-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .masthead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ MASTHEAD -->
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-eyebrow">Full Proposal · Rare Impact Fund · Mental Health Grant Cycle 2026</div>
+    <h1><em>Ukubona</em> LLC</h1>
+    <div class="masthead-sub">Augmenting Cognition at the Point of Care</div>
+    <div class="masthead-meta">
+      <div class="meta-item">Applicant<strong>Ukubona LLC</strong></div>
+      <div class="meta-item">Headquarters<strong>Maryland, USA · Kampala, Uganda</strong></div>
+      <div class="meta-item">LOI Deadline<strong>April 10, 2026</strong></div>
+      <div class="meta-item">Ask<strong>$250,000 – $500,000</strong></div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════ INVARIANT CHAIN HERO -->
+<div class="chain-section">
+  <div class="chain-label">The Invariant Chain · T → W → v → Eig → κ</div>
+  <div class="chain-container">
+    <div class="chain-node">
+      <div class="node-num">① NODE</div>
+      <div class="node-sym">T</div>
+      <div class="node-name">Tensor</div>
+      <div class="node-desc">Context dimensions — who, where, what scenario &amp; session history</div>
+    </div>
+    <div class="chain-node">
+      <div class="node-num">② NODE</div>
+      <div class="node-sym">W</div>
+      <div class="node-name">Compressor</div>
+      <div class="node-desc">Weight matrix of evidence-based intervention logic</div>
+    </div>
+    <div class="chain-node">
+      <div class="node-num">③ NODE</div>
+      <div class="node-sym">v</div>
+      <div class="node-name">Vector</div>
+      <div class="node-desc">Active query — the worker's real-time scenario</div>
+    </div>
+    <div class="chain-node">
+      <div class="node-num">④ NODE</div>
+      <div class="node-sym">Eig</div>
+      <div class="node-name">Eigenstructure</div>
+      <div class="node-desc">Scenario archetype surfaces: crisis · support · referral · systemic</div>
+    </div>
+    <div class="chain-node">
+      <div class="node-num">⑤ NODE</div>
+      <div class="node-sym">κ</div>
+      <div class="node-name">Scalar</div>
+      <div class="node-desc">Structured guidance output — actionable, grounded, auditable</div>
+    </div>
+  </div>
+  <div class="chain-equation">The chain is invariant — <strong>T → W → v → Eig → κ</strong></div>
+  <div class="chain-caption">Swap the programme. Swap the era. Only the content changes.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ NAV -->
+<nav>
+  <ul>
+    <li><a href="#loi">Letter of Intent</a></li>
+    <li><a href="#exec">Executive Summary</a></li>
+    <li><a href="#theory">Theory of Change</a></li>
+    <li><a href="#pillars">Pillars Mapping</a></li>
+    <li><a href="#pilot">Pilot Design</a></li>
+    <li><a href="#eval">Evaluation</a></li>
+    <li><a href="#arch">Architecture</a></li>
+    <li><a href="#budget">Budget</a></li>
+    <li><a href="#capacity">Capacity</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════ CONTENT -->
+<div class="content-wrap">
+
+  <!-- ─── LOI ─── -->
+  <section id="loi">
+    <div class="section-header">
+      <div class="section-num">01 ·</div>
+      <h2>Letter of Intent</h2>
+    </div>
+    <div class="loi-block">
+      <p>April 10, 2026</p>
+      <p>Dear Rare Impact Fund Review Committee,</p>
+      <p>On behalf of Ukubona LLC, we respectfully submit this Letter of Intent to apply for the Rare Impact Fund Mental Health Grant. We are requesting between <strong>$250,000 and $500,000</strong> to fund the production deployment, user-experience optimization, and 12-month pilot study of our AI-powered decision-support system for nonclinical youth mental health workers.</p>
+      <p>Our core intervention addresses one of the most persistent and underacknowledged failure points in mental health service delivery: the cognitive overload experienced by the frontline, nonclinical workforce. Peer supporters, community health workers, and school-based mentors are often the first — and sometimes only — point of contact for at-risk youth. Yet they routinely operate without real-time guidance, structured decision frameworks, or adequate protection from burnout.</p>
+      <p>Ukubona LLC has developed a digital twin architecture grounded in a recursive pentadic computational framework (<strong>T→W→v→Eig→κ</strong>), originally designed for Uganda's National Planning Authority. We are now translating this infrastructure into a direct-to-worker LLM interface that gives nonclinical mental health workers structured, intelligent decision support at the exact moment they need it.</p>
+      <p>We are not replacing human connection with AI. <strong>We are using AI to supercharge human connection</strong> — making every community health worker as effective as a well-supervised, well-resourced clinician.</p>
+      <p>The Rare Impact Fund's focus on scaling nonclinical mental health support aligns precisely with our architecture, our pilot population, and our 50-year vision for sovereign, community-owned mental health infrastructure. We welcome the opportunity to submit a full proposal and provide additional technical documentation or pilot design details.</p>
+      <div class="loi-sig">
+        Sincerely,<br><br>
+        <span class="sig-placeholder">[Applicant Name]</span><br>
+        Ukubona LLC<br>
+        <span class="sig-placeholder">[Email Address]</span> · <span class="sig-placeholder">[Phone Number]</span><br>
+        Maryland, USA | Kampala, Uganda
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── EXEC SUMMARY ─── -->
+  <section id="exec">
+    <div class="section-header">
+      <div class="section-num">02 ·</div>
+      <h2>Executive Summary</h2>
+    </div>
+    <h3>The Problem: Cognitive Overload at the Frontlines</h3>
+    <p>Nonclinical youth mental health workers — peer supporters, school counselors, community health workers — are the first line of defense for millions of underserved young people. They face an impossible task: navigate complex, emotionally charged, high-stakes scenarios without real-time guidance, without structured decision frameworks, and without adequate institutional support.</p>
+    <p>The result is predictable: decision fatigue, burnout, and high turnover. The very workforce that mental health systems depend on to reach vulnerable youth is itself becoming a casualty of the same systemic neglect it is trying to address.</p>
+    <p>No technical solution exists today that meets these workers where they are — in a school hallway, a community center, a WhatsApp thread — and provides intelligent, structured, real-time support.</p>
+
+    <h3>The Solution: Ukubona Digital Twin</h3>
+    <p>Ukubona LLC has built a computational decision-support infrastructure originally designed for national planning at scale. Its core architecture — a recursive pentadic engine represented by the chain <strong>T→W→v→Eig→κ</strong> (Tensor, Weight, Vector, Eigenstructure, Scalar) — allows any complex, multi-dimensional decision problem to be compressed into structured, actionable outputs.</p>
+    <p>We are deploying this infrastructure as a direct-to-worker LLM interface: an application that nonclinical mental health workers can access on their phone or laptop to receive structured, intelligent, scenario-specific guidance in real time. The worker describes what they are facing. The system applies structured decision logic. The worker receives clear, grounded, step-by-step guidance — not generic advice, but contextually calibrated support.</p>
+
+    <div class="callout">
+      <div class="callout-label">The Category Shift</div>
+      <p>"We do not train peer supporters. We augment their cognition at the point of care."</p>
+    </div>
+  </section>
+
+  <!-- ─── THEORY OF CHANGE ─── -->
+  <section id="theory">
+    <div class="section-header">
+      <div class="section-num">03 ·</div>
+      <h2>Theory of Change</h2>
+    </div>
+
+    <div class="toc-chain">
+      <div class="toc-node">
+        <div class="toc-node-label">Inputs</div>
+        <ul class="toc-items">
+          <li>Grant funding ($250k–$500k)</li>
+          <li>NPA-05 architecture (T→W→v→Eig→κ)</li>
+          <li>Claude API integration</li>
+          <li>Partner organizations</li>
+          <li>Academic advisory</li>
+        </ul>
+      </div>
+      <div class="toc-node">
+        <div class="toc-node-label">Activities</div>
+        <ul class="toc-items">
+          <li>Production LLM deployment</li>
+          <li>Mobile-first UX design</li>
+          <li>Onboard 50 workers</li>
+          <li>Monthly iteration cycles</li>
+          <li>Data collection</li>
+        </ul>
+      </div>
+      <div class="toc-node">
+        <div class="toc-node-label">Outputs</div>
+        <ul class="toc-items">
+          <li>Production-ready app</li>
+          <li>500+ interactions logged</li>
+          <li>Pilot evaluation report</li>
+          <li>Licensing framework</li>
+        </ul>
+      </div>
+      <div class="toc-node">
+        <div class="toc-node-label">Outcomes</div>
+        <ul class="toc-items">
+          <li>30% ↓ decision fatigue</li>
+          <li>40% ↑ confidence scores</li>
+          <li>25% ↓ worker turnover</li>
+          <li>35% ↑ documentation quality</li>
+        </ul>
+      </div>
+      <div class="toc-node">
+        <div class="toc-node-label">Impact</div>
+        <ul class="toc-items">
+          <li>Scalable national infrastructure</li>
+          <li>Underserved youth served</li>
+          <li>Replicable AI-augmented model</li>
+          <li>50-year community-owned platform</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="quote-block">
+      <blockquote>The core causal logic is this: when nonclinical workers receive real-time, structured cognitive support, their capacity to deliver effective, consistent care increases — and their likelihood of staying in the role increases. The youth they serve benefit from higher-quality, more consistent intervention. The organizations they work for retain trained staff rather than cycling through expensive turnover. The system scales because the infrastructure, once built, requires only marginal cost to serve additional workers and organizations.</blockquote>
+      <cite>Theory of Change · Ukubona LLC · 2026</cite>
+    </div>
+  </section>
+
+  <!-- ─── PILLARS ─── -->
+  <section id="pillars">
+    <div class="section-header">
+      <div class="section-num">04 ·</div>
+      <h2>Mapping to Rare Impact Fund Pillars</h2>
+    </div>
+
+    <div class="pillars-grid">
+      <div class="pillar-row header">
+        <div class="pillar-cell">Grant Pillar</div>
+        <div class="pillar-cell">The Gap</div>
+        <div class="pillar-cell">The Ukubona Solution</div>
+      </div>
+      <div class="pillar-row">
+        <div class="pillar-cell"><span class="pillar-tag">Training</span><br>Training &amp; Professional Development</div>
+        <div class="pillar-cell">Static one-time training modules leave workers without real-time guidance after initial onboarding.</div>
+        <div class="pillar-cell">Ukubona digital twin acts as an <strong>always-on mentor</strong>. Peer supporters role-play complex youth scenarios through the LLM interface, receiving structured feedback before real-world application.</div>
+      </div>
+      <div class="pillar-row">
+        <div class="pillar-cell"><span class="pillar-tag">Retention</span><br>Workforce Retention &amp; Sustainability</div>
+        <div class="pillar-cell">Decision fatigue and cognitive overload are primary drivers of high nonclinical worker turnover rates.</div>
+        <div class="pillar-cell">The Ukubona API absorbs the analytical heavy lifting. Structured decision-support at point of care <strong>reduces emotional burden</strong>, directly improving retention rates.</div>
+      </div>
+      <div class="pillar-row">
+        <div class="pillar-cell"><span class="pillar-tag">Access</span><br>Expanding Access to Vulnerable Youth</div>
+        <div class="pillar-cell">Clinical infrastructure cannot scale to reach underserved youth in community settings.</div>
+        <div class="pillar-cell">Empowering community workers with high-tier AI scaffolding ensures underserved youth receive <strong>nuanced support in their own communities</strong> — not in a clinic.</div>
+      </div>
+      <div class="pillar-row">
+        <div class="pillar-cell"><span class="pillar-tag">Evidence</span><br>Evidence-Based Program Design</div>
+        <div class="pillar-cell">Grant reviewers lack assurance that AI tools are grounded in rigorous, auditable methodology.</div>
+        <div class="pillar-cell">The recursive pentadic engine (T→W→v→Eig→κ) provides the logical backbone — structured, iterative, and <strong>fully auditable</strong>. Not a chatbot wrapper.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── PILOT ─── -->
+  <section id="pilot">
+    <div class="section-header">
+      <div class="section-num">05 ·</div>
+      <h2>Pilot Program Design</h2>
+    </div>
+
+    <div class="phases">
+      <div class="phase">
+        <div class="phase-num">Phase 01</div>
+        <div class="phase-title">Deployment &amp; Onboarding</div>
+        <div class="phase-months">Months 1 – 3</div>
+        <ul>
+          <li>Partner with 1–2 organizations employing nonclinical youth mental health workers</li>
+          <li>Finalize production deployment of LLM-to-frontend pipeline</li>
+          <li>Optimize UI/UX for nonclinical workers (mobile-first, low-barrier)</li>
+          <li>Onboard 50-worker pilot cohort</li>
+          <li>Administer baseline assessments (Maslach, Decision Self-Efficacy)</li>
+          <li>Deliver structured training on app use and ethical AI interaction</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Phase 02</div>
+        <div class="phase-title">Active Use &amp; Iteration</div>
+        <div class="phase-months">Months 4 – 9</div>
+        <ul>
+          <li>Workers actively use the decision-support app in real scenarios</li>
+          <li>Monthly usage analytics review and UX refinement</li>
+          <li>Qualitative interviews at Months 5 and 8 (grounded theory approach)</li>
+          <li>6-month KPI assessment administered</li>
+          <li>Supervisor documentation quality audits</li>
+          <li>Open dissemination of interim findings to peer organizations</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Phase 03</div>
+        <div class="phase-title">Evaluation &amp; Scale Planning</div>
+        <div class="phase-months">Months 10 – 12</div>
+        <ul>
+          <li>Full quantitative analysis of all KPI outcomes vs. baseline</li>
+          <li>Independent review by external academic partner</li>
+          <li>Worker and supervisor satisfaction survey (NPS + qualitative)</li>
+          <li>Youth outcome proxy measures (documentation quality, escalation accuracy)</li>
+          <li>Develop licensing model for nonprofit and public sector deployment</li>
+          <li>Identify 5 prospective organizational partners for Year 2 expansion</li>
+        </ul>
+      </div>
+    </div>
+
+    <h4>Cohort Composition (50 Nonclinical Workers)</h4>
+    <ul>
+      <li>Peer supporters in community mental health organizations</li>
+      <li>School-based support staff and student counselors</li>
+      <li>Youth mentors and case workers in nonprofit settings</li>
+      <li>Community health workers interfacing with at-risk adolescents</li>
+    </ul>
+  </section>
+
+  <!-- ─── EVALUATION ─── -->
+  <section id="eval">
+    <div class="section-header">
+      <div class="section-num">06 ·</div>
+      <h2>Evaluation Framework</h2>
+    </div>
+
+    <h3>KPI Dashboard</h3>
+    <table class="kpi-table">
+      <thead>
+        <tr>
+          <th>KPI / Outcome</th>
+          <th>Baseline</th>
+          <th>6-Month Target</th>
+          <th>12-Month Target</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Worker Decision Confidence Score (validated scale, 1–10)</td>
+          <td>Baseline survey</td>
+          <td class="target-cell">≥ 7.0 mean</td>
+          <td class="target-cell">≥ 8.0 mean</td>
+        </tr>
+        <tr>
+          <td>Worker Burnout Index (Maslach sub-scale)</td>
+          <td>Baseline survey</td>
+          <td class="target-cell">15% reduction</td>
+          <td class="target-cell">30% reduction</td>
+        </tr>
+        <tr>
+          <td>Worker Retention Rate (% still employed)</td>
+          <td>HR baseline</td>
+          <td class="target-cell">90% retention</td>
+          <td class="target-cell">85% (12-month)</td>
+        </tr>
+        <tr>
+          <td>App Interaction Volume (sessions / worker / month)</td>
+          <td>0 (pre-launch)</td>
+          <td class="target-cell">≥ 8 sessions</td>
+          <td class="target-cell">≥ 12 sessions</td>
+        </tr>
+        <tr>
+          <td>Documentation Quality Score (supervisor-rated rubric)</td>
+          <td>Baseline audit</td>
+          <td class="target-cell">20% improvement</td>
+          <td class="target-cell">35% improvement</td>
+        </tr>
+        <tr>
+          <td>Youth Escalation Accuracy (% appropriate referrals)</td>
+          <td>Baseline chart review</td>
+          <td class="target-cell">15% improvement</td>
+          <td class="target-cell">30% improvement</td>
+        </tr>
+        <tr>
+          <td>Worker NPS (Net Promoter Score for app utility)</td>
+          <td>N/A</td>
+          <td class="target-cell">≥ 40</td>
+          <td class="target-cell">≥ 55</td>
+        </tr>
+        <tr>
+          <td>Organizational Adoption Rate (sites renewing post-pilot)</td>
+          <td>N/A</td>
+          <td class="target-cell">N/A</td>
+          <td class="target-cell">≥ 80% renewal intent</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Data Collection &amp; Analysis</h3>
+    <h4>Quantitative Methods</h4>
+    <ul>
+      <li>Pre/post survey design with validated instruments (Maslach Burnout Inventory, Decision Self-Efficacy Scale)</li>
+      <li>Administrative data extraction (HR retention records, documentation audit)</li>
+      <li>App usage analytics (interaction frequency, scenario type, completion rates)</li>
+      <li>Statistical analysis: paired t-tests for within-group change; effect size (Cohen's d) reporting</li>
+    </ul>
+    <h4>Qualitative Methods</h4>
+    <ul>
+      <li>Grounded theory approach to qualitative interview analysis</li>
+      <li>Thematic coding using NVivo or equivalent</li>
+      <li>Member-checking with worker participants to validate interpretations</li>
+    </ul>
+    <h4>Independent Review &amp; Ethical Governance</h4>
+    <ul>
+      <li>External academic reviewer (public health or implementation science faculty) to assess evaluation integrity</li>
+      <li>Pre-registration of evaluation protocol on Open Science Framework before data collection begins</li>
+      <li>IRB review / ethics board submission through academic partner</li>
+      <li>Informed consent for all data collection; anonymization of app interaction logs</li>
+      <li>GDPR-compliant and HIPAA-aligned data handling protocols</li>
+      <li>Worker right to opt out of data collection at any time without penalty</li>
+    </ul>
+  </section>
+
+  <!-- ─── ARCHITECTURE ─── -->
+  <section id="arch">
+    <div class="section-header">
+      <div class="section-num">07 ·</div>
+      <h2>The Technical Architecture (NPA-05)</h2>
+    </div>
+
+    <p>The Ukubona decision-support system is not a thin wrapper around a generic language model. It is built on a computational architecture originally developed for Uganda's National Planning Authority to model national development performance across 146 districts, 100 indicators, and multiple time periods. That architecture — the invariant pentadic chain — is the same logic we apply to decision support in nonclinical mental health work.</p>
+
+    <h3>The Invariant Chain: T → W → v → Eig → κ</h3>
+
+    <table class="arch-table">
+      <thead>
+        <tr>
+          <th>Node</th>
+          <th>Symbol</th>
+          <th>In NPA National Planning</th>
+          <th>In Mental Health Decision Support</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="node-badge">①</span></td>
+          <td class="sym-cell">T</td>
+          <td>146 districts × 100 indicators × time</td>
+          <td>Worker context × youth scenario dimensions × session history</td>
+        </tr>
+        <tr>
+          <td><span class="node-badge">②</span></td>
+          <td class="sym-cell">W</td>
+          <td>Weight matrix: board's explicit national priorities</td>
+          <td>Weight matrix: evidence-based intervention logic (crisis, support, referral)</td>
+        </tr>
+        <tr>
+          <td><span class="node-badge">③</span></td>
+          <td class="sym-cell">v</td>
+          <td>Dropdown: which PIAP programme is active</td>
+          <td>Query: what scenario is the worker navigating right now?</td>
+        </tr>
+        <tr>
+          <td><span class="node-badge">④</span></td>
+          <td class="sym-cell">Eig</td>
+          <td>Dominant district clusters surface from data</td>
+          <td>Scenario archetype surfaces: crisis · behavioral · systemic · relational</td>
+        </tr>
+        <tr>
+          <td><span class="node-badge">⑤</span></td>
+          <td class="sym-cell">κ</td>
+          <td>One national performance number, owned by Government</td>
+          <td>One structured guidance output, grounded in evidence and context</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>LLM Decision-Support Interface</h3>
+    <p>The frontend is a lightweight, mobile-first web application. Workers interact via natural language chat. The backend routes their input through the pentadic compressor, identifies the relevant scenario archetype, retrieves evidence-based guidance from a curated knowledge base, and generates a structured response via the Claude API.</p>
+    <p>Critically, the system is designed to augment — not replace — human judgment. Every output includes a confidence indicator, a recommended next human step, and a clear escalation pathway if the scenario exceeds nonclinical scope. The system does not make clinical decisions. It provides the structured scaffolding that helps a peer supporter make better, more consistent, better-documented decisions.</p>
+    <p>The LLM layer is auditable. Every interaction can be reviewed by supervisors. Every guidance output references the evidence base it drew from. The weights — the intervention logic — are visible, adjustable, and owned by the deploying organization.</p>
+
+    <div class="quote-block">
+      <blockquote>"The others built dashboards that watch. We built a mind that thinks — with values as an explicit, auditable input."</blockquote>
+      <cite>Vincent Mangeni, Uganda National Planning Authority · comparing Ukubona to Singapore, UK, and Australia national digital twins</cite>
+    </div>
+  </section>
+
+  <!-- ─── BUDGET ─── -->
+  <section id="budget">
+    <div class="section-header">
+      <div class="section-num">08 ·</div>
+      <h2>Budget Outline</h2>
+    </div>
+    <p>Requested: $250,000 – $500,000 (12-month pilot). Proportional allocation across the <strong>$350,000 midpoint</strong>.</p>
+
+    <table class="budget-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Amount (USD)</th>
+          <th>Justification</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Technology: LLM API production deployment &amp; infrastructure</td>
+          <td class="amount-cell">$80,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:80%"></div></div>
+          </td>
+          <td>API costs, server, security audit, CI/CD pipeline</td>
+        </tr>
+        <tr>
+          <td>UX/UI Design &amp; Optimization (mobile-first, accessibility)</td>
+          <td class="amount-cell">$45,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:45%"></div></div>
+          </td>
+          <td>Nonclinical worker-centered design; 3 iteration cycles</td>
+        </tr>
+        <tr>
+          <td>Personnel: Lead Engineer (0.5 FTE, 12 months)</td>
+          <td class="amount-cell">$75,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:75%"></div></div>
+          </td>
+          <td>Backend/frontend development and maintenance</td>
+        </tr>
+        <tr>
+          <td>Personnel: Project Manager / Pilot Coordinator (0.5 FTE)</td>
+          <td class="amount-cell">$45,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:45%"></div></div>
+          </td>
+          <td>Partner relations, onboarding, data collection coordination</td>
+        </tr>
+        <tr>
+          <td>Pilot Operations: Partner organization support grants</td>
+          <td class="amount-cell">$40,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:40%"></div></div>
+          </td>
+          <td>Stipends, training time, site coordination for 50 workers</td>
+        </tr>
+        <tr>
+          <td>Evaluation: Academic partner, IRB, data analysis</td>
+          <td class="amount-cell">$30,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:30%"></div></div>
+          </td>
+          <td>Independent evaluation, pre-registration, ethics review</td>
+        </tr>
+        <tr>
+          <td>Dissemination: Report, open publication, conference</td>
+          <td class="amount-cell">$15,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:15%"></div></div>
+          </td>
+          <td>Sector-wide learning; Year 2 funding groundwork</td>
+        </tr>
+        <tr>
+          <td>Indirect / Organizational Overhead (10%)</td>
+          <td class="amount-cell">$20,000
+            <div class="budget-bar-wrap"><div class="budget-bar" style="width:20%"></div></div>
+          </td>
+          <td>Organizational support and compliance</td>
+        </tr>
+        <tr>
+          <td><strong>TOTAL</strong></td>
+          <td class="amount-cell"><strong>$350,000</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── CAPACITY ─── -->
+  <section id="capacity">
+    <div class="section-header">
+      <div class="section-num">09 ·</div>
+      <h2>Organizational Capacity</h2>
+    </div>
+
+    <p>Ukubona LLC is a health-technology company operating at the intersection of computational governance, AI infrastructure, and community health. We have demonstrated the capacity to build and deploy sophisticated technical systems in resource-constrained environments, including our landmark partnership with Uganda's National Planning Authority to develop the country's first intelligence-layer national digital twin (NPA-05).</p>
+
+    <h3>Key Organizational Assets</h3>
+    <ul>
+      <li>Proven computational architecture (T→W→v→Eig→κ) deployed with Uganda NPA for national planning</li>
+      <li>Active LLM API integration capability (Anthropic Claude)</li>
+      <li>Maryland-based legal entity with fiscal compliance infrastructure</li>
+      <li>Uganda-based operations providing direct community health context</li>
+      <li>Interdisciplinary team spanning epidemiology, software engineering, public health, and computational social science</li>
+    </ul>
+
+    <h3>Track Record</h3>
+    <ul>
+      <li><strong>NPA-04 / NPA-05:</strong> Digital twin architecture for Uganda's 146 districts, praised by NPA ICT leadership as surpassing Singapore, UK, and Australia national twins in intelligence-layer design</li>
+      <li><strong>SIB-GAP:</strong> Social Impact Bond / Gap-Aware Policy framework for health infrastructure, featuring multi-model LLM alignment methodology (Google, OpenAI, Anthropic, xAI cross-validation)</li>
+      <li><strong>CKD / Transplant Access Research:</strong> Ongoing work on CKD burden, transplant access gaps, and caregiver economics in East Africa — the same populations we aim to serve through nonclinical mental health workforce augmentation</li>
+    </ul>
+
+    <h3>Scalability Commitment</h3>
+    <p>We are committed to open evaluation, transparent methodology, and sector-wide learning. Our end goal is not proprietary lock-in — it is a scalable, licensable, community-owned infrastructure that any nonprofit organization can deploy.</p>
+
+    <div class="callout">
+      <div class="callout-label">The 50-Year Vision</div>
+      <p>The architecture is invariant; only the content changes. That is what makes this a 50-year platform and not a dashboard. T→W→v→Eig→κ processes national planning data for Uganda's 146 districts and real-time decision scenarios for a peer supporter in a school hallway — using the exact same chain.</p>
+    </div>
+  </section>
+
+</div><!-- /content-wrap -->
+
+<!-- ═══════════════════════════════════════════ FOOTER -->
+<footer>
+  <div class="footer-logo">Ukubona LLC</div>
+  <div class="footer-eq">T → W → v → Eig → κ</div>
+  <p>Maryland, USA · Kampala, Uganda · 2026</p>
+  <p>Rare Impact Fund · Mental Health Grant Cycle · LOI Deadline April 10, 2026</p>
+  <p style="margin-top:1rem; font-size:0.55rem;">Prepared for submission to the Rare Impact Fund Youth Mental Health Workforce Grant · $2.5M+ available · Grant size $250,000–$500,000 · USA eligible</p>
+</footer>
+
+</body>
+</html>
