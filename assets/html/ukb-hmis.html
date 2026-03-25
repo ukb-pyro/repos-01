@@ -1,135 +1,654 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Ukubona — Continuous Tuning System</title>
+<title>La Distinction — Ukubona LLC</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  :root {
+    --bg:        #05080f;
+    --surface:   #0c1220;
+    --border:    #1a2540;
+    --muted:     #2d3d5c;
+    --text:      #c8d4e8;
+    --dim:       #607090;
+    --accent:    #34d399;   /* ukubona green */
+    --warm:      #f59e0b;   /* gradient amber */
+    --cold:      #38bdf8;   /* incumbent blue */
+    --danger:    #f87171;   /* loss / distortion */
+    --white:     #eef2f8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    margin: 0;
-    background: #0f172a;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    color: #e5e7eb;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Spectral', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
-  .title {
-    text-align: center;
-    padding: 20px;
-    font-size: 22px;
-    font-weight: 600;
+
+  /* ── GRAIN OVERLAY ── */
+  body::before {
+    content:'';
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.6;
   }
-  svg {
+
+  /* ── HEADER ── */
+  header {
+    position: relative; z-index: 10;
+    padding: 48px 48px 0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px; letter-spacing: 0.18em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .logo span { color: var(--dim); }
+  .theta-chain {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative; z-index: 10;
+    padding: 56px 48px 16px;
+    max-width: 860px;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(32px, 5vw, 54px);
+    line-height: 1.1;
+    color: var(--white);
+    margin-bottom: 16px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .hero p {
+    font-size: 15px; font-weight: 300; line-height: 1.7;
+    color: var(--dim); max-width: 620px;
+  }
+  .hero p strong { color: var(--text); font-weight: 400; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    position: relative; z-index: 10;
+    padding: 48px 48px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.22em;
+    color: var(--muted); text-transform: uppercase;
+  }
+
+  /* ── MAIN DIAGRAM WRAPPER ── */
+  .diagram-wrap {
+    position: relative; z-index: 10;
+    padding: 0 24px 8px;
     width: 100%;
-    height: 90vh;
+    overflow-x: auto;
   }
-  .box {
-    fill: #1e293b;
-    stroke: #38bdf8;
-    stroke-width: 1.5;
-    rx: 10;
-  }
-  .ukubona {
-    fill: #022c22;
-    stroke: #34d399;
-    stroke-width: 2;
-  }
-  .text {
-    fill: #e5e7eb;
+
+  /* ── TABLE: PENTADIC DISTINCTION ── */
+  .pentad-table {
+    position: relative; z-index: 10;
+    margin: 0 48px 56px;
+    border-collapse: collapse;
+    width: calc(100% - 96px);
     font-size: 13px;
-    text-anchor: middle;
-    dominant-baseline: middle;
   }
-  .label {
-    fill: #94a3b8;
-    font-size: 11px;
-    text-anchor: middle;
+  .pentad-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; text-align: left;
+    padding: 10px 16px 10px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--dim);
   }
-  .arrow {
-    stroke: #64748b;
-    stroke-width: 1.5;
-    marker-end: url(#arrow);
+  .pentad-table th.col-uk { color: var(--accent); }
+  .pentad-table th.col-inc { color: var(--cold); }
+  .pentad-table td {
+    padding: 14px 16px 14px 0;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
   }
-  .highlight {
-    stroke: #f59e0b;
-    stroke-width: 2;
-    stroke-dasharray: 4;
+  .pentad-table tr:last-child td { border-bottom: none; }
+  .pentad-table td.layer {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--dim);
+    white-space: nowrap; padding-right: 24px;
+    width: 1%;
   }
+  .pentad-table td.layer span {
+    display: block; font-size: 18px; margin-bottom: 2px;
+  }
+  .pentad-table td.label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px; color: var(--white);
+    white-space: nowrap; padding-right: 32px;
+    width: 1%;
+  }
+  .pentad-table td.uk {
+    color: var(--accent);
+    font-style: italic;
+  }
+  .pentad-table td.inc {
+    color: var(--cold);
+    font-style: normal;
+    font-weight: 300;
+  }
+  .pentad-table td.dept {
+    color: var(--warm);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.05em;
+  }
+  .dot {
+    display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; margin-right: 6px;
+    vertical-align: middle;
+  }
+  .dot-uk { background: var(--accent); }
+  .dot-inc { background: var(--cold); }
+  .dot-dept { background: var(--warm); }
+
+  /* ── SVG FLOW ── */
+  .svg-section {
+    position: relative; z-index: 10;
+    padding: 0 48px 64px;
+  }
+  .svg-section svg {
+    width: 100%; height: auto;
+    display: block;
+  }
+
+  /* ── QUOTE BLOCK ── */
+  .quote-block {
+    position: relative; z-index: 10;
+    margin: 0 48px 56px;
+    padding: 28px 32px;
+    border-left: 2px solid var(--accent);
+    background: var(--surface);
+  }
+  .quote-block p {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px; line-height: 1.6;
+    color: var(--white);
+    font-style: italic;
+  }
+  .quote-block .attr {
+    margin-top: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    font-style: normal;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative; z-index: 10;
+    padding: 24px 48px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  footer .f-left {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px; color: var(--dim);
+  }
+  footer .f-left em { color: var(--accent); font-style: normal; }
+  footer .f-right {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.12em;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .hero, .pentad-table, .quote-block, .svg-section, header {
+    animation: fadeUp 0.8s ease both;
+  }
+  .pentad-table { animation-delay: 0.15s; }
+  .quote-block  { animation-delay: 0.3s;  }
+  .svg-section  { animation-delay: 0.45s; }
 </style>
 </head>
-
 <body>
 
-<div class="title">
-🎼 Ukubona — Continuous Tuning for Health Systems
+<header>
+  <div class="logo">Ukubona LLC <span>· Digital Twin OS</span></div>
+  <div class="theta-chain">θ → L(θ) → ∇L → −η∇L → θ′</div>
+</header>
+
+<div class="hero">
+  <h1><em>La Distinction</em><br/>Five departures<br/>from the expensive status quo.</h1>
+  <p>
+    DHIS2, DATIM, Tableau, Power BI, SAP—these are the instruments the world already paid for.
+    <strong>Ukubona is not a competitor. It is the layer the incumbents cannot see themselves needing.</strong>
+    Below: the five precise points where the architecture diverges—mapped onto the pentadic structure
+    of Tensor → Matrix → Vector → Eigenmode → Scalar.
+  </p>
 </div>
 
-<svg viewBox="0 0 1000 600">
+<!-- ── PENTADIC DISTINCTION TABLE ── -->
+<div class="section-label">01 · Pentadic Distinction Map</div>
 
-  <!-- Arrow Definition -->
+<table class="pentad-table">
+  <thead>
+    <tr>
+      <th></th>
+      <th></th>
+      <th class="col-inc">Incumbent (DHIS2 · DATIM · Tableau · SAP)</th>
+      <th class="col-uk">Ukubona LLC</th>
+      <th>Point of Departure</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr>
+      <td class="layer"><span>①</span>Tensor<br/>L₁–L₅</td>
+      <td class="label">The Map</td>
+      <td class="inc">
+        <span class="dot dot-inc"></span>
+        Captures <em>reported</em> reality. Forms define the field.
+        What isn't on the form doesn't exist. The tensor is truncated
+        at data-entry — staffing gaps, cognitive overload, stockouts
+        survive only as checkboxes.
+      </td>
+      <td class="uk">
+        <span class="dot dot-uk"></span>
+        Models <em>latent</em> reality. The tensor includes unobserved
+        dimensions — clinical variance, caregiver burden, district friction —
+        inferred from residuals. What the form misses, the loss function notices.
+      </td>
+      <td class="dept">
+        Reported state<br/>vs.<br/>Latent state
+      </td>
+    </tr>
+
+    <tr>
+      <td class="layer"><span>②</span>Matrix<br/>Compressor</td>
+      <td class="label">The Colour Key</td>
+      <td class="inc">
+        <span class="dot dot-inc"></span>
+        The compressor is <em>implicit and static</em>. WHO indicator
+        definitions, DHIS2 schemas, and training cycles define the weights
+        once — and silently. No one publishes the loss function.
+        Distortion accumulates invisibly.
+      </td>
+      <td class="uk">
+        <span class="dot dot-uk"></span>
+        The compressor is <em>explicit and tunable</em>.
+        Ukubona surfaces the weights as real-time sliders — form complexity,
+        staffing ratio, reporting lag, indicator rigidity — so the
+        loss function is visible, arguable, and adjustable.
+      </td>
+      <td class="dept">
+        Hidden weights<br/>vs.<br/>Exposed + tunable weights
+      </td>
+    </tr>
+
+    <tr>
+      <td class="layer"><span>③</span>Vector<br/>Direction</td>
+      <td class="label">The Dropdown</td>
+      <td class="inc">
+        <span class="dot dot-inc"></span>
+        Policy priority is set upstream — by ministries, donors, WHO —
+        and baked into indicator sets. The policymaker chooses from
+        a fixed menu. Changing the question requires a new data
+        collection cycle, often 6–18 months.
+      </td>
+      <td class="uk">
+        <span class="dot dot-uk"></span>
+        The vector is a live dropdown. Change the question — mental health
+        today, workforce gap tomorrow, climate stress next year —
+        and the engine recolours 146 districts instantly.
+        <em>The engine does not change. Only the direction of the board's gaze.</em>
+      </td>
+      <td class="dept">
+        Fixed indicator set<br/>vs.<br/>∞ reorientable vectors
+      </td>
+    </tr>
+
+    <tr>
+      <td class="layer"><span>④</span>Eigenmode<br/>Narrative</td>
+      <td class="label">The Pipeline</td>
+      <td class="inc">
+        <span class="dot dot-inc"></span>
+        The dominant narrative is produced by the system:
+        "reporting completeness = 68%" → blame assigned → training issued.
+        The gradient is invisible. Agency is assumed lost to individuals,
+        not to the compression architecture.
+      </td>
+      <td class="uk">
+        <span class="dot dot-uk"></span>
+        The eigenmode is attributed. "Compression loss = 28% at Mukono.
+        Cause: form complexity (40%), staffing gap (35%), reporting lag (25%)."
+        Agency is not lost to individuals — it is lost <em>at a specific
+        transformation step</em>, and that step is identified.
+      </td>
+      <td class="dept">
+        Blame narrative<br/>vs.<br/>Causal attribution
+      </td>
+    </tr>
+
+    <tr>
+      <td class="layer"><span>⑤</span>Scalar<br/>Sovereignty</td>
+      <td class="label">The Decision</td>
+      <td class="inc">
+        <span class="dot dot-inc"></span>
+        The scalar belongs to the platform. DHIS2 holds the schema.
+        Tableau holds the visualization. The Ministry holds the PDF.
+        Vendor lock-in is structural. Sovereignty is rhetorical.
+      </td>
+      <td class="uk">
+        <span class="dot dot-uk"></span>
+        The scalar belongs to Government. API keys stay with the Ministry.
+        Ukubona rents compute only — the engine, not the data.
+        If the contract ends, the data stays. <em>The twin is a service,
+        not a dependency.</em>
+      </td>
+      <td class="dept">
+        Vendor-held scalar<br/>vs.<br/>Sovereign scalar
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+<!-- ── SVG FLOW DIAGRAM ── -->
+<div class="section-label">02 · Architecture — The Closed Loop</div>
+
+<div class="svg-section">
+<svg viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    <!-- glow filters -->
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- arrowheads -->
+    <marker id="arr-dim" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#2d3d5c"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#34d399"/>
+    </marker>
+    <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arr-cold" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#38bdf8"/>
     </marker>
   </defs>
 
+  <!-- ─── BACKGROUND PANELS ─── -->
+  <!-- Incumbent lane (top) -->
+  <rect x="8" y="8" width="944" height="120" rx="6"
+        fill="#0c1a2e" stroke="#1a2540" stroke-width="1"/>
+  <text x="22" y="26" font-family="'DM Mono',monospace" font-size="9"
+        fill="#2d3d5c" letter-spacing="2">INCUMBENT PATH · PASSIVE · OPEN-LOOP</text>
+
+  <!-- Ukubona lane (bottom) -->
+  <rect x="8" y="200" width="944" height="132" rx="6"
+        fill="#041510" stroke="#34d399" stroke-width="1" opacity="0.7"/>
+  <text x="22" y="218" font-family="'DM Mono',monospace" font-size="9"
+        fill="#1a5c3c" letter-spacing="2">UKUBONA PATH · ADAPTIVE · CLOSED-LOOP</text>
+
+  <!-- ─── INCUMBENT NODES ─── -->
   <!-- Reality -->
-  <rect x="50" y="220" width="140" height="60" class="box"/>
-  <text x="120" y="250" class="text">Reality</text>
-  <text x="120" y="275" class="label">Patients • Staff • Workload</text>
+  <rect x="30" y="40" width="110" height="52" rx="5"
+        fill="#0c1220" stroke="#1a2540" stroke-width="1.2"/>
+  <text x="85" y="60" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="13" fill="#c8d4e8">Reality</text>
+  <text x="85" y="78" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#2d3d5c">Tensor · L₁–L₅</text>
 
-  <!-- Instruments -->
-  <rect x="240" y="220" width="140" height="60" class="box"/>
-  <text x="310" y="250" class="text">Instruments</text>
-  <text x="310" y="275" class="label">DHIS2 • eHMIS</text>
+  <!-- DHIS2/eHMIS -->
+  <rect x="200" y="40" width="120" height="52" rx="5"
+        fill="#0c1220" stroke="#38bdf8" stroke-width="1.2"/>
+  <text x="260" y="60" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="13" fill="#38bdf8">DHIS2 / eHMIS</text>
+  <text x="260" y="78" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#2d3d5c">Instruments · Forms</text>
 
-  <!-- Compression -->
-  <rect x="430" y="220" width="160" height="60" class="box highlight"/>
-  <text x="510" y="250" class="text">Compression</text>
-  <text x="510" y="275" class="label">Forms • Indicators</text>
+  <!-- Compression (highlighted problem) -->
+  <rect x="380" y="32" width="130" height="68" rx="5"
+        fill="#1a0a00" stroke="#f87171" stroke-width="1.8" stroke-dasharray="5 3"/>
+  <text x="445" y="55" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="13" fill="#f87171">Compression</text>
+  <text x="445" y="72" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#7a3030">Static weights · Hidden</text>
+  <text x="445" y="87" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#f87171">⚠ Agency lost here</text>
 
-  <!-- Output -->
-  <rect x="640" y="220" width="140" height="60" class="box"/>
-  <text x="710" y="250" class="text">KPIs</text>
-  <text x="710" y="275" class="label">Coverage • Completeness</text>
+  <!-- KPI -->
+  <rect x="572" y="40" width="110" height="52" rx="5"
+        fill="#0c1220" stroke="#1a2540" stroke-width="1.2"/>
+  <text x="627" y="60" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="13" fill="#c8d4e8">KPI / Scalar</text>
+  <text x="627" y="78" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#2d3d5c">Coverage % · PDF</text>
 
-  <!-- Ukubona Layer -->
-  <rect x="430" y="350" width="160" height="80" class="ukubona"/>
-  <text x="510" y="380" class="text">Ukubona</text>
-  <text x="510" y="405" class="label">Detect Distortion</text>
-  <text x="510" y="420" class="label">Estimate Loss</text>
+  <!-- Policy (end) -->
+  <rect x="744" y="40" width="120" height="52" rx="5"
+        fill="#0c1220" stroke="#1a2540" stroke-width="1.2"/>
+  <text x="804" y="60" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="13" fill="#c8d4e8">Policy</text>
+  <text x="804" y="78" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#2d3d5c">MoH · WHO · NPA</text>
+
+  <!-- Incumbent arrows -->
+  <line x1="140" y1="66" x2="198" y2="66" stroke="#2d3d5c" stroke-width="1.5"
+        marker-end="url(#arr-dim)"/>
+  <line x1="320" y1="66" x2="378" y2="66" stroke="#2d3d5c" stroke-width="1.5"
+        marker-end="url(#arr-dim)"/>
+  <line x1="510" y1="66" x2="570" y2="66" stroke="#2d3d5c" stroke-width="1.5"
+        marker-end="url(#arr-dim)"/>
+  <line x1="682" y1="66" x2="742" y2="66" stroke="#2d3d5c" stroke-width="1.5"
+        marker-end="url(#arr-dim)"/>
+
+  <!-- ─── UKUBONA NODES ─── -->
+
+  <!-- Ukubona core -->
+  <rect x="370" y="222" width="150" height="68" rx="6"
+        fill="#041a10" stroke="#34d399" stroke-width="2"
+        filter="url(#glow-green)"/>
+  <text x="445" y="247" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="15" fill="#34d399" font-style="italic">Ukubona</text>
+  <text x="445" y="265" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#1a5c3c">Detect distortion</text>
+  <text x="445" y="280" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#1a5c3c">Estimate loss · Attribute cause</text>
 
   <!-- SIB-GAP -->
-  <rect x="640" y="350" width="140" height="80" class="ukubona"/>
-  <text x="710" y="380" class="text">SIB-GAP</text>
-  <text x="710" y="405" class="label">Recommend Fix</text>
+  <rect x="572" y="222" width="130" height="68" rx="6"
+        fill="#041a10" stroke="#34d399" stroke-width="1.5"
+        filter="url(#glow-green)"/>
+  <text x="637" y="247" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#34d399" font-style="italic">SIB-GAP</text>
+  <text x="637" y="265" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#1a5c3c">Cheapest intervention</text>
+  <text x="637" y="280" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#1a5c3c">Gradient → Recovery curve</text>
 
-  <!-- UI Layer -->
-  <rect x="240" y="350" width="140" height="80" class="ukubona"/>
-  <text x="310" y="380" class="text">Selena UI</text>
-  <text x="310" y="405" class="label">Sliders / Control</text>
+  <!-- Selena UI -->
+  <rect x="160" y="222" width="150" height="68" rx="6"
+        fill="#0a1000" stroke="#f59e0b" stroke-width="1.5"
+        filter="url(#glow-amber)"/>
+  <text x="235" y="247" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#f59e0b" font-style="italic">Selena UI</text>
+  <text x="235" y="265" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#5c4000">Tuning sliders · Control panel</text>
+  <text x="235" y="280" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#5c4000">Agency restored here</text>
 
-  <!-- Arrows Top Row -->
-  <line x1="190" y1="250" x2="240" y2="250" class="arrow"/>
-  <line x1="380" y1="250" x2="430" y2="250" class="arrow"/>
-  <line x1="590" y1="250" x2="640" y2="250" class="arrow"/>
+  <!-- Sovereign Policy (Ukubona end) -->
+  <rect x="744" y="222" width="130" height="68" rx="6"
+        fill="#0c1220" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="809" y="247" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="13" fill="#38bdf8">Policy</text>
+  <text x="809" y="265" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#1a3a5c">Keys held by Gov.</text>
+  <text x="809" y="280" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#1a3a5c">Data sovereign</text>
 
-  <!-- Down to Ukubona -->
-  <line x1="510" y1="280" x2="510" y2="350" class="arrow"/>
+  <!-- Down: Compression → Ukubona -->
+  <line x1="445" y1="100" x2="445" y2="220" stroke="#f87171" stroke-width="1.5"
+        stroke-dasharray="4 3" marker-end="url(#arr-green)"/>
+  <text x="450" y="168" font-family="'DM Mono',monospace" font-size="9"
+        fill="#7a3030">compression error ↓</text>
 
-  <!-- Ukubona to SIB -->
-  <line x1="590" y1="390" x2="640" y2="390" class="arrow"/>
+  <!-- Ukubona → SIB-GAP -->
+  <line x1="520" y1="256" x2="570" y2="256" stroke="#34d399" stroke-width="1.5"
+        marker-end="url(#arr-green)"/>
 
-  <!-- SIB to UI -->
-  <line x1="640" y1="390" x2="380" y2="390" class="arrow"/>
+  <!-- SIB-GAP → Sovereign Policy -->
+  <line x1="702" y1="256" x2="742" y2="256" stroke="#34d399" stroke-width="1.5"
+        marker-end="url(#arr-cold)"/>
 
-  <!-- UI back to Instruments -->
-  <line x1="310" y1="350" x2="310" y2="280" class="arrow"/>
+  <!-- SIB-GAP → Selena (feedback) -->
+  <path d="M637 290 Q637 320 235 320 L235 292" fill="none"
+        stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+  <text x="430" y="333" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#5c4000">recommended intervention → tuning panel</text>
 
-  <!-- Loop Label -->
-  <text x="500" y="500" class="label">
-    Continuous Tuning Loop: Measure → Detect → Adjust → Repeat
-  </text>
+  <!-- Selena → DHIS2 (adjust instruments) -->
+  <line x1="235" y1="222" x2="235" y2="100"
+        stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="3 3"
+        marker-end="url(#arr-cold)"/>
+  <text x="155" y="168" font-family="'DM Mono',monospace" font-size="8.5"
+        fill="#5c4000" text-anchor="middle">re-tune↑</text>
 
+  <!-- DEPT LABELS (right margin) -->
+  <text x="920" y="70" text-anchor="middle" transform="rotate(-90,920,70)"
+        font-family="'DM Mono',monospace" font-size="8" fill="#1a2540"
+        letter-spacing="2">PASSIVE</text>
+  <text x="920" y="260" text-anchor="middle" transform="rotate(-90,920,260)"
+        font-family="'DM Mono',monospace" font-size="8" fill="#1a5c3c"
+        letter-spacing="2">ADAPTIVE</text>
 </svg>
+</div>
+
+<!-- ── QUOTE ── -->
+<div class="quote-block">
+  <p>
+    "Most health systems are played out of tune because their measurement instruments
+    are never recalibrated. Ukubona introduces continuous tuning — so data reflects
+    reality, and decisions restore agency."
+  </p>
+  <div class="attr">Ukubona LLC · La Distinction · 2025</div>
+</div>
+
+<!-- ── SECOND SVG: THE LOSS FUNCTION DELTA ── -->
+<div class="section-label">03 · Where the Loss Function Diverges</div>
+
+<div class="svg-section">
+<svg viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow2" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#2d3d5c"/>
+    </marker>
+    <marker id="a3" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#34d399"/>
+    </marker>
+  </defs>
+
+  <!-- Two columns -->
+  <!-- Left: Incumbent -->
+  <rect x="20" y="20" width="430" height="220" rx="6"
+        fill="#0c1a2e" stroke="#1a2540" stroke-width="1"/>
+  <text x="235" y="46" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="10" fill="#38bdf8" letter-spacing="2">INCUMBENT OPTIMIZES FOR →</text>
+
+  <text x="80" y="85" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#c8d4e8">Completeness</text>
+  <text x="80" y="103" font-family="'DM Mono',monospace"
+        font-size="10" fill="#2d3d5c">max( forms submitted / forms expected )</text>
+
+  <text x="80" y="135" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#c8d4e8">Timeliness</text>
+  <text x="80" y="153" font-family="'DM Mono',monospace"
+        font-size="10" fill="#2d3d5c">min( submission_date − due_date )</text>
+
+  <text x="80" y="185" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#c8d4e8">Consistency</text>
+  <text x="80" y="203" font-family="'DM Mono',monospace"
+        font-size="10" fill="#2d3d5c">std( reported_value ) → 0</text>
+
+  <text x="235" y="232" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#f87171">⚠ None of these measure fidelity to reality</text>
+
+  <!-- Divider -->
+  <line x1="480" y1="20" x2="480" y2="240" stroke="#1a2540" stroke-width="1"
+        stroke-dasharray="4 4"/>
+  <text x="480" y="135" text-anchor="middle" font-family="'DM Serif Display',serif"
+        font-size="22" fill="#2d3d5c">≠</text>
+
+  <!-- Right: Ukubona -->
+  <rect x="510" y="20" width="430" height="220" rx="6"
+        fill="#041510" stroke="#34d399" stroke-width="1" opacity="0.85"/>
+  <text x="725" y="46" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="10" fill="#34d399" letter-spacing="2">UKUBONA OPTIMIZES FOR →</text>
+
+  <text x="570" y="85" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#34d399" font-style="italic">Fidelity</text>
+  <text x="570" y="103" font-family="'DM Mono',monospace"
+        font-size="10" fill="#1a5c3c">min( Reality − Reported State )</text>
+
+  <text x="570" y="135" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#34d399" font-style="italic">Agency</text>
+  <text x="570" y="153" font-family="'DM Mono',monospace"
+        font-size="10" fill="#1a5c3c">max( latent_worker_intent captured )</text>
+
+  <text x="570" y="185" font-family="'DM Serif Display',serif"
+        font-size="14" fill="#34d399" font-style="italic">Convergence</text>
+  <text x="570" y="203" font-family="'DM Mono',monospace"
+        font-size="10" fill="#1a5c3c">∇L_total(θ) → 0 across all five layers</text>
+
+  <text x="725" y="232" text-anchor="middle" font-family="'DM Mono',monospace"
+        font-size="9" fill="#34d399">The twin does not report. It converges.</text>
+</svg>
+</div>
+
+<!-- ── QUOTE 2 ── -->
+<div class="quote-block" style="border-left-color: var(--warm);">
+  <p>
+    "We do not build another dashboard.
+    We install the tuning fork for Uganda's entire HMIS —
+    so the system finally hears itself."
+  </p>
+  <div class="attr">Ukubona LLC · Kiti kya Muwogo · Laterite-grown · Gradient-grown</div>
+</div>
+
+<footer>
+  <div class="f-left">
+    <em>Ukubona</em> · to see · Digital Twin OS · Kampala · Baltimore
+  </div>
+  <div class="f-right">
+    θ → L(θ) → ∇L → −η∇L → θ′ &nbsp;·&nbsp;
+    Personal · Household · Enterprise · Government · Civilizational
+  </div>
+</footer>
 
 </body>
 </html>
