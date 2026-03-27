@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ukubona — The Sovereign Stack</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c8a850;
+    --gold-dim: rgba(200,168,80,0.10);
+    --gold-border: rgba(200,168,80,0.18);
+    --ink: #ede8d8;
+    --mut: #6b6040;
+    --bg: #07090d;
+    --surf: #0d1117;
+    --surf2: #131a22;
+    --red: #d94040;
+    --teal: #20a890;
+    --blue: #3878d0;
+    --purple: #8060c8;
+    --green: #28a86a;
+    --amber: #d89030;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* === BACKGROUND GRID === */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,168,80,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,168,80,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* === SCANLINE === */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.06) 2px,
+      rgba(0,0,0,0.06) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+  }
+
+  /* === HEADER === */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-eye {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 28px;
+    animation: spin 90s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(42px, 7vw, 72px);
+    font-style: italic;
+    font-weight: 300;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .hero-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mut);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .hero-pentad {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: rgba(200,168,80,0.5);
+    letter-spacing: 0.12em;
+  }
+
+  /* === DIVIDER === */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 48px 0;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--gold-border);
+  }
+  .divider-sym {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--mut);
+    letter-spacing: 0.12em;
+  }
+
+  /* === SECTION HEADING === */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mut);
+    margin-bottom: 6px;
+  }
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 24px;
+    line-height: 1.3;
+  }
+
+  /* === EVOLUTION TIMELINE === */
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 12px;
+    bottom: 12px;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--gold-border) 10%, var(--gold-border) 90%, transparent);
+  }
+
+  .tl-item {
+    position: relative;
+    margin-bottom: 36px;
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .tl-item.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .tl-dot {
+    position: absolute;
+    left: -40px;
+    top: 14px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tl-dot::after {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--gold);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .tl-item:hover .tl-dot::after { opacity: 1; }
+
+  .tl-card {
+    background: var(--surf);
+    border: 1px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .tl-card:hover {
+    border-color: rgba(200,168,80,0.35);
+  }
+  .tl-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--tl-color, var(--gold));
+    opacity: 0.6;
+  }
+
+  .tl-era {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--tl-color, var(--gold));
+    margin-bottom: 6px;
+  }
+  .tl-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .tl-body {
+    font-size: 13px;
+    color: var(--mut);
+    line-height: 1.7;
+  }
+  .tl-body em {
+    color: var(--ink);
+    font-style: normal;
+  }
+  .tl-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .tl-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 3px 9px;
+    border: 1px solid;
+    border-radius: 999px;
+    border-color: var(--tl-color, var(--gold));
+    color: var(--tl-color, var(--gold));
+    opacity: 0.65;
+  }
+
+  /* === THE STACK DIAGRAM === */
+  .stack {
+    position: relative;
+    margin: 0 0 48px;
+  }
+
+  .stack-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .stack-node {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    position: relative;
+  }
+
+  .stack-node + .stack-node::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -1px;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 2px;
+    background: var(--gold-border);
+  }
+
+  .stack-arrow-col {
+    width: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stack-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--mut);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 8px 0;
+  }
+  .stack-arrow svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .stack-block {
+    flex: 1;
+    background: var(--surf);
+    border: 1px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 20px 24px 20px 28px;
+    margin: 4px 0;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .stack-block:hover {
+    border-color: rgba(200,168,80,0.3);
+    background: var(--surf2);
+  }
+  .stack-block::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--node-color, var(--gold));
+    opacity: 0.55;
+    border-radius: 10px 0 0 10px;
+  }
+
+  .stack-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--mut);
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .stack-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--node-color, var(--gold));
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .stack-desc {
+    font-size: 12px;
+    color: var(--mut);
+    line-height: 1.6;
+    max-width: 580px;
+  }
+  .stack-desc em {
+    color: rgba(237,232,216,0.7);
+    font-style: normal;
+  }
+
+  .stack-side {
+    width: 120px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 4px;
+  }
+  .stack-side-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--mut);
+    letter-spacing: 0.1em;
+    text-align: right;
+    line-height: 1.6;
+    opacity: 0.5;
+  }
+
+  /* === INSIGHT CARDS === */
+  .insights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-bottom: 48px;
+  }
+
+  .insight-card {
+    background: var(--surf);
+    border: 1px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.2s;
+  }
+  .insight-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .insight-card:hover {
+    border-color: rgba(200,168,80,0.3);
+  }
+
+  .insight-icon {
+    font-size: 20px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .insight-head {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .insight-body {
+    font-size: 12px;
+    color: var(--mut);
+    line-height: 1.7;
+  }
+  .insight-body em {
+    color: var(--ink);
+    font-style: normal;
+  }
+
+  /* === UPLOADED quote === */
+  .matrix-quote {
+    border: 1px solid var(--gold-border);
+    border-left: 3px solid var(--gold);
+    background: var(--surf);
+    border-radius: 0 10px 10px 0;
+    padding: 20px 28px;
+    margin: 0 0 24px;
+    position: relative;
+  }
+  .matrix-quote::before {
+    content: '"';
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 80px;
+    color: var(--gold);
+    opacity: 0.12;
+    position: absolute;
+    top: -12px;
+    left: 14px;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .matrix-quote p {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink);
+    line-height: 1.6;
+    position: relative;
+  }
+  .matrix-quote cite {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--mut);
+    letter-spacing: 0.12em;
+    margin-top: 10px;
+    font-style: normal;
+  }
+
+  /* === FOOTER === */
+  .footer {
+    border-top: 1px solid var(--gold-border);
+    padding: 32px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer-left {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--mut);
+    line-height: 1.8;
+  }
+  .footer-pent {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: rgba(200,168,80,0.4);
+  }
+
+  /* === ANIMATED SCROLL === */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .hero { animation: fadeInUp 0.8s ease both; }
+
+  /* === TERMINAL BLINK === */
+  .blink {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: var(--gold);
+    opacity: 0.7;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 0.7; }
+    50%      { opacity: 0; }
+  }
+
+  /* === KEY MOMENT HIGHLIGHT === */
+  .revelation {
+    background: linear-gradient(135deg, rgba(32,168,144,0.06), rgba(200,168,80,0.06));
+    border: 1px solid rgba(32,168,144,0.2);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin: 0 0 48px;
+    text-align: center;
+  }
+  .revelation-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 12px;
+  }
+  .revelation-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(20px, 3.5vw, 28px);
+    color: var(--ink);
+    line-height: 1.5;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .revelation-text strong {
+    color: var(--teal);
+    font-weight: 400;
+  }
+
+  /* === DATA CENTERS NOTE === */
+  .infra-note {
+    background: var(--surf);
+    border: 1px solid rgba(56,120,208,0.2);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .infra-note-icon {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    color: var(--blue);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .infra-note-body {
+    font-size: 12px;
+    color: var(--mut);
+    line-height: 1.7;
+  }
+  .infra-note-body strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* links */
+  a { color: var(--gold); text-decoration: none; opacity: 0.85; transition: opacity 0.15s; }
+  a:hover { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .container { padding: 0 18px 60px; }
+    .stack-side { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <svg class="hero-eye" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="30" stroke="rgba(200,168,80,0.2)" stroke-width="0.5"/>
+      <circle cx="32" cy="32" r="22" stroke="rgba(200,168,80,0.15)" stroke-width="0.5"/>
+      <ellipse cx="32" cy="32" rx="28" ry="14" stroke="rgba(200,168,80,0.35)" stroke-width="0.8"/>
+      <circle cx="32" cy="32" r="7" fill="none" stroke="rgba(200,168,80,0.6)" stroke-width="1"/>
+      <circle cx="32" cy="32" r="3" fill="#c8a850" opacity="0.8"/>
+      <line x1="32" y1="2" x2="32" y2="10" stroke="rgba(200,168,80,0.3)" stroke-width="0.5"/>
+      <line x1="32" y1="54" x2="32" y2="62" stroke="rgba(200,168,80,0.3)" stroke-width="0.5"/>
+      <line x1="2" y1="32" x2="10" y2="32" stroke="rgba(200,168,80,0.3)" stroke-width="0.5"/>
+      <line x1="54" y1="32" x2="62" y2="32" stroke="rgba(200,168,80,0.3)" stroke-width="0.5"/>
+    </svg>
+
+    <div class="hero-title">The Sovereign Stack</div>
+    <div class="hero-sub">MD · MPH · PhDc → CEO &amp; Founder, Ukubona LLC</div>
+    <div class="hero-pentad">T → M → V → E → S &nbsp;↺&nbsp; U(s)</div>
+  </div>
+
+  <!-- EVOLUTION TIMELINE -->
+  <div class="section-label">Act I — Accumulated Form</div>
+  <div class="section-title">From clinician to constructor</div>
+
+  <div class="timeline">
+
+    <div class="tl-item" style="--tl-color:#3878d0">
+      <div class="tl-dot"></div>
+      <div class="tl-card" style="--tl-color:#3878d0">
+        <div class="tl-era">Phase 0 · The formation</div>
+        <div class="tl-heading">MD · MPH · PhDc — learning to see systems</div>
+        <div class="tl-body">
+          Medicine teaches you to read signals in biological noise. Public health scales that gaze to populations. A PhD candidacy trains the eye to find <em>structure</em> where others see chaos.
+          Three disciplines, one disposition: reality is a tensor. Everything else is compression.
+        </div>
+        <div class="tl-tech">
+          <span class="tl-tag">Systems thinking</span>
+          <span class="tl-tag">Signal in noise</span>
+          <span class="tl-tag">Epidemiology</span>
+          <span class="tl-tag">Bayesian priors</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" style="--tl-color:#6b6040; transition-delay:0.1s">
+      <div class="tl-dot"></div>
+      <div class="tl-card" style="--tl-color:#6b6040">
+        <div class="tl-era">Phase 1 · First marks</div>
+        <div class="tl-heading">GitHub Pages &amp; index.md — publishing as thought</div>
+        <div class="tl-body">
+          The first instinct: write it down, put it somewhere. <em>index.md on GitHub Pages</em> — the humblest possible web presence.
+          No framework. No build step. Just Markdown rendered by someone else's system.
+          The dependency graph was invisible then. It wouldn't stay invisible.
+        </div>
+        <div class="tl-tech">
+          <span class="tl-tag">Markdown</span>
+          <span class="tl-tag">GitHub Pages</span>
+          <span class="tl-tag">Jekyll</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" style="--tl-color:#d89030; transition-delay:0.15s">
+      <div class="tl-dot"></div>
+      <div class="tl-card" style="--tl-color:#d89030">
+        <div class="tl-era">Phase 2 · Structured knowledge</div>
+        <div class="tl-heading">Jupyter Books — notebooks as narrative</div>
+        <div class="tl-body">
+          Computation woven into exposition. A Jupyter Book is a document that <em>proves its own claims</em>.
+          This was the first encounter with the idea that a document could also be infrastructure —
+          that writing and running weren't separate acts.
+        </div>
+        <div class="tl-tech">
+          <span class="tl-tag">Python</span>
+          <span class="tl-tag">Jupyter</span>
+          <span class="tl-tag">MyST Markdown</span>
+          <span class="tl-tag">Sphinx</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" style="--tl-color:#c8a850; transition-delay:0.2s">
+      <div class="tl-dot"></div>
+      <div class="tl-card" style="--tl-color:#c8a850">
+        <div class="tl-era">Phase 3 · Form finding aesthetic</div>
+        <div class="tl-heading">HTML &amp; CSS-heavy — the surface matters</div>
+        <div class="tl-body">
+          The leap from Markdown to raw HTML changes the relationship with the output.
+          You own every pixel. <em>CSS is philosophy</em>: how you layer, space, and color is how you think.
+          Cormorant Garamond italic for the serif soul. DM Mono for the machine underneath.
+          The aesthetic is never decoration — it's epistemology made visible.
+        </div>
+        <div class="tl-tech">
+          <span class="tl-tag">HTML5</span>
+          <span class="tl-tag">CSS Custom Properties</span>
+          <span class="tl-tag">Typography</span>
+          <span class="tl-tag">Dark mode</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" style="--tl-color:#8060c8; transition-delay:0.25s">
+      <div class="tl-dot"></div>
+      <div class="tl-card" style="--tl-color:#8060c8">
+        <div class="tl-era">Phase 4 · Dynamic systems</div>
+        <div class="tl-heading">React &amp; JavaScript — UI as living state</div>
+        <div class="tl-body">
+          State machines for the web. React teaches you that <em>a UI is not a document — it is a function of state</em>.
+          Components are eigenmodes. Props are inputs. Re-renders are dynamical updates.
+          The medical intuition (homeostasis, feedback loops) suddenly had a programming analogue.
+        </div>
+        <div class="tl-tech">
+          <span class="tl-tag">React 18</span>
+          <span class="tl-tag">Recharts</span>
+          <span class="tl-tag">Leaflet</span>
+          <span class="tl-tag">JWT Auth</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item" style="--tl-color:#20a890; transition-delay:0.3s">
+      <div class="tl-dot"></div>
+      <div class="tl-card" style="--tl-color:#20a890">
+        <div class="tl-era">Phase 5 · Current epoch</div>
+        <div class="tl-heading">setup.sh sovereignty — infrastructure as intent</div>
+        <div class="tl-body">
+          A single bash script that generates <em>an entire company's technical stack</em>: backend, frontend, database, auth, twin engine, geo operations, 20 sites across East Africa.
+          No local runs required. No dev environment. The script <em>is</em> the product.
+          And the prompt that generates the script is the highest-order artifact.
+          <br/><br/>
+          <em>I am not a coder. That is precisely why this matters.</em>
+        </div>
+        <div class="tl-tech">
+          <span class="tl-tag">Bash orchestration</span>
+          <span class="tl-tag">FastAPI</span>
+          <span class="tl-tag">Render.com</span>
+          <span class="tl-tag">Twin engine</span>
+          <span class="tl-tag">Zero local runs</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /timeline -->
+
+  <div class="divider"><span class="divider-sym">∿∿∿</span></div>
+
+  <!-- REVELATION -->
+  <div class="revelation">
+    <div class="revelation-label">The inflection point</div>
+    <div class="revelation-text">
+      I don't even need to run anything locally on my machine anymore.<br/>
+      <strong>Totally a waste of time.</strong><br/>
+      The local machine is an anachronism.
+    </div>
+  </div>
+
+  <!-- THE STACK -->
+  <div class="section-label">Act II — The Architecture</div>
+  <div class="section-title">Prompt → LLM → Broker → Collaborate → Deploy</div>
+
+  <div class="stack">
+    <div class="stack-flow">
+
+      <!-- Node 1 -->
+      <div class="stack-node">
+        <div class="stack-side">
+          <div class="stack-side-label">Digital Twin<br/>as highest<br/>prompt mode</div>
+        </div>
+        <div class="stack-block" style="--node-color:#c8a850">
+          <div class="stack-num">01 · Input</div>
+          <div class="stack-name">Prompt</div>
+          <div class="stack-desc">
+            Not a question. Not a command. A <em>digital twin</em> — a state-space model of reality embedded in language.
+            The quality of output is a function of how precisely you can express the tensor of your intent.
+            This is the new medical diagnosis: differential prompting.
+          </div>
+        </div>
+      </div>
+
+      <div class="stack-node">
+        <div class="stack-side"></div>
+        <div class="stack-arrow-col">
+          <div class="stack-arrow">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v12M4 10l4 4 4-4" stroke="rgba(200,168,80,0.4)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 2 -->
+      <div class="stack-node">
+        <div class="stack-side">
+          <div class="stack-side-label">Claude · GPT-4<br/>Gemini<br/>context window</div>
+        </div>
+        <div class="stack-block" style="--node-color:#8060c8">
+          <div class="stack-num">02 · Cognition</div>
+          <div class="stack-name">LLM</div>
+          <div class="stack-desc">
+            The large language model is not a search engine and not a calculator. It is a <em>compressed civilizational knowledge</em> that responds to eigenmodes.
+            Feed it a well-formed prompt and it returns not just code — but architecture, reasoning, and foresight.
+            The LLM is the new intern who has read everything and forgotten nothing.
+          </div>
+        </div>
+      </div>
+
+      <div class="stack-node">
+        <div class="stack-side"></div>
+        <div class="stack-arrow-col">
+          <div class="stack-arrow">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v12M4 10l4 4 4-4" stroke="rgba(128,96,200,0.4)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 3 -->
+      <div class="stack-node">
+        <div class="stack-side">
+          <div class="stack-side-label">VSCode · Cursor<br/>Terminal<br/>Sequential decisions</div>
+        </div>
+        <div class="stack-block" style="--node-color:#3878d0">
+          <div class="stack-num">03 · Sovereign Broker</div>
+          <div class="stack-name">Infrastructure Broker</div>
+          <div class="stack-desc">
+            VSCode, a terminal, a bash script — whatever executes the LLM's output. The broker is the <em>consequential decision layer</em>:
+            it turns language into filesystem state. Each command is irreversible. This is where sovereignty lives.
+            The non-coder's power: you don't need to understand every line. You need to understand every consequence.
+          </div>
+        </div>
+      </div>
+
+      <div class="stack-node">
+        <div class="stack-side"></div>
+        <div class="stack-arrow-col">
+          <div class="stack-arrow">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v12M4 10l4 4 4-4" stroke="rgba(56,120,208,0.4)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 4 -->
+      <div class="stack-node">
+        <div class="stack-side">
+          <div class="stack-side-label">Person → Network<br/>→ System<br/>→ Regulator<br/>→ Civilization</div>
+        </div>
+        <div class="stack-block" style="--node-color:#28a86a">
+          <div class="stack-num">04 · Collaborative Layer</div>
+          <div class="stack-name">GitHub</div>
+          <div class="stack-desc">
+            Version control is not a backup system. It is <em>nested collaborative memory</em>:
+            person → team → organization → regulator → civilization.
+            Every commit is a timestamped assertion of intent.
+            The repository is the externalized working memory of the company.
+          </div>
+        </div>
+      </div>
+
+      <div class="stack-node">
+        <div class="stack-side"></div>
+        <div class="stack-arrow-col">
+          <div class="stack-arrow">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v12M4 10l4 4 4-4" stroke="rgba(40,168,106,0.4)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 5 -->
+      <div class="stack-node">
+        <div class="stack-side">
+          <div class="stack-side-label">Render · AWS<br/>Azure · GCP<br/>Cold start ~60s</div>
+        </div>
+        <div class="stack-block" style="--node-color:#d94040">
+          <div class="stack-num">05 · Deployment</div>
+          <div class="stack-name">Cloud Platform</div>
+          <div class="stack-desc">
+            Render, AWS, Azure, GCP — it doesn't matter which. The choice is a tradeoff surface.
+            What matters: <em>the code runs somewhere you don't own</em>, served to users who don't care about your stack.
+            This is where the data centers live. This is why they're building them faster than ever.
+            The Matrix wasn't science fiction. It was a supply chain forecast.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /stack -->
+
+  <div class="divider"><span class="divider-sym">↺</span></div>
+
+  <!-- MATRIX / UPLOADED MEDITATION -->
+  <div class="section-label">Act III — The Philosophy</div>
+  <div class="section-title">What the TV series already understood</div>
+
+  <div class="matrix-quote">
+    <p>
+      There are several TV series on "Uploaded" — and they got the topology right.
+      You don't need a body in a server room. You need a coherent state vector and enough compute to run it.
+      The question was never <em>if</em>. The question was always <em>what's the interface</em>.
+    </p>
+    <cite>— Reflections on the stack, Kampala 2025</cite>
+  </div>
+
+  <div class="infra-note">
+    <div class="infra-note-icon">▲</div>
+    <div class="infra-note-body">
+      <strong>Where do data centers fall in this picture?</strong> They are the substrate — the physical tensor beneath every abstraction.
+      The sovereign stack makes their location irrelevant to the prompter. Render's servers could be in Virginia or Singapore.
+      The digital twin runs the same. <strong>Geography becomes a latency parameter, not a constraint on creativity.</strong>
+    </div>
+  </div>
+
+  <div class="infra-note">
+    <div class="infra-note-icon">◉</div>
+    <div class="infra-note-body">
+      <strong>The Matrix as infrastructure diagram:</strong> Neo wasn't hacking — he was <em>prompting</em>.
+      Every "I know kung fu" moment is a fine-tuned weight injection.
+      The difference between Neo and an ordinary operator? He understood that the system
+      responds to intent expressed with precision. <strong>This is what improving prompting means.</strong>
+    </div>
+  </div>
+
+  <div class="divider"><span class="divider-sym">∿∿∿</span></div>
+
+  <!-- INSIGHT CARDS -->
+  <div class="section-label">Act IV — Lessons</div>
+  <div class="section-title">What this evolution teaches</div>
+
+  <div class="insights">
+
+    <div class="insight-card" style="transition-delay:0s">
+      <div class="insight-head">The prompt is the product</div>
+      <div class="insight-body">
+        A 600-line bash script that builds an entire SaaS platform —
+        <em>that script was generated by a prompt</em>. The highest-leverage artifact in the stack
+        is the natural language description of what you want.
+        Every other layer is deterministic given good input.
+      </div>
+    </div>
+
+    <div class="insight-card" style="transition-delay:0.08s">
+      <div class="insight-head">Non-coders have the advantage</div>
+      <div class="insight-body">
+        The expert coder sees the implementation. The expert prompter sees the <em>intent</em>.
+        Medical training — reading symptoms, forming differentials, acting under uncertainty —
+        is better preparation for LLM prompting than knowing JavaScript.
+        <em>Abstraction is the skill. Syntax is a detail.</em>
+      </div>
+    </div>
+
+    <div class="insight-card" style="transition-delay:0.16s">
+      <div class="insight-head">Local machines are friction</div>
+      <div class="insight-body">
+        Running things locally is dependency management, environment setup, version conflicts,
+        and OS-specific bugs. <em>Totally a waste of time.</em>
+        The sovereign stack runs in the cloud, tests in the cloud, deploys from the cloud.
+        The laptop becomes a terminal for intent.
+      </div>
+    </div>
+
+    <div class="insight-card" style="transition-delay:0.24s">
+      <div class="insight-head">The pentad scales</div>
+      <div class="insight-body">
+        T → M → V → E → S is not just an analytics framework. It is an epistemology.
+        Tensor (reality) compressed to Matrix (attention) reduced to Vector (gradient)
+        expressed as Eigenmode (identity) collapsed to Scalar (decision).
+        <em>This is how every complex system should be read.</em>
+      </div>
+    </div>
+
+    <div class="insight-card" style="transition-delay:0.32s">
+      <div class="insight-head">Ukubona means "to see"</div>
+      <div class="insight-body">
+        The Zulu verb for seeing. Clinical training taught pattern recognition.
+        Data science taught feature extraction. LLMs taught that <em>describing what you see
+        precisely enough is already half the solution.</em>
+        The company name was always the thesis.
+      </div>
+    </div>
+
+    <div class="insight-card" style="transition-delay:0.40s">
+      <div class="insight-head">East Africa is not peripheral</div>
+      <div class="insight-body">
+        20 sites. Uganda, Kenya, Tanzania, Rwanda, South Sudan, Ethiopia.
+        The twin engine runs in Kampala because <em>the problems worth solving are here</em>.
+        The sovereign stack makes geography a coordinate, not a barrier.
+        Construction leakage in Ntinda is as tractable as SaaS churn in San Francisco.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CURRENT STATE -->
+  <div class="revelation" style="border-color:rgba(200,168,80,0.2); background:linear-gradient(135deg,rgba(200,168,80,0.04),rgba(128,96,200,0.04))">
+    <div class="revelation-label">Current state · <span class="blink"></span></div>
+    <div class="revelation-text">
+      <a href="https://ukubona-llc.github.io/dt/" target="_blank" style="color:var(--gold)">ukubona-llc.github.io/dt</a><br/>
+      <span style="font-size:0.75em; color:var(--mut)">ukb-dt-ssp-v07 · 120 vars · 9 depts · 20 sites · 9 trucks · JWT · twin API</span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      Ukubona LLC · Kampala, Uganda<br/>
+      <span style="opacity:0.4">MD MPH PhDc → CEO · Sovereign Stack v07</span>
+    </div>
+    <div class="footer-pent">T → M → V → E → S &nbsp;↺&nbsp; U(s)</div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+  // Intersection Observer for scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.tl-item, .insight-card').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
