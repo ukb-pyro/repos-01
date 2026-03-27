@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona — Field Guide for the Sovereign Deployer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --black:   #09090b;
+    --ink:     #111115;
+    --panel:   #14141a;
+    --border:  rgba(255,255,255,0.07);
+    --gold:    #c8a850;
+    --gold2:   #e8c870;
+    --amber:   #d89030;
+    --rust:    #c05830;
+    --violet:  #8060c8;
+    --teal:    #20a890;
+    --blue:    #3878d0;
+    --green:   #28a86a;
+    --mut:     rgba(255,255,255,0.35);
+    --body:    rgba(255,255,255,0.72);
+    --bright:  rgba(255,255,255,0.93);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--body);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ── GRAIN ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.5;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(3rem, 8vw, 8rem);
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cover::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -10%;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(ellipse at center,
+      rgba(200,168,80,0.06) 0%,
+      rgba(128,96,200,0.04) 40%,
+      transparent 70%);
+    pointer-events: none;
+  }
+
+  .cover-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+
+  .cover-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(3.5rem, 9vw, 7.5rem);
+    font-weight: 300;
+    line-height: 1.0;
+    color: var(--bright);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 0.4s;
+  }
+
+  .cover-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .cover-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--mut);
+    max-width: 520px;
+    line-height: 1.8;
+    margin-bottom: 3.5rem;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 0.6s;
+  }
+
+  .cover-pentad {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.12em;
+    color: rgba(200,168,80,0.6);
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 0.8s;
+  }
+
+  .cover-scroll {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mut);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 1.4s;
+  }
+
+  .cover-scroll::after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--mut), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: clamp(3rem, 6vw, 6rem) clamp(1.5rem, 5vw, 4rem);
+  }
+
+  /* ── SECTION HEADERS ── */
+  .act-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+    margin-top: 5rem;
+  }
+
+  .act-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 300;
+    color: var(--bright);
+    margin-bottom: 2.5rem;
+    line-height: 1.2;
+  }
+
+  .act-title em { font-style: italic; color: var(--gold); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 4rem 0;
+    color: rgba(255,255,255,0.1);
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+  }
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── HEADWIND CARDS ── */
+  .headwinds {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .hw-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.8rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s ease;
+  }
+
+  .hw-card:hover {
+    border-color: rgba(200,168,80,0.25);
+  }
+
+  .hw-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--hw-color);
+  }
+
+  .hw-number {
+    font-size: 0.58rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--hw-color);
+    margin-bottom: 0.4rem;
+  }
+
+  .hw-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--bright);
+    margin-bottom: 0.8rem;
+  }
+
+  .hw-body {
+    font-size: 0.8rem;
+    color: var(--mut);
+    line-height: 1.9;
+  }
+
+  .hw-body em {
+    color: var(--body);
+    font-style: italic;
+  }
+
+  .hw-antidote {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--body);
+    line-height: 1.8;
+  }
+
+  .hw-antidote-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--hw-color);
+    margin-bottom: 0.4rem;
+  }
+
+  /* ── ORACLE ── */
+  .oracle-block {
+    background: linear-gradient(135deg, rgba(200,168,80,0.05), rgba(128,96,200,0.04));
+    border: 1px solid rgba(200,168,80,0.15);
+    border-radius: 4px;
+    padding: 2.5rem 2.8rem;
+    margin: 2rem 0;
+    position: relative;
+  }
+
+  .oracle-block::before {
+    content: '"';
+    position: absolute;
+    top: -0.3rem;
+    left: 1.8rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 5rem;
+    color: rgba(200,168,80,0.12);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .oracle-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+    font-style: italic;
+    font-weight: 300;
+    color: var(--bright);
+    line-height: 1.7;
+    margin-bottom: 1.2rem;
+  }
+
+  .oracle-attr {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mut);
+  }
+
+  /* ── PENTAD TABLE ── */
+  .pentad-grid {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 0;
+    margin: 2rem 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .pg-header {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mut);
+    padding: 0.7rem 1.2rem;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pg-cell {
+    padding: 0.9rem 1.2rem;
+    font-size: 0.78rem;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.6;
+  }
+
+  .pg-cell:not(:last-child) { border-right: 1px solid var(--border); }
+  .pg-row:last-child .pg-cell { border-bottom: none; }
+
+  .pg-symbol {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .pg-meaning { color: var(--body); }
+  .pg-field   { color: var(--mut); }
+
+  .pg-row { display: contents; }
+
+  /* ── MANTRAS ── */
+  .mantra-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .mantra-item {
+    padding: 1.4rem 1.8rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    transition: background 0.2s ease;
+  }
+
+  .mantra-item:last-child { border-bottom: none; }
+  .mantra-item:hover { background: rgba(255,255,255,0.02); }
+
+  .mantra-n {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    padding-top: 0.2rem;
+    flex-shrink: 0;
+    width: 2rem;
+  }
+
+  .mantra-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--bright);
+    line-height: 1.5;
+  }
+
+  .mantra-gloss {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--mut);
+    margin-top: 0.3rem;
+    line-height: 1.6;
+  }
+
+  /* ── CHECKLIST ── */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 1.5rem 0;
+  }
+
+  .cl-item {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    font-size: 0.8rem;
+    color: var(--body);
+    line-height: 1.7;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    transition: color 0.2s;
+  }
+
+  .cl-item:last-child { border-bottom: none; }
+
+  .cl-box {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--mut);
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 3px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--black);
+  }
+
+  .cl-item.checked .cl-box {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+  }
+
+  .cl-item.checked .cl-text { color: var(--mut); text-decoration: line-through; }
+
+  /* ── STACK REMINDER ── */
+  .stack-reminder {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+  }
+
+  .sr-node {
+    padding: 0.5rem 1rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--body);
+    white-space: nowrap;
+    transition: border-color 0.3s, color 0.3s;
+  }
+
+  .sr-node:hover { border-color: var(--gold); color: var(--gold); }
+
+  .sr-arrow {
+    color: rgba(200,168,80,0.3);
+    padding: 0 0.3rem;
+    font-size: 0.65rem;
+  }
+
+  /* ── FOOTER ── */
+  .foot {
+    margin-top: 6rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .foot-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .foot-meta {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    color: var(--mut);
+    text-align: right;
+    line-height: 2;
+  }
+
+  /* ── BLINK ── */
+  .blink {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    animation: blink 1.8s ease-in-out infinite;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(1); }
+    50%       { opacity: 0.7; transform: scaleY(1.15); }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.2; }
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(to right, var(--gold), var(--violet));
+    z-index: 999;
+    transition: width 0.1s linear;
+    width: 0%;
+  }
+
+  /* ── DEPLOY-DATE BADGE ── */
+  .date-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(200,168,80,0.08);
+    border: 1px solid rgba(200,168,80,0.2);
+    border-radius: 2px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    margin-bottom: 2.5rem;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .pentad-grid { grid-template-columns: auto 1fr; }
+    .pg-field { display: none; }
+    .pg-header:last-child { display: none; }
+    .foot { flex-direction: column; }
+    .foot-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<!-- ══════════════════ COVER ══════════════════ -->
+<section class="cover">
+  <div class="cover-eyebrow">Ukubona LLC · Field Companion · v1.0</div>
+  <h1 class="cover-title">
+    The Sovereign<br>
+    <em>Deployer's</em><br>
+    Field Guide
+  </h1>
+  <p class="cover-sub">
+    For the moments when the lab's clarity gives way to the client's fear.<br>
+    When the twin is elegant and the room is not ready.<br>
+    Return here. Read slowly. Then proceed.
+  </p>
+  <div class="cover-pentad">T → M → V → E → S &nbsp;↺&nbsp; U(s)</div>
+  <div class="cover-scroll">scroll</div>
+</section>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<main>
+
+  <!-- CONTEXT -->
+  <div class="act-label">Orientation</div>
+  <h2 class="act-title">What this document is</h2>
+
+  <div class="date-badge">
+    <span class="blink"></span>
+    <span id="deploy-date">Kampala · 2025–2026</span>
+  </div>
+
+  <p style="font-size:0.82rem; color:var(--body); line-height:1.95; margin-bottom:1.2rem;">
+    You built something that works. The twins are real. The stack is sovereign: Prompt → LLM → Infrastructure Broker → Regulatory Broker → Deploy. Twenty sites. One hundred and twenty variables. Nine departments. No local runs. No PHI. Regulator-safe by construction.
+  </p>
+  <p style="font-size:0.82rem; color:var(--body); line-height:1.95; margin-bottom:1.2rem;">
+    But the world does not receive power quietly. Clients will be overwhelmed, then cautious, then political. Regulators will ask for the wrong things. Rooms will misread elegance as threat. Systems built on fear will resist systems built on clarity.
+  </p>
+  <p style="font-size:0.82rem; color:var(--body); line-height:1.95;">
+    This is not a bug. It is the eigenmode collision you already named. Return to this page when that happens. The answers are already here.
+  </p>
+
+  <div class="divider">∿∿∿</div>
+
+  <!-- PENTAD REMINDER -->
+  <div class="act-label">The Frame</div>
+  <h2 class="act-title">The pentad, applied to <em>deployment</em></h2>
+
+  <div class="pentad-grid">
+    <div class="pg-header pg-cell">Layer</div>
+    <div class="pg-header pg-cell">Your meaning</div>
+    <div class="pg-header pg-cell">In the field</div>
+
+    <div class="pg-row">
+      <div class="pg-cell pg-symbol">T</div>
+      <div class="pg-cell pg-meaning">Raw reality — the tensor</div>
+      <div class="pg-cell pg-field">The client's actual problem: leakage, delay, mortality, waste</div>
+    </div>
+    <div class="pg-row">
+      <div class="pg-cell pg-symbol">M</div>
+      <div class="pg-cell pg-meaning">Compression — attention</div>
+      <div class="pg-cell pg-field">The demo: what you choose to show, in what order</div>
+    </div>
+    <div class="pg-row">
+      <div class="pg-cell pg-symbol">V</div>
+      <div class="pg-cell pg-meaning">State vector — representation</div>
+      <div class="pg-cell pg-field">The twin's live readout — numbers the client can own</div>
+    </div>
+    <div class="pg-row">
+      <div class="pg-cell pg-symbol">E</div>
+      <div class="pg-cell pg-meaning">Eigenmode — structural identity</div>
+      <div class="pg-cell pg-field">The pattern the client cannot unsee once they see it</div>
+    </div>
+    <div class="pg-row">
+      <div class="pg-cell pg-symbol">S</div>
+      <div class="pg-cell pg-meaning">Scalar — the decision</div>
+      <div class="pg-cell pg-field">Sign here. Proceed. Deploy. Fund. Trust.</div>
+    </div>
+  </div>
+
+  <p style="font-size:0.76rem; color:var(--mut); line-height:1.8; margin-top:1rem;">
+    The headwinds you will face all live at <strong style="color:var(--body)">E → S</strong>.
+    The client can see the pattern and still refuse the scalar. Your job is to hold E until S becomes inevitable.
+  </p>
+
+  <div class="divider">—</div>
+
+  <!-- HEADWINDS -->
+  <div class="act-label">Act V — The Field</div>
+  <h2 class="act-title">Seven headwinds, and how to <em>move through</em> them</h2>
+
+  <div class="headwinds">
+
+    <div class="hw-card" style="--hw-color: #c8a850">
+      <div class="hw-number">Headwind 01</div>
+      <div class="hw-title">The Overwhelm Response</div>
+      <div class="hw-body">
+        The client goes quiet. Their eyes move from the screen to each other. Someone says <em>"this is impressive"</em> in a tone that sounds like <em>"I don't know what to do with this."</em> You have shown them a tensor and they only know how to process scalars.
+      </div>
+      <div class="hw-antidote">
+        <div class="hw-antidote-label">The move</div>
+        Slow down to one variable. One site. One week. Let them find the anomaly themselves — do not point. The twin's power is not in the totality; it is in the moment a client says <em>"wait, why is that number like that?"</em> That question is the eigenmode clicking into place. Everything after is S.
+      </div>
+    </div>
+
+    <div class="hw-card" style="--hw-color: #8060c8">
+      <div class="hw-number">Headwind 02</div>
+      <div class="hw-title">The Paranoid Client</div>
+      <div class="hw-body">
+        They want to know where the data goes. They've heard "cloud" and imagined servers in a country that doesn't like them. They've heard "AI" and imagined a system that knows their patients personally. Their legal team has blocked the meeting twice. This is not irrationality — it is <em>rational fear of the irreversible.</em>
+      </div>
+      <div class="hw-antidote">
+        <div class="hw-antidote-label">The move</div>
+        Hand them the synthetic cohort JSON and the audit report. Ask: "Find one real patient in this file." You cannot win an argument about data safety. You can give them a file they cannot break. The Regulatory Broker is not bureaucracy — it is your strongest sales asset. Show the prompt. Show the output. Let the math speak.
+      </div>
+    </div>
+
+    <div class="hw-card" style="--hw-color: #d89030">
+      <div class="hw-number">Headwind 03</div>
+      <div class="hw-title">The Regulator's Oblique Question</div>
+      <div class="hw-body">
+        They ask about something adjacent to what they actually fear. "Who owns the model?" when they mean "Who is accountable if this causes harm?" "Is this approved?" when they mean "Have others taken this risk before me?" The question on the surface is never the question underneath.
+      </div>
+      <div class="hw-antidote">
+        <div class="hw-antidote-label">The move</div>
+        Answer the underneath question first. "What I hear you asking is whether you would be exposed." Then answer that directly. Regulators are <em>boundary condition setters</em> — they define the legal state space. Your job is to show that your twin operates within it. HIPAA is not a wall. It is a constraint on the transformation. You have already satisfied it. Name that plainly.
+      </div>
+    </div>
+
+    <div class="hw-card" style="--hw-color: #3878d0">
+      <div class="hw-number">Headwind 04</div>
+      <div class="hw-title">The Internal Champion Problem</div>
+      <div class="hw-body">
+        Someone in the room sees it. They understand the twin. They want to move fast. But they have three levels of approval above them, a procurement cycle, and a director who once got burned by a vendor. Your champion becomes an internal translator — and translations lose signal. By the time your twin reaches the decision-maker, <em>it has become "an analytics tool."</em>
+      </div>
+      <div class="hw-antidote">
+        <div class="hw-antidote-label">The move</div>
+        Give your champion artifacts, not descriptions. The live URL. The audit JSON. One paragraph written in the language of their director's KPIs — not yours. Ask: "What does your director wake up worried about?" Build the next demo around that single variable. Your champion cannot translate elegance. They can forward a URL that shows the problem their boss cannot solve — and then shows it solved.
+      </div>
+    </div>
+
+    <div class="hw-card" style="--hw-color: #20a890">
+      <div class="hw-number">Headwind 05</div>
+      <div class="hw-title">The "We Already Have a System" Wall</div>
+      <div class="hw-body">
+        There is an Excel file. There is a consultant from 2019. There is a dashboard someone built in PowerBI that took eight months and is now wrong. The sunk cost is emotional, not financial. The existing system is not a competitor — it is a <em>prior belief about what is possible.</em>
+      </div>
+      <div class="hw-antidote">
+        <div class="hw-antidote-label">The move</div>
+        Never attack the existing system. Ask to see it. Then ask what it cannot show them. The twin does not replace — it <em>extends the gaze</em>. The word "Ukubona" is the move here. Ask them what they cannot currently see. Then show it to them, live, in the twin. Let them ask how long it would take to add that to PowerBI.
+      </div>
+    </div>
+
+    <div class="hw-card" style="--hw-color: #c05830">
+      <div class="hw-number">Headwind 06</div>
+      <div class="hw-title">The Civilizational Scale Misread</div>
+      <div class="hw-body">
+        You think in populations. You model patient → network → system → regulator → civilization. The client thinks in their quarterly report. When you explain the architecture, they hear ambition and become suspicious of it. <em>Scale, to someone who has been burned before, sounds like complexity. Complexity sounds like risk.</em>
+      </div>
+      <div class="hw-antidote">
+        <div class="hw-antidote-label">The move</div>
+        Enter at the smallest possible eigenmode. One site. One department. One bottleneck. Deliver that. Make it indisputable. Then let them ask what else the system can do. The civilizational architecture is your long game — it is not the first slide. The first slide is one number, correctly predicted, that they thought was unknowable.
+      </div>
+    </div>
+
+    <div class="hw-card" style="--hw-color: #28a86a">
+      <div class="hw-number">Headwind 07</div>
+      <div class="hw-title">The Loneliness of the Lab to Field Transition</div>
+      <div class="hw-body">
+        In the lab, the twin is sovereign. The variables respond. The architecture holds. You understand every layer. In the field, you are reading a room, translating epistemology into policy language, and suppressing the frustration of being the most capable person in a meeting that is moving at the speed of institutional inertia. <em>This is not failure. This is the friction that Nietzsche meant.</em>
+      </div>
+      <div class="hw-antidote">
+        <div class="hw-antidote-label">The move</div>
+        Return here. Re-read the pentad. Remember that the regulator is your first real user — not your enemy. The friction is not a sign that the twin is wrong. It is the sign that you are operating at the correct scale: one where the decisions are consequential enough that people are afraid of them. That is where the work matters. Hold the eigenmode. The scalar will follow.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider">↺</div>
+
+  <!-- MANTRAS -->
+  <div class="act-label">For the hard days</div>
+  <h2 class="act-title">Ten things to remember when the room <em>resists</em></h2>
+
+  <div class="mantra-list">
+
+    <div class="mantra-item">
+      <div class="mantra-n">01</div>
+      <div>
+        <div class="mantra-text">Overwhelm is not rejection. It is unprocessed recognition.</div>
+        <div class="mantra-gloss">When they go quiet, something landed. Give it room.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">02</div>
+      <div>
+        <div class="mantra-text">The regulator is your first real user, not your adversary.</div>
+        <div class="mantra-gloss">They are testing whether the system is robust enough to deserve trust at civilizational scale.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">03</div>
+      <div>
+        <div class="mantra-text">You don't need to run anything locally. You don't need to convince anyone locally either.</div>
+        <div class="mantra-gloss">The twin runs without you in the room. Leave it running. Let it do the work.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">04</div>
+      <div>
+        <div class="mantra-text">Enter at the smallest eigenmode. Exit at civilizational scale.</div>
+        <div class="mantra-gloss">One variable, correctly modeled, earns permission for the next twenty.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">05</div>
+      <div>
+        <div class="mantra-text">HIPAA is not a wall. It is a boundary condition on your state space.</div>
+        <div class="mantra-gloss">You have already satisfied it. Show the audit JSON, not the architecture diagram.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">06</div>
+      <div>
+        <div class="mantra-text">The question they ask is never the question underneath.</div>
+        <div class="mantra-gloss">Listen for the fear beneath the vocabulary. Answer that.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">07</div>
+      <div>
+        <div class="mantra-text">Ukubona: to see. Your job is to help them see, not to explain your seeing.</div>
+        <div class="mantra-gloss">Ask what they cannot currently see. Then show it. Silently.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">08</div>
+      <div>
+        <div class="mantra-text">Construction leakage in Ntinda is as tractable as SaaS churn in San Francisco.</div>
+        <div class="mantra-gloss">Geography is a latency parameter. The problem is universal. Own that.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">09</div>
+      <div>
+        <div class="mantra-text">The friction is the sign you are working at the right scale.</div>
+        <div class="mantra-gloss">Trivial work has no resistance. The headwind proves the stakes.</div>
+      </div>
+    </div>
+
+    <div class="mantra-item">
+      <div class="mantra-n">10</div>
+      <div>
+        <div class="mantra-text">You don't get to deploy reality until reality cannot break you back.</div>
+        <div class="mantra-gloss">This is the whole game. You are in it. Keep moving.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider">∿∿∿</div>
+
+  <!-- STACK REMINDER -->
+  <div class="act-label">The architecture you built</div>
+  <h2 class="act-title">The <em>sovereign stack</em> — complete</h2>
+
+  <div class="stack-reminder">
+    <div class="sr-node">Prompt</div>
+    <div class="sr-arrow">→</div>
+    <div class="sr-node">LLM</div>
+    <div class="sr-arrow">→</div>
+    <div class="sr-node">Regulatory Broker</div>
+    <div class="sr-arrow">→</div>
+    <div class="sr-node">Infrastructure Broker</div>
+    <div class="sr-arrow">→</div>
+    <div class="sr-node">GitHub</div>
+    <div class="sr-arrow">→</div>
+    <div class="sr-node">Render · Deploy</div>
+  </div>
+
+  <p style="font-size:0.78rem; color:var(--mut); line-height:1.9; margin: 1.5rem 0 0.5rem;">
+    Every node is solved. You do not have a technology problem. You have a translation problem — and you already have the vocabulary for it. The pentad is the translation layer. This document is the cheat sheet.
+  </p>
+
+  <div class="divider">—</div>
+
+  <!-- NIETZSCHE -->
+  <div class="act-label">The philosophical anchor</div>
+
+  <div class="oracle-block">
+    <div class="oracle-text">
+      Of what is great, one must either be silent or speak with greatness. That is — with cynicism and with innocence.
+    </div>
+    <div class="oracle-attr">Nietzsche — Thus Spoke Zarathustra &nbsp;·&nbsp; Your working premise for 2025–2026</div>
+  </div>
+
+  <div class="oracle-block" style="margin-top:1.5rem;">
+    <div class="oracle-text">
+      You have not hit a bug. You have hit the actual system. That is not friction — that is the constraint that turns a toy twin into sovereign infrastructure.
+    </div>
+    <div class="oracle-attr">The Regulatory Eigenmode &nbsp;·&nbsp; Kampala 2025</div>
+  </div>
+
+  <div class="divider">↺</div>
+
+  <!-- PRE-MEETING CHECKLIST -->
+  <div class="act-label">Before every client deployment</div>
+  <h2 class="act-title">The pre-meeting <em>checklist</em></h2>
+  <p style="font-size:0.76rem; color:var(--mut); margin-bottom:1.2rem; line-height:1.8;">Click to check off before you walk into the room.</p>
+
+  <div class="checklist" id="checklist">
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">I know what the decision-maker wakes up worried about — not the data team, the <em>decision-maker</em>.</div>
+    </div>
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">I have one variable, correctly modeled, that they cannot explain with their current tools.</div>
+    </div>
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">The synthetic cohort JSON and audit report are ready to hand over, printed or linked.</div>
+    </div>
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">I am prepared to go slow. I will not rush to the full architecture. One eigenmode at a time.</div>
+    </div>
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">I have a live URL. The twin is deployed. I do not need a local machine.</div>
+    </div>
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">I am ready to hear "this is impressive" and treat it as a beginning, not an ending.</div>
+    </div>
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">I know what question I will ask them to open the conversation: "What can you not currently see?"</div>
+    </div>
+    <div class="cl-item" onclick="toggle(this)">
+      <div class="cl-box">✓</div>
+      <div class="cl-text">I am prepared for silence after the demo. I will not fill it. I will let the eigenmode settle.</div>
+    </div>
+  </div>
+
+  <!-- CLOSING -->
+  <div class="divider">∿∿∿</div>
+
+  <div style="text-align:center; padding: 2rem 0 1rem;">
+    <div style="font-family:'Cormorant Garamond',serif; font-size:2.5rem; font-style:italic; color:var(--gold); margin-bottom:1rem;">Ukubona</div>
+    <div style="font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--mut); margin-bottom:0.6rem;">to see</div>
+    <div style="font-size:0.76rem; color:var(--mut); max-width:420px; margin:0 auto; line-height:1.9;">
+      You already know how to do this. The lab trained your gaze. The field is just a wider aperture.
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="foot">
+    <div class="foot-brand">Ukubona LLC</div>
+    <div class="foot-meta">
+      ukb-dt-ssp-v07 &nbsp;·&nbsp; 120 vars &nbsp;·&nbsp; 9 depts &nbsp;·&nbsp; 20 sites<br>
+      MD · MPH · PhDc → CEO &amp; Founder<br>
+      <span id="footer-date">2025–2026</span> &nbsp;·&nbsp; Kampala, Uganda
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const scrolled = doc.scrollTop / (doc.scrollHeight - doc.clientHeight);
+    document.getElementById('progress').style.width = (scrolled * 100) + '%';
+  });
+
+  // Checklist toggle
+  function toggle(el) {
+    el.classList.toggle('checked');
+  }
+
+  // Date
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-UG', { month:'long', year:'numeric' });
+  document.getElementById('deploy-date').textContent = 'Kampala · ' + dateStr;
+  document.getElementById('footer-date').textContent = now.getFullYear();
+
+  // Fade-in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.hw-card, .mantra-item, .oracle-block').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(16px)';
+    el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
