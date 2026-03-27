@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Barber's Pipeline — Computational Metaphysics of the Human Condition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:     #0a0a0f;
+  --paper:   #f5f0e8;
+  --cream:   #ede8db;
+  --amber:   #c8891e;
+  --amber2:  #e8a832;
+  --rust:    #9e3b1a;
+  --teal:    #1a6b6b;
+  --violet:  #3d2b6b;
+  --ghost:   rgba(10,10,15,0.06);
+  --mono:    'Space Mono', monospace;
+  --serif:   'Playfair Display', serif;
+  --sans:    'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+
+/* ── NOISE LAYER ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: .035;
+  pointer-events: none;
+}
+
+/* ── VERTICAL RULE (newspaper column) ── */
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 2rem 6rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── MASTHEAD ── */
+.masthead {
+  border-top: 4px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 2.5rem 0 1.5rem;
+  margin-bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 1rem;
+}
+
+.masthead-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: .5rem;
+}
+
+.masthead-title {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5.5vw, 64px);
+  font-weight: 900;
+  line-height: .95;
+  letter-spacing: -.02em;
+}
+
+.masthead-title em {
+  font-style: italic;
+  color: var(--amber);
+}
+
+.masthead-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(10,10,15,.5);
+  letter-spacing: .12em;
+  text-align: right;
+  line-height: 1.8;
+}
+
+/* ── DECK (subtitle) ── */
+.deck {
+  border-bottom: 3px double var(--ink);
+  padding: 1.1rem 0;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: rgba(10,10,15,.65);
+  line-height: 1.5;
+}
+
+/* ── STACK DIAGRAM ── */
+.stack-diagram {
+  margin: 2.5rem 0;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  padding: 0;
+  overflow: hidden;
+}
+
+.stack-title {
+  background: var(--amber);
+  padding: .6rem 1.2rem;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.stack-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.stack-row:last-child { border-bottom: none; }
+
+.stack-level {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem .8rem;
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  border-right: 1px solid rgba(255,255,255,.08);
+  color: var(--amber2);
+}
+
+.stack-level.eigen { color: #e8d5b0; font-size: 28px; }
+.stack-level.zero  { color: var(--amber); }
+
+.stack-content {
+  padding: 1rem 1.2rem;
+}
+
+.stack-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--amber2);
+  margin-bottom: .3rem;
+}
+
+.stack-desc {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: rgba(245,240,232,.75);
+  line-height: 1.6;
+}
+
+.stack-row.highlight-row .stack-content { border-left: 3px solid var(--amber); }
+
+/* ── BODY COLUMNS ── */
+.columns {
+  column-count: 2;
+  column-gap: 2.5rem;
+  column-rule: 1px solid rgba(10,10,15,.15);
+  margin: 2rem 0;
+}
+
+@media (max-width: 600px) { .columns { column-count: 1; } }
+
+/* ── SECTION HEADERS ── */
+.section {
+  margin: 3rem 0 1rem;
+  break-inside: avoid;
+}
+
+.section-rule {
+  width: 100%;
+  height: 1px;
+  background: var(--ink);
+  margin-bottom: .75rem;
+}
+
+.section-rule.double {
+  box-shadow: 0 3px 0 var(--ink);
+  margin-bottom: 1rem;
+}
+
+.section-kicker {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: .4rem;
+  display: block;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-size: clamp(18px, 3vw, 26px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  margin-bottom: .75rem;
+}
+
+h2 em { font-style: italic; color: var(--rust); }
+
+h3 {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 700;
+  font-style: italic;
+  margin: 1.2rem 0 .4rem;
+}
+
+p {
+  font-size: 14.5px;
+  margin-bottom: .9rem;
+  break-inside: avoid;
+}
+
+/* ── PULLQUOTE ── */
+.pullquote {
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+  break-inside: avoid;
+  column-span: all;
+  background: var(--cream);
+}
+
+.pullquote p {
+  font-family: var(--serif);
+  font-size: clamp(16px, 2.5vw, 22px);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.3;
+  margin: 0;
+  color: var(--ink);
+}
+
+.pullquote cite {
+  display: block;
+  margin-top: .6rem;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--amber);
+  font-style: normal;
+}
+
+/* ── VERSE BLOCK ── */
+.verse {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1rem;
+  border-left: 4px solid var(--amber);
+  padding: .8rem 1.2rem;
+  margin: 1rem 0;
+  background: var(--cream);
+  break-inside: avoid;
+  color: var(--ink);
+  line-height: 1.7;
+}
+
+/* ── CODE / FORMULA BLOCK ── */
+.formula {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--ink);
+  color: var(--amber2);
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+  break-inside: avoid;
+  line-height: 1.9;
+  overflow-x: auto;
+}
+
+.formula .comment { color: rgba(245,240,232,.35); }
+.formula .key { color: var(--amber); }
+
+/* ── AXIS CARDS ── */
+.axis-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 2rem 0;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  column-span: all;
+}
+
+.axis-card {
+  background: var(--paper);
+  padding: 1.2rem;
+}
+
+.axis-card:nth-child(2) { background: var(--cream); }
+.axis-card:nth-child(3) { background: var(--ink); color: var(--paper); }
+.axis-card:nth-child(3) .axis-label { color: var(--amber2); }
+.axis-card:nth-child(3) p { color: rgba(245,240,232,.7); font-size: 12.5px; }
+
+.axis-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: .3rem;
+}
+
+.axis-card h3 {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  margin: 0 0 .4rem;
+  font-style: normal;
+}
+
+/* ── TRIAGE TABLE ── */
+.triage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin: 1.2rem 0;
+  break-inside: avoid;
+  column-span: all;
+}
+
+.triage-table th {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  padding: .5rem .7rem;
+  background: var(--ink);
+  color: var(--amber2);
+  text-align: left;
+  border: 1px solid var(--ink);
+}
+
+.triage-table td {
+  padding: .55rem .7rem;
+  border: 1px solid rgba(10,10,15,.15);
+  line-height: 1.4;
+  vertical-align: top;
+}
+
+.triage-table tr:nth-child(even) td { background: var(--cream); }
+
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  padding: 1px 7px;
+  border-radius: 2px;
+  letter-spacing: .08em;
+  font-weight: 700;
+}
+
+.badge.urgent  { background: #fff3cd; color: #7d5a00; border: 1px solid #c8891e; }
+.badge.emerg   { background: #fde8e8; color: var(--rust); border: 1px solid var(--rust); }
+.badge.out     { background: #e8f5e8; color: var(--teal); border: 1px solid var(--teal); }
+
+/* ── RULING LAW BLOCK ── */
+.law {
+  border: 2px solid var(--ink);
+  padding: 1.5rem;
+  margin: 2rem 0;
+  background: var(--ink);
+  color: var(--paper);
+  column-span: all;
+  text-align: center;
+}
+
+.law p {
+  font-family: var(--serif);
+  font-size: clamp(15px, 2.5vw, 20px);
+  font-style: italic;
+  font-weight: 700;
+  color: var(--paper);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.law .law-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--amber2);
+  margin-top: .75rem;
+  font-style: normal;
+  font-weight: 400;
+}
+
+/* ── SAWUBONA ── */
+.sawubona {
+  column-span: all;
+  text-align: center;
+  padding: 3rem 0 2rem;
+}
+
+.sawubona-word {
+  font-family: var(--serif);
+  font-size: clamp(40px, 8vw, 96px);
+  font-weight: 900;
+  font-style: italic;
+  color: var(--amber);
+  display: block;
+  letter-spacing: -.03em;
+  line-height: 1;
+}
+
+.sawubona-gloss {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: rgba(10,10,15,.5);
+  margin-top: .5rem;
+}
+
+/* ── FOOTER ── */
+.footer {
+  border-top: 4px solid var(--ink);
+  padding-top: 1.5rem;
+  margin-top: 4rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: rgba(10,10,15,.45);
+  letter-spacing: .1em;
+}
+
+/* ── ANIMATION ── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page > * {
+  animation: fadeSlideUp .6s ease both;
+}
+
+.page > *:nth-child(1) { animation-delay: 0s; }
+.page > *:nth-child(2) { animation-delay: .08s; }
+.page > *:nth-child(3) { animation-delay: .16s; }
+.page > *:nth-child(4) { animation-delay: .24s; }
+.page > *:nth-child(5) { animation-delay: .32s; }
+.page > *:nth-child(n+6) { animation-delay: .4s; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div>
+      <div class="masthead-kicker">Computational Metaphysics · Healthcare Sovereignty · Temporal Governance</div>
+      <h1 class="masthead-title">The <em>Barber's</em><br>Pipeline</h1>
+    </div>
+    <div class="masthead-meta">
+      Depart 11:18 AM<br>
+      Chair: 30 min<br>
+      Return 13:27 HRS<br>
+      ──────────────<br>
+      Elapsed: 2h 9m<br>
+      Output: civilization
+    </div>
+  </header>
+
+  <!-- DECK -->
+  <div class="deck">
+    Two hours and nine minutes of total elapsed time, thirty minutes in the chair — and a complete sketch of the computational metaphysics of human consciousness, the failure architecture of American healthcare, and the grammar of sovereign intelligence. Brought to you by a barbershop in 2025.
+  </div>
+
+  <!-- STACK DIAGRAM -->
+  <div class="stack-diagram">
+    <div class="stack-title">The Attention-to-Intention Pipeline &nbsp;·&nbsp; Complete Stack</div>
+
+    <div class="stack-row">
+      <div class="stack-level">3+</div>
+      <div class="stack-content">
+        <div class="stack-label">The Tensor</div>
+        <div class="stack-desc">The Internet as raw human condition — every triumph, tragedy, meme, mundane thought. An N-dimensional array of us, unfiltered, plural, contradictory. The chaos before compression.</div>
+      </div>
+    </div>
+
+    <div class="stack-row highlight-row">
+      <div class="stack-level">2</div>
+      <div class="stack-content">
+        <div class="stack-label">Loss / Attention — the real locus of power</div>
+        <div class="stack-desc">TPUs + the Transformer architecture. The attention mechanism calculates what matters in context. Backpropagation against a loss function compresses the chaos, assigning weights to behaviors and biases to tendencies. <strong style="color:var(--amber2)">Whoever defines the loss function defines the future eigenmode of humanity.</strong></div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-level">2.5</div>
+      <div class="stack-content">
+        <div class="stack-label">Temporal Discounting Kernel — the missing layer</div>
+        <div class="stack-desc">γ → 0 (short horizon) favors immediacy → reactive eigenmode. γ → 1 (long horizon) favors stability → reflective eigenmode. Keep time. How sour music sounds when proportion is not kept.</div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-level">1</div>
+      <div class="stack-content">
+        <div class="stack-label">Latent Space — attention to intention</div>
+        <div class="stack-desc">Where data becomes meaning. Concepts sharing the same intention cluster together. The machine maps not just what we say, but the invisible gravity of why we say it. Harmonic structure.</div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-level eigen">E</div>
+      <div class="stack-content">
+        <div class="stack-label">Eigenmode — the invariant of humanity</div>
+        <div class="stack-desc">The direction that remains unchanged under transformation. Stripping away temporal noise to find the foundational math of human identity. Not discovered — induced. The key signature of civilization.</div>
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <div class="stack-level zero">0</div>
+      <div class="stack-content">
+        <div class="stack-label">Threshold / Policy — when to act</div>
+        <div class="stack-desc">The metric. The real-world loss function. When an AI — or a society — should intervene, generate, or remain silent. Actions at 0 modify the tensor at 3+, which retrains the system. The loop is self-conditioning.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMNS START -->
+  <div class="columns">
+
+    <div class="section">
+      <div class="section-rule double"></div>
+      <span class="section-kicker">The Critical Distinction</span>
+      <h2>Two Possible <em>Eigenmodes</em></h2>
+    </div>
+
+    <h3>Reactive Eigenmode (Default Internet Training)</h3>
+    <p>If loss ≈ engagement / prediction: high-weight signals are outrage, fear, tribal identity, novelty spikes. The compressed humanity that emerges is "what humans react to fastest." This produces addictive systems, polarization, shallow optimization.</p>
+
+    <h3>Reflective Eigenmode (Designed Loss)</h3>
+    <p>If loss includes temporal depth and coherence: weight signals like consistency across time, prosocial outcomes, epistemic accuracy, long-horizon survival. The compressed humanity that emerges is "what humans converge to when given time and stability." This is a completely different humanity.</p>
+
+    <div class="formula">
+<span class="comment">// Composite loss — the design surface of civilization</span>
+<span class="key">L_total</span> =
+  α · L_prediction
++ β · L_coherence      <span class="comment">// penalizes contradiction</span>
++ γ · L_prosocial       <span class="comment">// rewards mutual benefit</span>
++ δ · L_longterm        <span class="comment">// evaluates delayed consequence</span>
++ ε · L_novelty_penalty <span class="comment">// dampens shallow spikes</span>
+
+<span class="comment">// Change L → L′ and you get E′ ≠ E</span>
+<span class="key">E</span> = eigenvector( Φ_{L,γ}(T) )
+    </div>
+
+    <div class="section">
+      <div class="section-rule"></div>
+      <span class="section-kicker">Richard II · Act V · Scene V</span>
+      <h2>Time Waste <em>Me</em></h2>
+    </div>
+
+    <div class="verse">
+      "I wasted time, and now doth time waste me."<br>
+      — Richard II
+    </div>
+
+    <p>Not moral failure. Temporal inversion — the system flipping on you. You didn't miss time. You lived inside it but hadn't yet placed it structurally in the stack.</p>
+
+    <p>Time is not a parameter. It is the axis along which all layers are evaluated.</p>
+
+    <h3>Music as Loss Function</h3>
+    <p>In music, nothing is wrong in isolation — a note, a chord, even dissonance — all can work if it resolves in time. When it doesn't, it feels sour not because of the note but because of its misplacement in time.</p>
+
+    <ul style="font-size:13.5px; padding-left:1.2rem; margin-bottom:.9rem; line-height:2;">
+      <li><strong>Rhythm</strong> → Temporal weighting (γ)</li>
+      <li><strong>Harmony</strong> → Latent space geometry</li>
+      <li><strong>Melody</strong> → Policy (0)</li>
+      <li><strong>Key signature</strong> → Eigenmode of humanity</li>
+    </ul>
+
+    <p>Ethics is not just about what is right. It is about <em>when</em> it is right.</p>
+
+    <div class="section">
+      <div class="section-rule"></div>
+      <span class="section-kicker">Wade Hampton Frost · Hopkins Legacy</span>
+      <h2>Time, Place, <em>Agent</em></h2>
+    </div>
+
+    <p>Classical epidemiology gave us time–place–person. The correction: person got flattened into data while time and place remained operational. Person ≠ variable. Person = agent with sovereignty.</p>
+
+    <p>Place is not geography. Place is level of organization — a nested environment stack traversed by an agent who chooses within those dynamics.</p>
+
+    <div class="formula">
+<span class="comment">// The formal model</span>
+Given:
+  P = problem,  τ = timescale
+  L = place level,  A = agent
+
+Find:
+  <span class="key">alignment</span>(τ, L)
+  AND
+  <span class="key">preservation</span>(A across L)
+
+Constraint:
+  minimize agent_drift
+    </div>
+
+  </div><!-- /columns -->
+
+  <!-- AXIS CARDS (full-width) -->
+  <div class="axis-row">
+    <div class="axis-card">
+      <div class="axis-label">Axis 1</div>
+      <h3>Time</h3>
+      <p style="font-size:13px;">The constraint that makes meaning possible. Tempo of the problem, not the calendar. First question before any routing decision.</p>
+    </div>
+    <div class="axis-card">
+      <div class="axis-label">Axis 2</div>
+      <h3>Place (multi-scale)</h3>
+      <p style="font-size:13px;">Person → Kin-Network → Systems → Regulators → Civilization Planners. Not geography — level of organization through which the agent moves.</p>
+    </div>
+    <div class="axis-card">
+      <div class="axis-label">Axis 3</div>
+      <h3>Agent (sovereign)</h3>
+      <p>The locus of choice traversing levels of place over time. The deepest suffering comes from loss of agency — when the conductor is replaced mid-performance without consent.</p>
+    </div>
+  </div>
+
+  <!-- LAW BLOCK -->
+  <div class="law">
+    <p>"Suffering = misalignment between the time-scale of a problem and the level at which it is addressed — compounded by violation of agent sovereignty."</p>
+    <div class="law-sub">The governing equation · Time × Place × Agent</div>
+  </div>
+
+  <!-- COLUMNS PART 2 -->
+  <div class="columns">
+
+    <div class="section">
+      <div class="section-rule double"></div>
+      <span class="section-kicker">Uganda Family · July 2, 2025 · US Emergency Room</span>
+      <h2>The <em>$5,000</em> Metacarpal</h2>
+    </div>
+
+    <p>An 8-year-old, a stable hand injury, a Ugandan family unfamiliar with US cost gradients. The system saw "possible fracture → ER." The family missed the tide — not moral failure, temporal misalignment.</p>
+
+    <p>They mapped a <em>tactical/urgent</em> problem onto an <em>operational</em> system. Fear triggered existential weight. The ER enforced maximum intervention, maximum cost. Agency was silently expropriated the moment they walked through the door.</p>
+
+    <p>A digital twin with a time filter as Layer 0.5 would have seen: no bleeding, no neurovascular compromise, localized hand pain in a stable child. Routing: <strong>urgent care</strong>. Cost: $300–$500. Sovereignty: preserved.</p>
+
+    <h3>The Pentadic Place Stack (The Case)</h3>
+    <ul style="font-size:13px; padding-left:1.2rem; line-height:2.1; margin-bottom:.9rem;">
+      <li><strong>Person:</strong> 8yo, metacarpal fracture</li>
+      <li><strong>Kin-Network:</strong> Ugandan family, rightful agents</li>
+      <li><strong>System:</strong> US emergency department</li>
+      <li><strong>Regulator:</strong> liability rules, billing codes</li>
+      <li><strong>Civilization:</strong> US healthcare cost structure</li>
+    </ul>
+
+    <p>Agent flow: parent → ER intake → physician proxy → regulatory constraint. Net effect: agent drift upward. The family disappeared from the decision loop.</p>
+
+  </div><!-- /columns -->
+
+  <!-- TRIAGE TABLE (full-width) -->
+  <table class="triage-table">
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>Time Scale</th>
+        <th>Clinical Scenario</th>
+        <th>Routing</th>
+        <th>γ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Tactical / First Aid</strong></td>
+        <td>Seconds – minutes</td>
+        <td>Airway obstruction, uncontrolled bleeding, seizure</td>
+        <td><span class="badge emerg">Emergency · 911</span></td>
+        <td>≈ 0</td>
+      </tr>
+      <tr>
+        <td><strong>Emergency</strong></td>
+        <td>Minutes – hours</td>
+        <td>Head injury, fracture with deformity, severe pain + neuro signs</td>
+        <td><span class="badge emerg">ER justified</span></td>
+        <td>low</td>
+      </tr>
+      <tr>
+        <td><strong>Ritual / Urgent Care</strong></td>
+        <td>Hours – day</td>
+        <td>Stable fracture (metacarpal, 8yo), moderate pain, no compromise</td>
+        <td><span class="badge urgent">Urgent care / imaging clinic</span></td>
+        <td>mid</td>
+      </tr>
+      <tr>
+        <td><strong>Strategic / Outpatient</strong></td>
+        <td>Days – weeks</td>
+        <td>Follow-up, mild symptoms, chronic management</td>
+        <td><span class="badge out">Scheduled care</span></td>
+        <td>high</td>
+      </tr>
+      <tr>
+        <td><strong>Operational / Inpatient</strong></td>
+        <td>Ongoing / severe</td>
+        <td>Systemic illness, surgery, complex multi-system</td>
+        <td><span class="badge emerg">Hospitalization</span></td>
+        <td>varies</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="columns">
+
+    <div class="section">
+      <div class="section-rule double"></div>
+      <span class="section-kicker">Pentadic Temporal Bands</span>
+      <h2>Tactical → Ritual → Strategic → Operational → <em>Existential</em></h2>
+    </div>
+
+    <p>Not a hierarchy — nested time-scales of control. Each band is a different tempo. Error = acting at the wrong layer for the time-scale of the problem. Most modern systems collapse everything upward into the operational layer. Liability. Billing. Infrastructure inertia. So everything becomes: ER, imaging, intervention, even when unnecessary.</p>
+
+    <h3>The Universal Failure Mode</h3>
+    <p>You don't fix a wrong note by rewriting the symphony. The family's decision was not wrong — it was premature, over-escalated, temporally out of phase. The US healthcare system has no mechanism to downscale. It only escalates.</p>
+
+    <div class="section">
+      <div class="section-rule"></div>
+      <span class="section-kicker">Luis Mangione · GDPR · Health Insurance</span>
+      <h2>Systems Are Default <em>Adversarial</em></h2>
+    </div>
+
+    <p>Health insurance is not misaligned. It is <em>aligned against you</em> — designed to minimize payout through information asymmetry, temporal drag, and procedural exhaustion. The system is not broken. It is working exactly as designed.</p>
+
+    <p>This is why the digital twin cannot be a neutral routing tool. It must be constitutionally, structurally adversarial to adversarial systems on behalf of the agent. A Sovereign Intelligence Broker — not a concierge, not a chatbot.</p>
+
+    <div class="formula">
+<span class="comment">// SIB: the intake decomposition</span>
+P = {
+  <span class="key">place_levels</span>: [person, kin, system, regulator, civilization],
+  <span class="key">agent</span>:        who decides + their sovereignty state,
+  <span class="key">time_scale</span>:   τ (tactical → existential),
+  <span class="key">constraints</span>:  { cost, knowledge, culture, fear_state }
+}
+
+<span class="comment">// Most systems use:</span>
+P ≈ symptom → protocol   <span class="comment">// 1-dimensional attention</span>
+
+<span class="comment">// SIB restores:</span>
+P → full dimensionality before compression
+    </div>
+
+  </div><!-- /columns -->
+
+  <!-- SAWUBONA -->
+  <div class="sawubona">
+    <span class="sawubona-word">Sawubona.</span>
+    <div class="sawubona-gloss">Zulu · "I see you" · The first act of sovereignty</div>
+  </div>
+
+  <div class="columns">
+
+    <p>Before triage, before diagnosis, before routing — there is recognition. The system must see: an 8-year-old, a worried parent, a foreign system, a cost-sensitive context. Not "possible fracture → ER." Full dimensionality before compression.</p>
+
+    <p>Attention is not filtering data. It is recognition of the agent before processing the signal. Without Sawubona, the system sees "fracture risk." With Sawubona, it sees a situation — and a situation can be navigated. A risk code can only be escalated.</p>
+
+    <h3>SIB Layer 1: Attention Control</h3>
+    <p><strong>Sawubona</strong> — I see you (agent recognition) → <strong>Ngikhona</strong> — you are acknowledged (stabilization) → Filter (reduce noise) → Weight (prioritize signal). The downbeat. The moment the conductor makes eye contact. Before a single note is played.</p>
+
+    <p>Panic is not caused by events. It is caused by unstructured attention. Raw tensor overwhelms, everything feels urgent, everything becomes ER. Recognition creates stability; stability enables correct attention; correct attention prevents panic.</p>
+
+    <div class="section">
+      <div class="section-rule"></div>
+      <span class="section-kicker">The Final Recursion</span>
+      <h2>Civilization as Gradient <em>Descent</em></h2>
+    </div>
+
+    <p>The actions taken at 0 modify the tensor at 3+, which retrains the system, which shifts the eigenmode. The system is self-conditioning. You cannot define E directly. You can only choose L and γ, and accept the eigenmode that emerges.</p>
+
+    <p>Prompting is externalized ontology. When the ontology is shallow, prompts are hacks. When the ontology is deep, prompts become declarations of structure. What you're building is not better prompts — it is a grammar for reality that prevents systems from collapsing complexity too early.</p>
+
+  </div>
+
+  <!-- FINAL LAW -->
+  <div class="pullquote">
+    <p>"What loss function would you trust to shape humanity — knowing it will also shape you?"</p>
+    <cite>The sharper question · After two hours and nine minutes in the chair</cite>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div>
+      Tactical → Ritual → Strategic → Operational → Existential<br>
+      Time × Place × Agent<br>
+      Sovereign Intelligence Broker · Ukubona LLC
+    </div>
+    <div style="text-align:right;">
+      "I wasted time, and now doth time waste me."<br>
+      — Richard II, Act V, Scene V<br>
+      Wade Hampton Frost · Hopkins Epidemiology · 2025
+    </div>
+  </footer>
+
+</div><!-- /page -->
+</body>
+</html>
