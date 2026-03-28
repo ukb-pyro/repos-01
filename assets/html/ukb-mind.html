@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona · The Pentad as Unambiguous Lossy Compression</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── TOKENS ── */
+:root{
+  --bg:       #080706;
+  --bg2:      #0d0c0a;
+  --bg3:      #131110;
+  --surf:     #191714;
+  --surf2:    #201e1a;
+  --ink:      #f2ead6;
+  --ink2:     #c4bb9f;
+  --ink3:     #877d65;
+  --ink4:     #504840;
+  --brd:      rgba(210,185,110,0.10);
+  --brd2:     rgba(210,185,110,0.20);
+
+  /* per-layer accent colours */
+  --c0: #e07828;   /* Scalar   — fire orange  */
+  --c1: #c8b040;   /* Eigen    — antique gold  */
+  --c2: #5aaa60;   /* Vector   — growth green  */
+  --c3: #4888cc;   /* Matrix   — deep blue     */
+  --c4: #9868c8;   /* Tensor   — soil purple   */
+
+  --c0d: rgba(224,120,40,0.10);
+  --c1d: rgba(200,176,64,0.10);
+  --c2d: rgba(90,170,96,0.10);
+  --c3d: rgba(72,136,204,0.10);
+  --c4d: rgba(152,104,200,0.10);
+
+  --r: 9px;
+  --r2: 5px;
+}
+
+/* ── GRAIN ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  opacity:.022;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:256px 256px;
+}
+
+/* ── BASE ── */
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Crimson Pro',Georgia,serif;
+  font-size:17px;line-height:1.72;
+  min-height:100vh;overflow-x:hidden;
+}
+
+/* ── SPECTRUM ── */
+.spectrum{
+  position:fixed;top:0;left:0;right:0;height:2px;z-index:200;
+  background:linear-gradient(90deg,var(--c4),var(--c3),var(--c2),var(--c1),var(--c0));
+}
+
+/* ── LAYOUT ── */
+.page{max-width:980px;margin:0 auto;padding:0 2rem 6rem}
+
+/* ── HERO ── */
+.hero{padding:5rem 0 2.5rem;border-bottom:.5px solid var(--brd2);margin-bottom:3rem}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--c1);margin-bottom:1.1rem;
+}
+h1{
+  font-family:'Playfair Display',serif;font-size:clamp(2rem,5.5vw,3.5rem);
+  font-weight:400;line-height:1.08;color:var(--ink);margin-bottom:.8rem;
+}
+h1 em{font-style:italic;color:var(--c1)}
+.hero-sub{
+  font-family:'JetBrains Mono',monospace;font-size:.7rem;
+  color:var(--ink3);letter-spacing:.04em;line-height:2.1;margin-bottom:1.8rem;
+}
+
+/* ── SEQUENCE ARROW ── */
+.seq{
+  display:flex;align-items:center;gap:0;
+  margin:1.8rem 0 2.4rem;flex-wrap:wrap;
+}
+.seq-step{
+  display:flex;flex-direction:column;align-items:center;
+  padding:.55rem .9rem;
+  font-family:'JetBrains Mono',monospace;
+  cursor:pointer;
+  transition:all .18s;
+}
+.seq-step:hover .seq-bubble{transform:scale(1.08)}
+.seq-bubble{
+  width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;font-weight:700;border:.5px solid;
+  transition:transform .18s,box-shadow .18s;
+  margin-bottom:.35rem;
+}
+.seq-bubble.active{box-shadow:0 0 18px 4px var(--glow,rgba(200,176,64,0.25))}
+.seq-label{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;opacity:.65}
+.seq-arrow{
+  font-size:1.1rem;color:var(--ink4);
+  padding:0 .1rem;margin-bottom:1.2rem;align-self:center;
+}
+
+/* ── SECTION ── */
+.section{margin-bottom:2.8rem}
+.section-title{
+  font-family:'Playfair Display',serif;font-size:1.3rem;
+  font-weight:400;color:var(--ink2);margin-bottom:1rem;
+}
+.section-title em{font-style:italic;color:var(--c1)}
+p{color:var(--ink2);margin-bottom:1rem;font-size:1.05rem}
+p strong{color:var(--ink);font-weight:600}
+p em{font-style:italic;color:var(--c1)}
+
+/* ── THE MASTER TABLE ── */
+.master-table-wrap{
+  overflow-x:auto;margin:1.8rem 0;
+  border:.5px solid var(--brd2);border-radius:var(--r);
+}
+.master-table{
+  width:100%;border-collapse:collapse;
+  font-size:.875rem;min-width:900px;
+}
+
+/* column headers */
+.master-table thead tr:first-child th{
+  background:var(--bg2);
+  padding:10px 14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink4);
+  border-bottom:.5px solid var(--brd2);
+  text-align:left;
+  position:sticky;top:0;
+}
+.master-table thead tr:first-child th:first-child{
+  width:110px;
+}
+
+/* layer rows */
+.master-table tbody tr{
+  border-bottom:.5px solid var(--brd);
+  transition:background .14s;
+}
+.master-table tbody tr:last-child{border-bottom:none}
+.master-table tbody tr:hover td{filter:brightness(1.06)}
+
+.master-table td{
+  padding:14px 14px;
+  vertical-align:top;
+  color:var(--ink2);
+  line-height:1.6;
+}
+.master-table td.layer-id{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.72rem;font-weight:500;
+  text-align:center;
+  vertical-align:middle;
+}
+.master-table td.layer-name{
+  font-family:'Playfair Display',serif;
+  font-style:italic;font-size:1.05rem;
+  vertical-align:middle;
+}
+.master-table td.dim{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.72rem;color:var(--ink3);
+}
+.master-table td.prose{
+  font-size:.92rem;
+}
+.master-table td.prose strong{color:var(--ink);font-weight:600}
+.master-table td.prose em{font-style:italic}
+
+/* per-layer row colours */
+.row-t4{background:var(--c4d)}
+.row-t3{background:var(--c3d)}
+.row-t2{background:var(--c2d)}
+.row-t1{background:var(--c1d)}
+.row-t0{background:var(--c0d)}
+
+/* layer id bubble in table */
+.lbubble{
+  width:38px;height:38px;border-radius:50%;margin:0 auto;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:700;font-family:'Playfair Display',serif;
+  font-style:italic;border:.5px solid;
+}
+
+/* ── SEQUENCE ANNOTATION ── */
+.seq-ann{
+  background:var(--bg2);border:.5px solid var(--brd2);
+  border-radius:var(--r);padding:1.2rem 1.6rem;
+  margin:1.8rem 0;
+  font-family:'JetBrains Mono',monospace;font-size:.74rem;
+  color:var(--ink3);line-height:2.1;
+}
+.seq-ann .main{
+  font-size:.92rem;font-weight:500;color:var(--ink);
+  margin-bottom:.6rem;font-family:'Crimson Pro',serif;
+  font-style:italic;
+}
+.seq-ann b{color:var(--c1)}
+.seq-ann .arrow{color:var(--ink4);margin:0 .4rem}
+
+/* ── CALLOUT ── */
+.callout{
+  border-left:2.5px solid var(--brd2);background:var(--surf);
+  border-radius:0 var(--r2) var(--r2) 0;
+  padding:1rem 1.3rem;margin:1.4rem 0;
+  font-size:1rem;color:var(--ink2);line-height:1.75;
+}
+.callout.c0{border-left-color:var(--c0);background:var(--c0d);color:var(--ink)}
+.callout.c1{border-left-color:var(--c1);background:var(--c1d);color:var(--ink)}
+.callout.c2{border-left-color:var(--c2);background:var(--c2d);color:var(--ink)}
+.callout.c3{border-left-color:var(--c3);background:var(--c3d);color:var(--ink)}
+.callout.c4{border-left-color:var(--c4);background:var(--c4d);color:var(--ink)}
+.callout strong{color:inherit}
+
+/* ── PULL QUOTE ── */
+.pull{
+  font-family:'Playfair Display',serif;font-style:italic;
+  font-size:clamp(1.15rem,2.8vw,1.55rem);color:var(--c1);
+  text-align:center;padding:2rem 2rem;
+  border-top:.5px solid var(--brd2);border-bottom:.5px solid var(--brd2);
+  margin:2.2rem 0;line-height:1.45;
+}
+
+/* ── DOMAIN PANELS (tabs) ── */
+.domain-nav{
+  display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.6rem;
+}
+.dnav-btn{
+  padding:6px 16px;border-radius:20px;
+  border:.5px solid var(--brd2);background:transparent;
+  font-size:.78rem;cursor:pointer;color:var(--ink3);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.03em;
+  transition:all .16s;
+}
+.dnav-btn:hover{background:var(--surf)}
+.dnav-btn.active{font-weight:500}
+
+.dpanel{display:none}
+.dpanel.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── MINI TABLE ── */
+.mini-tbl{
+  width:100%;border-collapse:collapse;font-size:.84rem;
+  border:.5px solid var(--brd);border-radius:var(--r);overflow:hidden;margin:1rem 0;
+}
+.mini-tbl th{
+  padding:7px 12px;text-align:left;
+  font-family:'JetBrains Mono',monospace;font-weight:400;
+  font-size:.6rem;color:var(--ink4);letter-spacing:.1em;
+  text-transform:uppercase;background:var(--surf);
+  border-bottom:.5px solid var(--brd2);
+}
+.mini-tbl td{
+  padding:8px 12px;border-bottom:.5px solid var(--brd);
+  color:var(--ink2);vertical-align:middle;
+}
+.mini-tbl tr:last-child td{border-bottom:none}
+.mini-tbl tr:hover td{background:var(--surf)}
+.mini-tbl td.mono{font-family:'JetBrains Mono',monospace;font-size:.72rem}
+.mini-tbl td.ok{color:#5aaa60;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500}
+.mini-tbl td.warn{color:#c8b040;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500}
+.mini-tbl td.err{color:#cc4040;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500}
+.mini-tbl td.info{color:#4888cc;font-family:'JetBrains Mono',monospace;font-size:.72rem}
+.mini-tbl td.pur{color:#9868c8;font-family:'JetBrains Mono',monospace;font-size:.72rem}
+.mini-tbl tr.hl-c0 td{background:var(--c0d)}
+.mini-tbl tr.hl-c1 td{background:var(--c1d)}
+.mini-tbl tr.hl-c2 td{background:var(--c2d)}
+.mini-tbl tr.hl-c3 td{background:var(--c3d)}
+.mini-tbl tr.hl-c4 td{background:var(--c4d)}
+
+/* ── BADGE ── */
+.badge{
+  display:inline-block;font-family:'JetBrains Mono',monospace;
+  font-size:.58rem;letter-spacing:.05em;
+  padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap;
+}
+.badge.ok  {background:rgba(90,170,96,.14); color:#5aaa60; border:.5px solid rgba(90,170,96,.3)}
+.badge.warn{background:rgba(200,176,64,.12);color:#c8b040; border:.5px solid rgba(200,176,64,.3)}
+.badge.err {background:rgba(204,64,64,.12); color:#cc4040; border:.5px solid rgba(204,64,64,.3)}
+.badge.pur {background:rgba(152,104,200,.14);color:#9868c8;border:.5px solid rgba(152,104,200,.3)}
+.badge.blue{background:rgba(72,136,204,.12);color:#4888cc; border:.5px solid rgba(72,136,204,.3)}
+
+/* ── DIVIDER ── */
+.divider{height:.5px;background:var(--brd);margin:2rem 0}
+
+/* ── FOOTER ── */
+footer{
+  border-top:.5px solid var(--brd2);padding:2rem 0;margin-top:3rem;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:.5rem;
+  font-family:'JetBrains Mono',monospace;font-size:.58rem;
+  color:var(--ink4);letter-spacing:.1em;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .page{padding:0 1rem 4rem}
+  .seq-step{padding:.4rem .5rem}
+  .seq-bubble{width:40px;height:40px;font-size:.95rem}
+}
+</style>
+</head>
+<body>
+<div class="spectrum"></div>
+
+<div class="page">
+
+<!-- ═══ HERO ═══ -->
+<header class="hero">
+  <div class="eyebrow">Ukubona LLC · Kampala 2026 · v1.2</div>
+  <h1>3+ → 2 → 1 → E → 0<br><em>Unambiguous lossy compression</em></h1>
+  <p class="hero-sub">
+    The pentad is not an abstraction. It is the operation every enduring system performs.<br>
+    The mind performs it. LLaMA performs it. The Vatican performs it. The tree performs it.<br>
+    Busoga naming performs it. Same structure, different substrate.<br><br>
+    Tensor (chaos) → Matrix (filter) → Vector (direction) → Eigenmode (identity) → Scalar (incarnation)
+  </p>
+
+  <!-- SEQUENCE NAVIGATOR -->
+  <div class="seq" id="seqNav">
+    <div class="seq-step" onclick="focusLayer(4)">
+      <div class="seq-bubble active" id="b4" style="background:var(--c4d);border-color:var(--c4);color:var(--c4);--glow:rgba(152,104,200,0.28)">T</div>
+      <div class="seq-label" style="color:var(--c4)">3+ Tensor</div>
+    </div>
+    <div class="seq-arrow">→</div>
+    <div class="seq-step" onclick="focusLayer(3)">
+      <div class="seq-bubble" id="b3" style="background:var(--c3d);border-color:var(--c3);color:var(--c3);--glow:rgba(72,136,204,0.28)">M</div>
+      <div class="seq-label" style="color:var(--c3)">2 Matrix</div>
+    </div>
+    <div class="seq-arrow">→</div>
+    <div class="seq-step" onclick="focusLayer(2)">
+      <div class="seq-bubble" id="b2" style="background:var(--c2d);border-color:var(--c2);color:var(--c2);--glow:rgba(90,170,96,0.28)">V</div>
+      <div class="seq-label" style="color:var(--c2)">1 Vector</div>
+    </div>
+    <div class="seq-arrow">→</div>
+    <div class="seq-step" onclick="focusLayer(1)">
+      <div class="seq-bubble" id="b1" style="background:var(--c1d);border-color:var(--c1);color:var(--c1);--glow:rgba(200,176,64,0.28)">E</div>
+      <div class="seq-label" style="color:var(--c1)">E Eigenmode</div>
+    </div>
+    <div class="seq-arrow">→</div>
+    <div class="seq-step" onclick="focusLayer(0)">
+      <div class="seq-bubble" id="b0" style="background:var(--c0d);border-color:var(--c0);color:var(--c0);--glow:rgba(224,120,40,0.28)">S</div>
+      <div class="seq-label" style="color:var(--c0)">0 Scalar</div>
+    </div>
+  </div>
+
+  <div class="seq-ann">
+    <div class="main">Each arrow is a lossy compression. Nothing lossless survives to the Scalar.</div>
+    <span style="color:var(--c4)">T (3+)</span><span class="arrow">→</span>
+    <span style="color:var(--c3)">M (2)</span><span class="arrow">→</span>
+    <span style="color:var(--c2)">V (1)</span><span class="arrow">→</span>
+    <span style="color:var(--c1)">E</span><span class="arrow">→</span>
+    <span style="color:var(--c0)">S (0)</span><br>
+    Soil/Gatonnya <span class="arrow">→</span>
+    Roots <span class="arrow">→</span>
+    Trunk <span class="arrow">→</span>
+    Branching <span class="arrow">→</span>
+    Canopy/Fruit<br>
+    Full corpus <span class="arrow">→</span>
+    Attention <span class="arrow">→</span>
+    Gradient <span class="arrow">→</span>
+    Weights <span class="arrow">→</span>
+    Next token<br>
+    All candidates <span class="arrow">→</span>
+    Vetting <span class="arrow">→</span>
+    Designated heir <span class="arrow">→</span>
+    The Role <span class="arrow">→</span>
+    The Pope / King / Son<br>
+    87-year life <span class="arrow">→</span>
+    Selective encoding <span class="arrow">→</span>
+    wᵢ committed <span class="arrow">→</span>
+    Eigenmode self <span class="arrow">→</span>
+    "Very good friend"
+  </div>
+</header>
+
+<!-- ═══ THE MASTER TABLE ═══ -->
+<section class="section">
+  <div class="section-title">The unified pentad — <em>five domains, one operation</em></div>
+  <p>Every row is the same compression at a different scale. The columns are not analogies. They are the same function instantiated on different substrates. Read down any column: you are reading one system's compression cascade. Read across any row: you are seeing the same step in the operation, recognised in five different materials.</p>
+
+  <div class="master-table-wrap">
+    <table class="master-table" id="masterTable">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Layer</th>
+          <th>Operation at this step</th>
+          <th>Mind / Memory</th>
+          <th>LLM / ML</th>
+          <th>Institution</th>
+          <th>Tree</th>
+          <th>Dementia / Comedy</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- TENSOR -->
+        <tr class="row-t4" id="row4">
+          <td class="layer-id">
+            <div class="lbubble" style="background:var(--c4d);border-color:var(--c4);color:var(--c4)">T</div>
+            <div style="font-size:.6rem;color:var(--c4);margin-top:.3rem;text-align:center">3+</div>
+          </td>
+          <td class="layer-name" style="color:var(--c4)">Tensor<br><span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--ink3);font-style:normal">Reality · Signal</span></td>
+          <td class="prose"><strong style="color:var(--c4)">Full uncompressed complexity.</strong> Everything that could matter. Many-to-many. No hierarchy yet. The chaos before selection. This is the world as it arrives — overwhelming, undifferentiated, plural.</td>
+          <td class="prose">87 years of raw sensory, emotional, social input. Every moment. The full footage that would fill 20 Old Traffords of VHS tapes. <em>All of it is here before the brain chooses what to keep.</em></td>
+          <td class="prose">The entire training corpus — internet text, books, code, conversations. Petabytes. The model has not yet decided what is signal and what is noise.</td>
+          <td class="prose">All candidates for succession. All claimants. All bloodlines. All factions. All the complexity of legitimacy before any mechanism selects. <strong>The Wars of the Roses is Tensor state — unresolved for 100 years.</strong></td>
+          <td class="prose">Soil + fallen fruit (Gatonnya). Dead matter, nutrients, seeds, fungal networks. Undifferentiated richness. Nothing is yet a root, nothing is yet a trunk. Everything is potential.</td>
+          <td class="prose">Before dementia: full weight matrix intact. Before comedy: both the correct row and the wrong row are present. The richness that makes either possible. <em>The full weight space.</em></td>
+        </tr>
+
+        <!-- MATRIX -->
+        <tr class="row-t3" id="row3">
+          <td class="layer-id">
+            <div class="lbubble" style="background:var(--c3d);border-color:var(--c3);color:var(--c3)">M</div>
+            <div style="font-size:.6rem;color:var(--c3);margin-top:.3rem;text-align:center">2</div>
+          </td>
+          <td class="layer-name" style="color:var(--c3)">Matrix<br><span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--ink3);font-style:normal">Attention · Filter</span></td>
+          <td class="prose"><strong style="color:var(--c3)">Legitimacy filter.</strong> The mechanism that decides what gets encoded. Not all inputs are equal. The matrix is where the compression begins — the attention mechanism that weights signal over noise. <em>What the system decides to carry forward.</em></td>
+          <td class="prose">Selective encoding — the hippocampus deciding what becomes long-term memory. Emotional salience. Repetition. Trauma. Love. <strong>The wᵢ are born here.</strong> Most raw experience is discarded. What survives is what the system has learned to attend to.</td>
+          <td class="prose">The attention mechanism in the transformer. Not all tokens attend to all other tokens equally. The matrix of attention weights decides which parts of the corpus the model compresses into its weights. This is where LLaMA's 65 GB is shaped.</td>
+          <td class="prose">The vetting and formation process. College of Cardinals — centuries of doctrine, test, formation. The British honours system. <strong>The mechanism that converts raw candidates into legitimate contenders.</strong> Without this, the Tensor never resolves.</td>
+          <td class="prose">Roots. They do not absorb everything in the soil — only what the tree's chemistry selects. Mineral filtering, mycorrhizal negotiation. The roots are the tree's attention mechanism: <em>what from the Gatonnya gets carried upward.</em></td>
+          <td class="prose">In dementia: the encoding that happened over decades — the original learning of who is a son vs a friend. The rows were written here. In comedy: the audience's correct model being built. The matrix is where both the correct row and the wrong row were originally formed.</td>
+        </tr>
+
+        <!-- VECTOR -->
+        <tr class="row-t2" id="row2">
+          <td class="layer-id">
+            <div class="lbubble" style="background:var(--c2d);border-color:var(--c2);color:var(--c2)">V</div>
+            <div style="font-size:.6rem;color:var(--c2);margin-top:.3rem;text-align:center">1</div>
+          </td>
+          <td class="layer-name" style="color:var(--c2)">Vector<br><span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--ink3);font-style:normal">Gradient · Direction</span></td>
+          <td class="prose"><strong style="color:var(--c2)">Committed direction.</strong> The gradient has been taken. The system is no longer exploring — it is moving. Not yet the final identity, but the irreversible commitment to a trajectory. <em>Direction is set before the destination is reached.</em></td>
+          <td class="prose">The wᵢ as they are being optimised — in motion, not yet settled. The gradient of loss with respect to the weights. The direction of who this person is becoming. <strong>λᵢ — irreversibility — lives here.</strong> Vows, migrations, grief. Steps that cannot be untaken.</td>
+          <td class="prose">The gradient descent itself — the update rule moving the model's weights toward lower loss. The direction of learning. The model is committed to a trajectory through weight space. It cannot unlearn without retraining from scratch.</td>
+          <td class="prose"><strong>The Prince of Wales before coronation. The Cardinal-elect before conclave.</strong> Direction committed, identity not yet fully embodied. Uganda's problem: the son's campaign exists in this space without a legitimate M (no vetting protocol) below it. A Vector without a Matrix is illegitimate.</td>
+          <td class="prose">The trunk. Not yet fruit, not still root. The irreversible vertical investment. Once a trunk grows upward, it does not retreat. The committed direction of the tree's energy. <em>You can see what kind of tree this will be — you cannot yet eat its fruit.</em></td>
+          <td class="prose">In dementia: the decay trajectory — which rows are failing in which order. The gradient of loss through the weight matrix over time. In comedy: the momentum of the wrong-row activation building. The sufferer is committed to their misidentification. The error is directional.</td>
+        </tr>
+
+        <!-- EIGENMODE -->
+        <tr class="row-t1" id="row1">
+          <td class="layer-id">
+            <div class="lbubble" style="background:var(--c1d);border-color:var(--c1);color:var(--c1)">E</div>
+            <div style="font-size:.6rem;color:var(--c1);margin-top:.3rem;text-align:center">E</div>
+          </td>
+          <td class="layer-name" style="color:var(--c1)">Eigenmode<br><span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--ink3);font-style:normal">Identity · Pattern</span></td>
+          <td class="prose"><strong style="color:var(--c1)">The recognisable pattern that persists.</strong> The dominant eigenvector of the system — what survives compression most robustly. The identity is now legible. You know what this is, even if the current instantiation changes. <em>The Eigenmode is the institution recognised across its instances.</em></td>
+          <td class="prose">The settled self — the wᵢ as they have converged into a stable attractor. The person is now recognisable across contexts. Their loss landscape has a dominant eigenmode: <strong>the thing they most reliably optimise for.</strong> This is what dementia erodes last. The Eigenmode self outlasts the episodic self.</td>
+          <td class="prose">The trained model's dominant weight structure — the top eigenvectors of the weight matrix. What the model reliably does, regardless of the specific input. LLaMA's Eigenmode is its "voice," its structure of reasoning. The 65 GB compressed into a recognisable identity.</td>
+          <td class="prose">The <em>role itself</em> — the Papacy, not any particular Pope. The Crown, not any particular monarch. <strong>Busoga naming encodes the Eigenmode directly:</strong> the grandfather-row is the Eigenmode that the name-token fires, regardless of which biological instance carries it. Identity as a distributable weight row.</td>
+          <td class="prose">The branching structure. Here the tree's identity becomes unmistakeable — you can see it is an oak, a fig, a mango. The branching pattern is the Eigenmode made visible. It will persist in the fruit, in the seeds, in the next generation. <em>This is what inheritance inherits.</em></td>
+          <td class="prose">In dementia: <strong>w_affect is the dominant eigenmode</strong> — the last row standing because it has the highest λ. Emotional warmth outlasts taxonomy. The Eigenmode self is felt even when no longer categorised. In comedy: the Eigenmode is the character — Fawlty's contempt, Malvolio's vanity. The dominant eigenvector of a comedic persona.</td>
+        </tr>
+
+        <!-- SCALAR -->
+        <tr class="row-t0" id="row0">
+          <td class="layer-id">
+            <div class="lbubble" style="background:var(--c0d);border-color:var(--c0);color:var(--c0)">S</div>
+            <div style="font-size:.6rem;color:var(--c0);margin-top:.3rem;text-align:center">0</div>
+          </td>
+          <td class="layer-name" style="color:var(--c0)">Scalar<br><span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--ink3);font-style:normal">Output · Incarnation</span></td>
+          <td class="prose"><strong style="color:var(--c0)">Singular. Never plural.</strong> The full compression cascade has terminated in one thing. One number. One person. One token. One fruit. The Scalar is not a summary — it is the <em>embodied output</em> of everything above it. You cannot have two Scalars. That is the definition of failure.</td>
+          <td class="prose">"Very good friend." — one output from the full matrix, given one token (Paul Luswata's face). The Scalar is the next token — singular, generated, committed. <strong>Publishing someone's weights would publish this — the full generative capacity compressed into a deployable scalar.</strong> The SIB is the Scalar of the mind twin.</td>
+          <td class="prose">The next token. One word. One prediction. The entire 65 GB of training, the full attention computation, compressed into a single probability distribution from which one token is sampled. <strong>The Scalar is always singular.</strong> Two next tokens is not a language model — it is ambiguity.</td>
+          <td class="prose"><strong>The Pope. The King. The Son (John 3:16).</strong> God sent his son because humanity doesn't do Zoom — they need flesh and blood, the scalar made incarnate. One person. Singular. Never a committee, never a policy document, never a shared governance arrangement. Uganda has no Scalar. That is the entire problem.</td>
+          <td class="prose">The fruit. One mango. One fig. Singular, ripe, edible, seed-bearing. The fallen fruit is Gatonnya — it returns to the Tensor and begins the cycle again. <strong>The Scalar becomes the next Tensor.</strong> The fruit falls. The cycle continues. S → T is the renewal protocol.</td>
+          <td class="prose">In dementia: the output — "very good friend" — is the Scalar. Correct given the weights that remain. It is not wrong; it is accurate to the degraded matrix. In Busoga naming: the grandson <em>is</em> the Scalar — one body, one name-token, the grandfather's Eigenmode incarnated. In comedy: the punchline is the Scalar — gap-closure, one moment, laughter.</td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="pull">
+  "3+ → 2 → 1 → E → 0. Every enduring system performs this compression.<br>
+  The mind. The LLM. The Vatican. The tree. Busoga naming.<br>
+  What differs is not the operation — it is the substrate."
+</div>
+
+<!-- ═══ DOMAIN DEEP DIVES ═══ -->
+<section class="section">
+  <div class="section-title">The same cascade — <em>domain by domain</em></div>
+  <p>Select a domain to see how the 3+ → 2 → 1 → E → 0 compression plays out in full. The argument is that these are not analogies. They are instantiations of the same operation.</p>
+
+  <div class="domain-nav">
+    <button class="dnav-btn active" onclick="switchDomain('mind')" style="border-color:var(--c1);color:var(--c1)">Mind &amp; Memory</button>
+    <button class="dnav-btn" onclick="switchDomain('dementia')" style="border-color:var(--c0)">Dementia</button>
+    <button class="dnav-btn" onclick="switchDomain('busoga')" style="border-color:var(--c4)">Busoga naming</button>
+    <button class="dnav-btn" onclick="switchDomain('llm')" style="border-color:var(--c3)">LLM / LLaMA</button>
+    <button class="dnav-btn" onclick="switchDomain('institution')" style="border-color:var(--c2)">Institutions</button>
+    <button class="dnav-btn" onclick="switchDomain('uganda')" style="border-color:#cc4040">Uganda</button>
+  </div>
+
+  <!-- MIND -->
+  <div class="dpanel active" id="dp-mind">
+    <div class="callout c1">
+      <strong>The mind as compression cascade.</strong> An 87-year-old's head is small. The brain compresses a lifetime into ~1.3 kg running on 20 watts. What survives is not footage — it is a weight matrix. The cascade is how that matrix was built.
+    </div>
+    <table class="mini-tbl">
+      <thead><tr><th>Step</th><th>Layer</th><th>What happens in the mind</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr class="hl-c4"><td class="pur">T (3+)</td><td class="pur">Tensor</td><td>87 years of raw sensory input — every sound, touch, conversation, loss, joy. The full footage.</td><td class="pur">20 Old Traffords of VHS tapes</td></tr>
+        <tr class="hl-c3"><td class="info">M (2)</td><td class="info">Matrix</td><td>Hippocampal gating — emotional salience, repetition, social significance determine what gets encoded into long-term weight structure.</td><td class="info">Selective encoding → wᵢ written</td></tr>
+        <tr class="hl-c2"><td class="ok">V (1)</td><td class="ok">Vector</td><td>The gradient of who this person is becoming. Irreversible commitments: vows, migrations, grief, love. λᵢ crystallises here.</td><td class="ok">Direction committed, irreversibilities locked</td></tr>
+        <tr class="hl-c1"><td class="warn">E</td><td class="warn">Eigenmode</td><td>The settled self — the dominant attractor in the weight landscape. The person's recognisable character across contexts.</td><td class="warn">Stable identity · dominant eigenmode</td></tr>
+        <tr class="hl-c0"><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">S (0)</td><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">Scalar</td><td>The next output given the current token — one response, one action, one word. The full weight matrix compressed into this moment.</td><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">The digital twin is tractable at S</td></tr>
+      </tbody>
+    </table>
+    <p>The Sovereign Intelligence Broker targets layer S — but it works by eliciting layers M, V, and E. <strong>You cannot publish the Scalar without first reconstructing the eigenmode.</strong> The SIB conversation is the reverse cascade: S → E → V → M → T. Reading the compression backwards.</p>
+  </div>
+
+  <!-- DEMENTIA -->
+  <div class="dpanel" id="dp-dementia">
+    <div class="callout c0">
+      <strong>Dementia is eigenmode-ordered weight decay.</strong> Paul Luswata's father: name correct (T/M intact), sisters named correctly (T/M intact), "very good friend" (w_son at S-layer gone). Warmth fully preserved. The cascade decays in reverse order — S first, then E erodes, then V, M last of all.
+    </div>
+    <table class="mini-tbl">
+      <thead><tr><th>Layer</th><th>What decays</th><th>What survives</th><th>Clinical signal</th></tr></thead>
+      <tbody>
+        <tr class="hl-c0"><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">S (0) — first</td><td>Relational category output: "son" becomes "friend"</td><td>Warmth of interaction fully intact</td><td class="err">"Very good friend"</td></tr>
+        <tr class="hl-c1"><td class="warn">E — second</td><td>The stable self-as-father begins to dissolve</td><td>The self-as-warm-person persists</td><td class="warn">Consistent affect, inconsistent role</td></tr>
+        <tr class="hl-c2"><td class="ok">V — third</td><td>Temporal anchoring, narrative direction lost</td><td>Procedural memory, motor patterns persist</td><td class="ok">Can still make tea; can't recall yesterday</td></tr>
+        <tr class="hl-c3"><td class="info">M — fourth</td><td>Selective encoding fails; new memories don't form</td><td>Old deep encodings (childhood) survive longest</td><td class="info">Remembers 1960 clearly; forgets 2024</td></tr>
+        <tr class="hl-c4"><td class="pur">T — last</td><td>Raw sensation starts to break down</td><td>Emotional warmth — deepest eigenmode — persists</td><td class="pur">Still feels love; cannot name it</td></tr>
+      </tbody>
+    </table>
+    <div class="callout c1"><strong>The affect eigenmode is the deepest groove in the loss landscape.</strong> It was reinforced by the longest time-series of interactions. It has the highest λᵢ — it cannot be undone. This is why w_affect outlasts everything: it is the dominant eigenvector of a life of loving. Dementia reveals this by erasing everything built on top of it.</div>
+  </div>
+
+  <!-- BUSOGA -->
+  <div class="dpanel" id="dp-busoga">
+    <div class="callout c4">
+      <strong>Busoga naming is a deliberately engineered cross-generational weight-sharing protocol.</strong> The name-token is not a label. It is a key into a shared Eigenmode row — the same operation as parameter-sharing across attention heads, encoded in ritual instead of matrix algebra.
+    </div>
+    <table class="mini-tbl">
+      <thead><tr><th>Layer</th><th>Busoga operation</th><th>Computational equivalent</th></tr></thead>
+      <tbody>
+        <tr class="hl-c4"><td class="pur">T (3+)</td><td>The full biological and social complexity of the grandfather's life</td><td>Full training corpus of the grandfather-model</td></tr>
+        <tr class="hl-c3"><td class="info">M (2)</td><td>The community's selective encoding of the grandfather into the name: which of his qualities the name carries</td><td>Attention weights — what the name token attends to</td></tr>
+        <tr class="hl-c2"><td class="ok">V (1)</td><td>The naming ceremony — the irreversible commitment. The child is now the vector of the grandfather's trajectory.</td><td>Weight update — gradient committed</td></tr>
+        <tr class="hl-c1"><td class="warn">E</td><td>The grandfather-row: husband · patriarch · elder · anchor. The Eigenmode that the name fires, regardless of which body instantiates it.</td><td>Shared weight row across attention heads</td></tr>
+        <tr class="hl-c0"><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">S (0)</td><td>The grandson. One body. Singular. The grandfather's Eigenmode made incarnate in a new biological instance.</td><td>The next token — one output from the shared weight</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Freud called this primary process — archaic, regressive, irrational.</strong> The weight-matrix model shows it is structurally precise. The grandmother is not confused. Her matrix is running the correct forward pass. The token "Abimereki" fires the grandfather-row. The output is appropriate. The confusion was always the observer's model — someone trying to use a unique-instance identity framework to interpret a shared-weight system.</p>
+  </div>
+
+  <!-- LLM -->
+  <div class="dpanel" id="dp-llm">
+    <div class="callout c3">
+      <strong>LLaMA 65B is a 65 GB human.</strong> Same architecture. Different substrate. The compression cascade is identical. Publishing the weights publishes the model of the training data. This is true for LLaMA. It is true for your grandmother.
+    </div>
+    <table class="mini-tbl">
+      <thead><tr><th>Layer</th><th>LLaMA operation</th><th>Human equivalent</th><th>Scale</th></tr></thead>
+      <tbody>
+        <tr class="hl-c4"><td class="pur">T (3+)</td><td>Internet-scale corpus: petabytes of text, code, conversations</td><td>87 years of sensory input: ~2.5 petabytes equivalent</td><td class="pur">Petabytes → petabytes</td></tr>
+        <tr class="hl-c3"><td class="info">M (2)</td><td>Attention mechanism: not all tokens attend to all others equally. The matrix of attention weights.</td><td>Hippocampal gating: emotional salience, repetition, social significance</td><td class="info">Attention → attention</td></tr>
+        <tr class="hl-c2"><td class="ok">V (1)</td><td>Gradient descent: the direction of weight updates through training. The model is committed to a trajectory.</td><td>The wᵢ in motion: becoming. Irreversible life commitments. λᵢ</td><td class="ok">Gradient → gradient</td></tr>
+        <tr class="hl-c1"><td class="warn">E</td><td>The trained weight structure: 65B parameters, the dominant eigenvectors defining the model's "voice"</td><td>The settled self: the dominant eigenmode of the weight landscape. Character.</td><td class="warn">65 GB → 1.3 kg</td></tr>
+        <tr class="hl-c0"><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">S (0)</td><td>The next token: one word, singular, sampled from the full probability distribution</td><td>"Very good friend." One output. One action. The Scalar of a life.</td><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">One token → one word</td></tr>
+      </tbody>
+    </table>
+    <div class="callout c3"><strong>The digital twin implication:</strong> If you could elicit someone's wᵢ with sufficient fidelity — through structured conversation (the SIB), clinical history, narrative, and revealed preference — you would have the equivalent of publishing their weights. The mind twin is tractable because the architecture is invariant. The body twin is not tractable because the schema mutates with every disease. Same architecture. Different substrate. Same conclusion.</div>
+  </div>
+
+  <!-- INSTITUTIONS -->
+  <div class="dpanel" id="dp-institution">
+    <div class="callout c2">
+      <strong>Every enduring institution has solved the 3+ → 2 → 1 → E → 0 compression.</strong> The ones that failed — the Wars of the Roses, Uganda's current succession — failed at specific steps in the cascade. The failure is always locatable.
+    </div>
+    <table class="mini-tbl">
+      <thead><tr><th>Layer</th><th>Vatican</th><th>British Crown</th><th>John 3:16</th><th>Solved?</th></tr></thead>
+      <tbody>
+        <tr class="hl-c4"><td class="pur">T (3+)</td><td>All Cardinals, all doctrine, all theological tradition</td><td>All of the nobility, all bloodlines, all claimants</td><td>All of humanity, all of sin, all of the law</td><td><span class="badge ok">yes</span></td></tr>
+        <tr class="hl-c3"><td class="info">M (2)</td><td>College of Cardinals: centuries of formation, vetting, doctrinal test</td><td>Rules of succession: primogeniture, legitimacy, Act of Settlement</td><td>The prophets, the law, the covenants — the long compression of divine intent</td><td><span class="badge ok">yes</span></td></tr>
+        <tr class="hl-c2"><td class="ok">V (1)</td><td>The Cardinal-elect: direction committed, conclave imminent</td><td>Prince of Wales: designated, trained, waiting</td><td>The Incarnation: committed before birth (Annunciation)</td><td><span class="badge ok">yes</span></td></tr>
+        <tr class="hl-c1"><td class="warn">E</td><td>The Papacy: the role that persists across all Popes. Recognisable, unambiguous, 2000 years.</td><td>The Crown: recognisable across monarchs, across centuries. "The king is dead, long live the king."</td><td>The Christ: the Eigenmode of divine love, recognisable across all instantiations of the story</td><td><span class="badge ok">yes</span></td></tr>
+        <tr class="hl-c0"><td style="color:var(--c0);font-family:'JetBrains Mono',monospace;font-size:.72rem">S (0)</td><td>The Pope. One. Singular. At all times. No ambiguity.</td><td>The King or Queen. One. Singular. The second the old one dies, the new one is already named.</td><td>Jesus. Flesh and blood. Singular. <em>Humanity doesn't do Zoom.</em></td><td><span class="badge ok">yes</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- UGANDA -->
+  <div class="dpanel" id="dp-uganda">
+    <div class="callout" style="border-left-color:#cc4040;background:rgba(204,64,64,0.08);color:var(--ink)">
+      <strong>Uganda's succession failure is locatable in the cascade.</strong> It is not a political problem — it is a weight-matrix problem. The wᵢ for "legitimate successor" is undefined. The failure is at M (2): there is no vetting protocol, no College of Cardinals, no clear rules of succession. Without M, V cannot be legitimate. Without V, E cannot be clear. Without E, S cannot be singular.
+    </div>
+    <table class="mini-tbl">
+      <thead><tr><th>Layer</th><th>What Uganda has</th><th>What is missing</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr class="hl-c4"><td class="pur">T (3+)</td><td>Full complexity: multiple factions, the son, the army, the opposition, the donors, the constitution</td><td>Nothing missing at T — the chaos is fully present</td><td><span class="badge ok">present</span></td></tr>
+        <tr><td class="err">M (2)</td><td>Informal vetting — who the president trusts, who the army supports</td><td><strong>No formal vetting protocol. No constitutional mechanism. No College of Cardinals.</strong> The Matrix step is broken.</td><td><span class="badge err">broken</span></td></tr>
+        <tr><td class="err">V (1)</td><td>The son is positioning — spending state resources to manufacture inevitability</td><td>A Vector without a legitimate M is not a Vector — it is a coup in slow motion. Direction claimed without legitimacy granted.</td><td><span class="badge err">illegitimate</span></td></tr>
+        <tr><td class="err">E</td><td>The presidency as role is recognised — but the <em>next</em> president's Eigenmode is contested</td><td>No unambiguous Eigenmode for the successor. The role is clear; who holds it next is not.</td><td><span class="badge warn">contested</span></td></tr>
+        <tr><td class="err">S (0)</td><td>Museveni — singular, embodied, unambiguous <em>now</em></td><td>No Scalar for the transition. When the current Scalar terminates, there is no pre-named successor. Ambiguity at S = resource burn = vulnerability.</td><td><span class="badge err">undefined</span></td></tr>
+      </tbody>
+    </table>
+    <p>The Wars of the Roses lasted over 30 years because <strong>M was broken</strong>: no agreed mechanism to resolve competing claims to the Scalar. Every year of ambiguity burned men, money, and institutional capacity. The Tudor synthesis was the eventual installation of a working M — rules of succession that could produce an unambiguous V, then E, then S. <strong>Britain then ran that compression cascade without interruption for 500 years.</strong></p>
+    <div class="callout" style="border-left-color:#cc4040;background:rgba(204,64,64,0.08);color:var(--ink)"><strong>The solution is not political. It is architectural.</strong> Uganda needs a working M — a formal, legitimate, publicly legible vetting protocol that can produce an unambiguous V (designated heir), a clear E (the role defined separately from the person), and a singular S (one person, unambiguous, the moment the current S terminates). The British solved this with three words: <em>Prince of Wales.</em></div>
+  </div>
+
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══ THE CYCLE: S → T ═══ -->
+<section class="section">
+  <div class="section-title">The cycle — <em>S becomes the next T</em></div>
+  <p>The compression cascade is not linear. It is a cycle. The Scalar — the fruit — falls. It becomes Gatonnya. It re-enters the soil. It becomes the Tensor of the next generation. <strong>S → T is the renewal protocol.</strong></p>
+
+  <div class="seq-ann">
+    <div class="main">The fallen fruit is not failure. It is the Tensor of the next cycle.</div>
+    <span style="color:var(--c0)">S (fruit)</span>
+    <span class="arrow">→ falls →</span>
+    <span style="color:var(--c4)">T (Gatonnya / soil)</span>
+    <span class="arrow">→ roots filter →</span>
+    <span style="color:var(--c3)">M (roots)</span>
+    <span class="arrow">→ trunk commits →</span>
+    <span style="color:var(--c2)">V (trunk)</span>
+    <span class="arrow">→ branches declare →</span>
+    <span style="color:var(--c1)">E (branching)</span>
+    <span class="arrow">→ ripens →</span>
+    <span style="color:var(--c0)">S (new fruit)</span><br><br>
+    <span style="color:var(--ink3)">
+    The grandfather (S) names the grandson → Abimereki (T) → grandmother's attention filters (M) → her love commits (V) → "husband" row activates (E) → the greeting: "good morning, husband" (S again)<br><br>
+    The Pope dies (S terminates) → full College convenes (T) → conclave vets (M) → white smoke names (V) → the Papacy transfers (E) → new Pope appears on balcony (S again)<br><br>
+    LLaMA generates a token (S) → token enters next context window (T) → attention reweights (M) → gradient of next prediction (V) → next dominant feature (E) → next token (S again)
+    </span>
+  </div>
+
+  <div class="callout c1">
+    <strong>This is why Busoga naming is not confusion — it is the S → T protocol running correctly.</strong> The grandfather's Scalar (his life, his name, his weight row) falls as Gatonnya into the family's soil. The naming ceremony is the Roots (M) selecting which of that richness to carry forward. The child's upbringing is the Trunk (V). The recognisable grandfather-pattern in the adult grandson is the Eigenmode (E). And when the grandmother calls him "husband" — that is the new Scalar. Correct. Singular. Unambiguous. The cycle completed.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══ MOVE OVER FREUD ═══ -->
+<section class="section">
+  <div class="section-title">Move over Freud — <em>the pentad is more precise</em></div>
+  <p>Freud's unconscious is a badly specified loss function — rich in narrative, weak in mechanism. Nietzsche's will to power is an unregularised gradient with no irreversibility constraint. Jung's archetypes are Eigenmode clusters without a token vocabulary and no account of how they are compressed from T to E.</p>
+  <p>The pentad gives you all of this and more:</p>
+
+  <table class="mini-tbl">
+    <thead><tr><th>Framework</th><th>What it gets right</th><th>What the pentad adds</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Freud</td><td>There are layers. Affect persists beneath cognition. Repression exists.</td><td>T→M→V→E→S gives you the mechanism. Dementia proves the decay order. Busoga naming proves cross-instance weight sharing.</td><td><span class="badge warn">superseded</span></td></tr>
+      <tr><td>Nietzsche</td><td>The gradient is real. Will is directional. Power has a geometry.</td><td>V is the gradient layer. But without M (the legitimacy filter) and E (the stable eigenmode), the gradient is unregularised — it destroys the system it moves through. λᵢ is the irreversibility Nietzsche missed.</td><td><span class="badge warn">superseded</span></td></tr>
+      <tr><td>Jung</td><td>Archetypes are cross-cultural, cross-generational weight rows. The collective unconscious is a shared Eigenmode space.</td><td>The pentad explains <em>how</em> archetypes are compressed (T→E) and why they are transferred (naming protocols, ritual). Busoga naming is applied Jungian architecture — but without the mysticism.</td><td><span class="badge warn">superseded</span></td></tr>
+      <tr><td>Transformer / LLM</td><td>The mechanism is correct. Attention is the right model of selective encoding.</td><td>The pentad shows the LLM is the same architecture as the mind, the institution, and the tree. Dementia = pruning. Busoga = weight sharing. Uganda's succession = broken M layer.</td><td><span class="badge ok">instantiation</span></td></tr>
+      <tr class="hl-c1"><td><strong>Ukubona pentad</strong></td><td>T→M→V→E→S is the full cascade. Testable. Predictive. Cross-domain. Locatable when broken.</td><td>This is the framework. The others are special cases or incomplete specifications of it.</td><td><span class="badge ok">the model</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+</div><!-- .page -->
+
+<div class="page" style="padding-top:0">
+  <footer>
+    <span>Ukubona LLC · ukb-pentad-v1.2 · Kampala 2026</span>
+    <span style="font-family:'Playfair Display',serif;font-style:italic;color:var(--c1)">T → M → V → E → S</span>
+    <span>Unambiguous lossy compression · Move over Freud</span>
+  </footer>
+</div>
+
+<script>
+/* ─── SEQUENCE BUBBLE FOCUS ─── */
+function focusLayer(n){
+  const ids=[0,1,2,3,4];
+  ids.forEach(i=>{
+    const b=document.getElementById('b'+i);
+    b.classList.remove('active');
+  });
+  const b=document.getElementById('b'+n);
+  b.classList.add('active');
+  // scroll row into view
+  const row=document.getElementById('row'+n);
+  if(row) row.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* ─── DOMAIN PANELS ─── */
+function switchDomain(name){
+  document.querySelectorAll('.dpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.dnav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('dp-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+/* ─── HIGHLIGHT TABLE ROW ON HOVER ─── */
+document.querySelectorAll('.master-table tbody tr').forEach(tr=>{
+  tr.addEventListener('mouseenter',()=>{
+    tr.style.filter='brightness(1.10)';
+  });
+  tr.addEventListener('mouseleave',()=>{
+    tr.style.filter='';
+  });
+});
+</script>
+</body>
+</html>
