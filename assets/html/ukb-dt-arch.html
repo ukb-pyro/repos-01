@@ -5,10 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ukubona Digital Twin OS — v10 Architecture</title>
 <style>
-  /* ── reset ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ── colour tokens (light default) ── */
   :root {
     --bg:   #f9f8f5;
     --surf: #ffffff;
@@ -16,7 +14,6 @@
     --mut:  #6b6b63;
     --brd:  rgba(0,0,0,0.10);
 
-    /* ramp fills — light */
     --blue-fill:   #E6F1FB; --blue-stroke:  #185FA5; --blue-text:   #0C447C;
     --teal-fill:   #E1F5EE; --teal-stroke:  #0F6E56; --teal-text:   #085041;
     --amber-fill:  #FAEEDA; --amber-stroke: #854F0B; --amber-text:  #633806;
@@ -25,10 +22,20 @@
     --red-fill:    #FCEBEB; --red-stroke:   #A32D2D; --red-text:    #791F1F;
     --gray-fill:   #F1EFE8; --gray-stroke:  #5F5E5A; --gray-text:   #444441;
 
-    --arr: #5F5E5A;
-    --back-dash: rgba(0,0,0,0.20);
+    --arr:        #5F5E5A;
+    --back-dash:  rgba(0,0,0,0.20);
     --panel-dash: rgba(0,0,0,0.18);
-    --col-label: rgba(0,0,0,0.38);
+    --col-label:  rgba(0,0,0,0.38);
+
+    --panel-bg:       #ffffff;
+    --panel-brd:      rgba(0,0,0,0.12);
+    --panel-head:     #1a1a18;
+    --panel-body:     #3a3a36;
+    --panel-tag-bg:   rgba(0,0,0,0.06);
+    --panel-tag-ink:  #5a5a52;
+    --close-bg:       rgba(0,0,0,0.06);
+    --close-hover:    rgba(0,0,0,0.13);
+    --overlay-bg:     rgba(0,0,0,0.28);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -47,10 +54,20 @@
       --red-fill:    #280c0c; --red-stroke:   #F09595; --red-text:    #F7C1C1;
       --gray-fill:   #252520; --gray-stroke:  #B4B2A9; --gray-text:   #D3D1C7;
 
-      --arr: #9a9890;
-      --back-dash: rgba(255,255,255,0.18);
+      --arr:        #9a9890;
+      --back-dash:  rgba(255,255,255,0.18);
       --panel-dash: rgba(255,255,255,0.14);
-      --col-label: rgba(255,255,255,0.30);
+      --col-label:  rgba(255,255,255,0.30);
+
+      --panel-bg:       #1e1e1b;
+      --panel-brd:      rgba(255,255,255,0.10);
+      --panel-head:     #e8e6de;
+      --panel-body:     #b0aea6;
+      --panel-tag-bg:   rgba(255,255,255,0.07);
+      --panel-tag-ink:  #9a9890;
+      --close-bg:       rgba(255,255,255,0.07);
+      --close-hover:    rgba(255,255,255,0.14);
+      --overlay-bg:     rgba(0,0,0,0.55);
     }
   }
 
@@ -74,8 +91,14 @@
   p.sub {
     font-size: 0.75rem;
     color: var(--mut);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.6rem;
     letter-spacing: 0.04em;
+  }
+  p.hint {
+    font-size: 0.7rem;
+    color: var(--mut);
+    margin-bottom: 1.4rem;
+    opacity: 0.65;
   }
 
   .diagram-wrap {
@@ -87,17 +110,12 @@
     width: 100%;
   }
 
-  svg {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
+  svg { width: 100%; height: auto; display: block; }
 
-  /* ── SVG node interactivity ── */
   .node { cursor: pointer; }
-  .node:hover rect, .node:hover circle { opacity: 0.80; }
+  .node rect { transition: opacity 0.13s ease; }
+  .node:hover rect { opacity: 0.76; }
 
-  /* ── colour classes (applied to <g> wrapping rect + text) ── */
   .c-blue   rect { fill: var(--blue-fill);   stroke: var(--blue-stroke);   }
   .c-blue   text { fill: var(--blue-text);   }
   .c-teal   rect { fill: var(--teal-fill);   stroke: var(--teal-stroke);   }
@@ -113,17 +131,114 @@
   .c-gray   rect { fill: var(--gray-fill);   stroke: var(--gray-stroke);   }
   .c-gray   text { fill: var(--gray-text);   }
 
-  /* ── SVG text base styles ── */
-  text      { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink); }
-  text.th   { font-size: 13px; font-weight: 500; }
-  text.ts   { font-size: 11px; font-weight: 400; fill: var(--mut); }
+  text        { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink); }
+  text.th     { font-size: 13px; font-weight: 500; }
+  text.ts     { font-size: 11px; font-weight: 400; fill: var(--mut); }
   text.tlabel { font-size: 10px; font-weight: 400; fill: var(--col-label); }
 
-  /* arrows and leaders */
-  line.arr  { stroke: var(--arr); stroke-width: 1.2; }
-  line.leader { stroke: var(--arr); stroke-width: 0.5; stroke-dasharray: 3 3; }
-  path.back { fill: none; stroke: var(--back-dash); stroke-width: 1; stroke-dasharray: 5 4; }
-  rect.panel-dash { fill: none; stroke: var(--panel-dash); stroke-width: 0.5; stroke-dasharray: 4 3; }
+  line.arr       { stroke: var(--arr); stroke-width: 1.2; }
+  path.back      { fill: none; stroke: var(--back-dash); stroke-width: 1; stroke-dasharray: 5 4; }
+  rect.pdash     { fill: none; stroke: var(--panel-dash); stroke-width: 0.5; stroke-dasharray: 4 3; }
+
+  /* ── overlay ── */
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  #overlay.open { display: flex; }
+
+  #panel {
+    background: var(--panel-bg);
+    border: 0.5px solid var(--panel-brd);
+    border-radius: 14px;
+    padding: 1.75rem 2rem 2rem;
+    max-width: 520px;
+    width: 100%;
+    max-height: 82vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 28px 72px rgba(0,0,0,0.18);
+  }
+
+  #panel .bar {
+    height: 3px;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+  }
+  #panel .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 0.9rem;
+  }
+  #panel .tag {
+    font-size: 0.67rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--panel-tag-bg);
+    color: var(--panel-tag-ink);
+  }
+  #panel h2 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--panel-head);
+    margin-bottom: 0.3rem;
+    line-height: 1.35;
+  }
+  #panel .sub {
+    font-size: 0.74rem;
+    color: var(--mut);
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+  }
+  #panel p {
+    font-size: 0.83rem;
+    line-height: 1.78;
+    color: var(--panel-body);
+    margin-bottom: 0.8rem;
+  }
+  #panel p:last-of-type { margin-bottom: 0; }
+  #panel .ex {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: var(--panel-tag-bg);
+    border-left: 3px solid transparent;
+  }
+  #panel .ex-label {
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mut);
+    margin-bottom: 0.4rem;
+  }
+  #panel .ex p { font-size: 0.79rem; margin-bottom: 0; }
+
+  #close {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--close-bg);
+    color: var(--mut);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s;
+    line-height: 1;
+  }
+  #close:hover { background: var(--close-hover); }
 
   footer {
     margin-top: 2rem;
@@ -137,6 +252,7 @@
 
 <h1>Ukubona Digital Twin OS — v10 Architecture</h1>
 <p class="sub">T → M → V → E → S  ↺  ∇L  ·  pentadic at every scale  ·  Ukubona LLC</p>
+<p class="hint">Click any box to read notes. Press Esc to close.</p>
 
 <div class="diagram-wrap">
 <svg viewBox="0 0 680 820" xmlns="http://www.w3.org/2000/svg">
@@ -148,70 +264,58 @@
   </marker>
 </defs>
 
-<!-- ═══════════════════════════════════════════════
-     TITLE
-═══════════════════════════════════════════════ -->
-<text class="th" x="340" y="36" text-anchor="middle"
-      style="font-size:14px">Ukubona Digital Twin OS — v10 architecture</text>
-<text class="ts" x="340" y="54" text-anchor="middle">
-  T → M → V → E → S  ↺  ∇L  ·  pentadic at every scale
-</text>
+<!-- TITLE -->
+<text class="th" x="340" y="36" text-anchor="middle" style="font-size:14px">Ukubona Digital Twin OS — v10 architecture</text>
+<text class="ts" x="340" y="54" text-anchor="middle">T → M → V → E → S  ↺  ∇L  ·  pentadic at every scale</text>
 
-<!-- ═══════════════════════════════════════════════
-     COLUMN HEADERS
-═══════════════════════════════════════════════ -->
+<!-- COLUMN HEADERS -->
 <text class="tlabel" x="120" y="76" text-anchor="middle">scale</text>
 <text class="tlabel" x="265" y="76" text-anchor="middle">math layer</text>
 <text class="tlabel" x="400" y="76" text-anchor="middle">triage clock</text>
 <text class="tlabel" x="559" y="76" text-anchor="middle">deployment signal</text>
 
-<!-- ═══════════════════════════════════════════════
-     ROW 1 — INDIVIDUAL  (blue)
-═══════════════════════════════════════════════ -->
-<g class="node c-blue">
+<!-- ROW 1 — INDIVIDUAL (blue) -->
+<g class="node c-blue" onclick="show('individual')">
   <rect x="50" y="90" width="140" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="120" y="112" text-anchor="middle" dominant-baseline="central">Individual</text>
   <text class="ts" x="120" y="130" text-anchor="middle" dominant-baseline="central">vitals · symptoms · context</text>
 </g>
-<g class="node c-blue">
+<g class="node c-blue" onclick="show('tensor')">
   <rect x="210" y="90" width="110" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="265" y="112" text-anchor="middle" dominant-baseline="central">T — Tensor</text>
   <text class="ts" x="265" y="130" text-anchor="middle" dominant-baseline="central">raw state · N-dim</text>
 </g>
-<g class="node c-gray">
+<g class="node c-gray" onclick="show('er')">
   <rect x="340" y="90" width="120" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="400" y="112" text-anchor="middle" dominant-baseline="central">Existential / ER</text>
   <text class="ts" x="400" y="130" text-anchor="middle" dominant-baseline="central">t &lt; 1h · eigenmode</text>
 </g>
-<g class="node c-gray">
+<g class="node c-gray" onclick="show('lgkx')">
   <rect x="480" y="90" width="158" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="559" y="112" text-anchor="middle" dominant-baseline="central">Constraint check</text>
   <text class="ts" x="559" y="130" text-anchor="middle" dominant-baseline="central">L · G · K · X</text>
 </g>
-<!-- row 1 horizontal connectors -->
 <line class="arr" x1="190" y1="118" x2="208" y2="118" marker-end="url(#arrow)"/>
 <line class="arr" x1="320" y1="118" x2="338" y2="118" marker-end="url(#arrow)"/>
 <line class="arr" x1="460" y1="118" x2="478" y2="118" marker-end="url(#arrow)"/>
 
-<!-- ═══════════════════════════════════════════════
-     ROW 2 — KIN NETWORK  (teal)
-═══════════════════════════════════════════════ -->
-<g class="node c-teal">
+<!-- ROW 2 — KIN NETWORK (teal) -->
+<g class="node c-teal" onclick="show('kin')">
   <rect x="50" y="188" width="140" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="120" y="210" text-anchor="middle" dominant-baseline="central">Kin network</text>
   <text class="ts" x="120" y="228" text-anchor="middle" dominant-baseline="central">family · trust · logistics</text>
 </g>
-<g class="node c-teal">
+<g class="node c-teal" onclick="show('matrix')">
   <rect x="210" y="188" width="110" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="265" y="210" text-anchor="middle" dominant-baseline="central">M — Matrix</text>
   <text class="ts" x="265" y="228" text-anchor="middle" dominant-baseline="central">attention · weights W</text>
 </g>
-<g class="node c-gray">
+<g class="node c-gray" onclick="show('tactical')">
   <rect x="340" y="188" width="120" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="400" y="210" text-anchor="middle" dominant-baseline="central">Tactical / First Aid</text>
   <text class="ts" x="400" y="228" text-anchor="middle" dominant-baseline="central">t → 0 · hard heuristic</text>
 </g>
-<g class="node c-teal">
+<g class="node c-teal" onclick="show('feasibility')">
   <rect x="480" y="188" width="158" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="559" y="210" text-anchor="middle" dominant-baseline="central">Feasibility filter</text>
   <text class="ts" x="559" y="228" text-anchor="middle" dominant-baseline="central">who decides · who pays</text>
@@ -220,25 +324,23 @@
 <line class="arr" x1="320" y1="216" x2="338" y2="216" marker-end="url(#arrow)"/>
 <line class="arr" x1="460" y1="216" x2="478" y2="216" marker-end="url(#arrow)"/>
 
-<!-- ═══════════════════════════════════════════════
-     ROW 3 — SYSTEM CAPACITY  (amber)
-═══════════════════════════════════════════════ -->
-<g class="node c-amber">
+<!-- ROW 3 — SYSTEM CAPACITY (amber) -->
+<g class="node c-amber" onclick="show('system')">
   <rect x="50" y="286" width="140" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="120" y="308" text-anchor="middle" dominant-baseline="central">System capacity</text>
   <text class="ts" x="120" y="326" text-anchor="middle" dominant-baseline="central">beds · staff · infra</text>
 </g>
-<g class="node c-amber">
+<g class="node c-amber" onclick="show('vector')">
   <rect x="210" y="286" width="110" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="265" y="308" text-anchor="middle" dominant-baseline="central">V — Vector</text>
   <text class="ts" x="265" y="326" text-anchor="middle" dominant-baseline="central">gradient · drift ∇L</text>
 </g>
-<g class="node c-gray">
+<g class="node c-gray" onclick="show('ritual')">
   <rect x="340" y="286" width="120" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="400" y="308" text-anchor="middle" dominant-baseline="central">Ritual / Urgent</text>
   <text class="ts" x="400" y="326" text-anchor="middle" dominant-baseline="central">days–weeks · vector</text>
 </g>
-<g class="node c-amber">
+<g class="node c-amber" onclick="show('capsignal')">
   <rect x="480" y="286" width="158" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="559" y="308" text-anchor="middle" dominant-baseline="central">Capacity signal</text>
   <text class="ts" x="559" y="326" text-anchor="middle" dominant-baseline="central">beds · labs · logistics</text>
@@ -247,25 +349,23 @@
 <line class="arr" x1="320" y1="314" x2="338" y2="314" marker-end="url(#arrow)"/>
 <line class="arr" x1="460" y1="314" x2="478" y2="314" marker-end="url(#arrow)"/>
 
-<!-- ═══════════════════════════════════════════════
-     ROW 4 — NATIONAL SCORECARD  (purple)
-═══════════════════════════════════════════════ -->
-<g class="node c-purple">
+<!-- ROW 4 — NATIONAL SCORECARD (purple) -->
+<g class="node c-purple" onclick="show('national')">
   <rect x="50" y="384" width="140" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="120" y="406" text-anchor="middle" dominant-baseline="central">National scorecard</text>
   <text class="ts" x="120" y="424" text-anchor="middle" dominant-baseline="central">policy · finance · NPA</text>
 </g>
-<g class="node c-purple">
+<g class="node c-purple" onclick="show('eigenmode')">
   <rect x="210" y="384" width="110" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="265" y="406" text-anchor="middle" dominant-baseline="central">E — Eigenmode</text>
   <text class="ts" x="265" y="424" text-anchor="middle" dominant-baseline="central">identity · λ dominant</text>
 </g>
-<g class="node c-gray">
+<g class="node c-gray" onclick="show('strategic')">
   <rect x="340" y="384" width="120" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="400" y="406" text-anchor="middle" dominant-baseline="central">Strategic / Outpatient</text>
   <text class="ts" x="400" y="424" text-anchor="middle" dominant-baseline="central">months–years · matrix W</text>
 </g>
-<g class="node c-purple">
+<g class="node c-purple" onclick="show('budget')">
   <rect x="480" y="384" width="158" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="559" y="406" text-anchor="middle" dominant-baseline="central">Budget release</text>
   <text class="ts" x="559" y="424" text-anchor="middle" dominant-baseline="central">K constraint · capital</text>
@@ -274,25 +374,23 @@
 <line class="arr" x1="320" y1="412" x2="338" y2="412" marker-end="url(#arrow)"/>
 <line class="arr" x1="460" y1="412" x2="478" y2="412" marker-end="url(#arrow)"/>
 
-<!-- ═══════════════════════════════════════════════
-     ROW 5 — CIVILIZATIONAL  (coral)
-═══════════════════════════════════════════════ -->
-<g class="node c-coral">
+<!-- ROW 5 — CIVILIZATIONAL (coral) -->
+<g class="node c-coral" onclick="show('civilizational')">
   <rect x="50" y="482" width="140" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="120" y="504" text-anchor="middle" dominant-baseline="central">Civilizational</text>
   <text class="ts" x="120" y="522" text-anchor="middle" dominant-baseline="central">economy · energy · epistemology</text>
 </g>
-<g class="node c-coral">
+<g class="node c-coral" onclick="show('scalar')">
   <rect x="210" y="482" width="110" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="265" y="504" text-anchor="middle" dominant-baseline="central">S — Scalar</text>
   <text class="ts" x="265" y="522" text-anchor="middle" dominant-baseline="central">decision · action · s</text>
 </g>
-<g class="node c-gray">
+<g class="node c-gray" onclick="show('operational')">
   <rect x="340" y="482" width="120" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="400" y="504" text-anchor="middle" dominant-baseline="central">Operational / Inpatient</text>
   <text class="ts" x="400" y="522" text-anchor="middle" dominant-baseline="central">continuous · full tensor</text>
 </g>
-<g class="node c-coral">
+<g class="node c-coral" onclick="show('eta')">
   <rect x="480" y="482" width="158" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="559" y="504" text-anchor="middle" dominant-baseline="central">η = M · V / C</text>
   <text class="ts" x="559" y="522" text-anchor="middle" dominant-baseline="central">efficiency · deployment</text>
@@ -301,64 +399,291 @@
 <line class="arr" x1="320" y1="510" x2="338" y2="510" marker-end="url(#arrow)"/>
 <line class="arr" x1="460" y1="510" x2="478" y2="510" marker-end="url(#arrow)"/>
 
-<!-- ═══════════════════════════════════════════════
-     VERTICAL FLOW ARROWS  (col 1, between rows)
-═══════════════════════════════════════════════ -->
+<!-- VERTICAL FLOW ARROWS -->
 <line class="arr" x1="120" y1="146" x2="120" y2="186" marker-end="url(#arrow)"/>
 <line class="arr" x1="120" y1="244" x2="120" y2="284" marker-end="url(#arrow)"/>
 <line class="arr" x1="120" y1="342" x2="120" y2="382" marker-end="url(#arrow)"/>
 <line class="arr" x1="120" y1="440" x2="120" y2="480" marker-end="url(#arrow)"/>
 
-<!-- ═══════════════════════════════════════════════
-     BACKPROP LOOP  (right side, dashed)
-═══════════════════════════════════════════════ -->
+<!-- BACKPROP LOOP -->
 <path class="back"
   d="M638 538 L638 580 Q638 600 618 600 L56 600 Q36 600 36 580 L36 118 Q36 90 56 90"
-  marker-end="url(#arrow)" stroke="var(--back-dash)"/>
-<text class="ts" x="648" y="572" text-anchor="start">∇L</text>
+  marker-end="url(#arrow)"/>
+<g class="node" onclick="show('backprop')" style="cursor:pointer">
+  <text class="ts" x="650" y="572" text-anchor="start">∇L</text>
+</g>
 
-<!-- ═══════════════════════════════════════════════
-     CONSTRAINT ATTRIBUTION PANEL  (bottom, dashed)
-═══════════════════════════════════════════════ -->
-<rect class="panel-dash" x="50" y="620" width="598" height="168" rx="10"/>
-<text class="th" x="349" y="644" text-anchor="middle">
-  Constraint attribution layer  —  the missing piece
-</text>
+<!-- CONSTRAINT PANEL -->
+<rect class="pdash" x="50" y="620" width="598" height="168" rx="10"/>
+<text class="th" x="349" y="644" text-anchor="middle">Constraint attribution layer  —  the missing piece</text>
 
-<!-- four constraint boxes -->
-<g class="node c-red">
+<g class="node c-red" onclick="show('labor')">
   <rect x="66" y="658" width="128" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="130" y="680" text-anchor="middle" dominant-baseline="central">L — Labor</text>
   <text class="ts" x="130" y="698" text-anchor="middle" dominant-baseline="central">no surgeon · no driver</text>
 </g>
-<g class="node c-purple">
+<g class="node c-purple" onclick="show('governance')">
   <rect x="210" y="658" width="128" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="274" y="680" text-anchor="middle" dominant-baseline="central">G — Governance</text>
   <text class="ts" x="274" y="698" text-anchor="middle" dominant-baseline="central">no consent · no authority</text>
 </g>
-<g class="node c-amber">
+<g class="node c-amber" onclick="show('capital')">
   <rect x="354" y="658" width="128" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="418" y="680" text-anchor="middle" dominant-baseline="central">K — Capital</text>
   <text class="ts" x="418" y="698" text-anchor="middle" dominant-baseline="central">no payment · no credit</text>
 </g>
-<g class="node c-teal">
+<g class="node c-teal" onclick="show('logistics')">
   <rect x="498" y="658" width="134" height="56" rx="8" stroke-width="0.5"/>
   <text class="th" x="565" y="680" text-anchor="middle" dominant-baseline="central">X — Logistics</text>
   <text class="ts" x="565" y="698" text-anchor="middle" dominant-baseline="central">no transport · no supply</text>
 </g>
 
-<!-- constraint panel footer text -->
-<text class="ts" x="349" y="752" text-anchor="middle">
-  output: "action feasible" vs "blocked by [L|G|K|X] at [scale 1–5]"
-</text>
-<text class="ts" x="349" y="772" text-anchor="middle" style="opacity:0.6">
-  η* = argmax M·V/C  subject to kin-network + constraint bounds
-</text>
+<text class="ts" x="349" y="752" text-anchor="middle">output: "action feasible" vs "blocked by [L|G|K|X] at [scale 1–5]"</text>
+<text class="ts" x="349" y="772" text-anchor="middle" style="opacity:0.6">η* = argmax M·V/C  subject to kin-network + constraint bounds</text>
 
 </svg>
 </div>
 
 <footer>Ukubona LLC · ukb-dt-ssp-v10 · Kampala, Uganda · T → M → V → E → S ↺ ∇L</footer>
+
+<!-- OVERLAY -->
+<div id="overlay" onclick="closeIfBg(event)">
+  <div id="panel">
+    <button id="close" onclick="close()">&#x2715;</button>
+    <div class="bar" id="bar"></div>
+    <div class="tags" id="tags"></div>
+    <h2 id="title"></h2>
+    <p class="sub" id="subtitle"></p>
+    <div id="body"></div>
+    <div class="ex" id="ex" style="display:none">
+      <div class="ex-label">Real-world example</div>
+      <p id="ex-text"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+const N = {
+  individual:{
+    color:'#185FA5',tags:['scale 1','clinical twin','ground truth'],
+    title:'Individual — the starting point',
+    sub:'Biology as ground truth. The tightest feedback loop.',
+    body:`This is scale 1 — the single patient, the single construction site, the single household. It is where you anchor the system first because feedback is fast, loss is measurable, and the stakes are unambiguous.\n\nThe clinical digital twin starts here. You ingest vitals, labs, symptoms, and social context as a raw tensor. Everything upstream — kin network, hospital system, national policy — exists to serve this layer. If you get the individual representation wrong, every higher scale inherits the error.\n\nKey rule: start here, not at the civilizational layer. The gradient ∇L is sharpest here. Prove the loop at scale 1 before generalising upward. The proof-of-gradient test is one case, end-to-end: show the recommended action, the blocker, the intervention that clears the blocker, and the outcome shift.`,
+    ex:'A sepsis patient in Mulago: HR 118, temp 38.9°C, lactate 3.2. That is the individual tensor. Everything else — who can consent, who will pay, whether a bed exists — is the system acting on this raw state.'
+  },
+  tensor:{
+    color:'#185FA5',tags:['math layer','T','N-dimensional','input'],
+    title:'T — Tensor: raw reality',
+    sub:'The uncompressed state of the environment across all modalities simultaneously.',
+    body:`A tensor is an N-order array capturing multiple modalities at once: spatial coordinates, temporal fluxes, thermal gradients, kinetic shifts. In the clinical twin these are vitals, labs, imaging, and social context. In the Strata Stone real estate twin these are 120 variables across 9 departments and 20 sites.\n\nThe tensor is intentionally high-dimensional and unfiltered. The computational cost of operating at tensor level in real time is too high for any system — biological or digital — which is why the Matrix layer must compress it immediately.\n\nFailure mode at this layer: missing sensors. If the right variables are not being ingested, every downstream inference will be systematically blind to the most important signals. In the v07 shell script, the tensor is leakage_data.csv + site_states.csv — 120 variables × 20 sites × 16 weeks.`,
+    ex:'The 120-variable tensor in ukb-dt-ssp-v07 spans Finance, Procurement, Material Control, Project Management, Legal, Customer Relations, and three other departments. Each variable has a definition, a causal pathway, and a P&L mapping — that is instrumentation of reality, not reporting.'
+  },
+  er:{
+    color:'#5F5E5A',tags:['triage clock','existential','t < 1h','eigenmode'],
+    title:'Existential / ER — the fastest clock',
+    sub:'Maximum allowable latency between Tensor and Scalar is under one hour.',
+    body:`The five triage timescales define how long the system can afford to think before it must act. Existential / ER is the most urgent: the window between sensing and deployment must be under one hour — often under minutes.\n\nAt this timescale the system cannot afford full latent-space traversal. It must identify the dominant eigenmode (the single structural invariant of the crisis — septic shock vs trauma vs cardiac arrest) and collapse to a scalar action immediately.\n\nTime-scale lock-in failure: if the system responds to an Existential crisis with Strategic latency (scheduling a test for next month), the patient dies. The digital twin's job is to detect this mismatch and escalate.\n\nThe five timescales in order: Tactical (t→0), Existential (t<1h), Ritual (days–weeks), Strategic (months–years), Operational (continuous). The twin classifies every incoming event to the correct timescale before doing anything else.`,
+    ex:'Sepsis: the 1-hour bundle (antibiotics, fluids, blood cultures, lactate) exists precisely because the eigenmode demands action before confirmation. The bundle is a hard-coded scalar for the Existential timescale.'
+  },
+  lgkx:{
+    color:'#5F5E5A',tags:['constraint','L','G','K','X','deployment'],
+    title:'Constraint check — L · G · K · X',
+    sub:'The four forces that prevent a correct decision from being deployed.',
+    body:`Every recommended action passes through a constraint check before it can become a real-world scalar. The four types:\n\nL = Labor: is the required human available? (surgeon, driver, engineer)\nG = Governance: is authority and consent in place? (husband not present, ministry approval pending)\nK = Capital: is the money accessible? (payment not secured, credit maxed)\nX = Logistics: can things physically move? (no transport, supply delay, last-mile failure)\n\nThis is the layer most AI health and planning systems skip. They output a recommendation and stop. Your system must output: recommendation + feasibility score + specific blocker + intervention that clears the blocker.\n\nThe constraint check runs at every scale. Scale 1: can this patient get surgery today? Scale 4: can this budget be released this quarter? Same architecture, different tensor inputs.`,
+    ex:'Obstructed labour in rural Uganda: clinical eigenmode says C-section. L is available (surgeon on call). K is available (NHIS covers it). But G fails — husband is the legal decision-maker under local custom and is unreachable. The blocker is Governance, not Medicine.'
+  },
+  kin:{
+    color:'#0F6E56',tags:['scale 2','mesoscale','social graph','the missing layer'],
+    title:'Kin network — the layer that was missing',
+    sub:'Deployment is a social computation, not an individual one.',
+    body:`This was the critical correction in the architecture. The original scaling path (Individual → Hospital → National → Civilizational) was a tetrad — it violated the pentadic invariant. The kin network is the missing scale 2.\n\nThe kin network is the distributed latent space across multiple agents: family, caregivers, social graph, financial support structure, cultural priors. Mathematically: v_kin = Σ wᵢ · vᵢ, where each vᵢ is an individual state vector and wᵢ is a relational weight (trust, proximity, obligation).\n\nWhy it is non-optional: individuals do not deploy scalar actions alone. Decisions are co-regulated. Cost (C) is shared across the kin network. Velocity (V) is constrained or amplified by the social structure. A medically optimal action with a failing kin network will not execute.\n\nThe kin layer modifies all three variables of η: M (support increases magnitude of outcome), V (transport and coordination set the velocity), C (who pays and how burden is distributed).`,
+    ex:'Patient needs urgent surgery. No transport. No money. Husband not present. The scalar action fails at deployment — not because the hospital failed, but because the kin network has zero logistical and governance capacity at this moment.'
+  },
+  matrix:{
+    color:'#0F6E56',tags:['math layer','M','compression','emotion','weights W'],
+    title:'M — Matrix: the compression operator',
+    sub:'Emotion is the weight matrix W. It transforms the tensor into something processable.',
+    body:`Raw sensory data (the tensor) is too high-dimensional to process in real time. The system must project it into a lower-dimensional space. In neural networks this is the encoder weight matrix W. In human cognition, emotion performs this role — assigning heavy weights to immediate threats or high-reward stimuli, zeroing out irrelevant noise.\n\nThe matrix layer is an active transformation operator. It multiplies the incoming tensor and produces a compressed representation storable as a latent vector.\n\nIn the clinical twin: the matrix layer is the triage scoring system — NEWS2, qSOFA, clinician intuition. It compresses 40 vitals and labs into a single acuity signal in seconds.\n\nIn the real estate twin: the matrix is the leakage weighting — how much does cement vs steel vs labour loss dominate the signal this week?\n\nFailure mode: if the weight matrix is miscalibrated (biased toward visible symptoms, ignoring social determinants), the compressed signal will miss the real risk systematically.`,
+    ex:'A clinician walks into a room and immediately feels something is wrong before reading a single number. That pre-verbal compression of posture, colour, and breathing pattern is the emotion matrix operating at near-zero latency.'
+  },
+  tactical:{
+    color:'#5F5E5A',tags:['triage clock','tactical','t → 0','first aid'],
+    title:'Tactical / First Aid — t → 0',
+    sub:'No time for reasoning. Hard-coded heuristics only.',
+    body:`At the Tactical timescale, latency is effectively zero. The matrix here is binary: stop the bleed or restore the airway. There is no time for latent-space traversal or eigenmode extraction.\n\nThis is where hard-coded clinical algorithms live: ACLS, ATLS, haemorrhage control. They exist because the cost of deliberation at t→0 exceeds the cost of a false positive.\n\nThe digital twin's role at this timescale is not to reason — it is to classify. Is this an Existential crisis requiring immediate scalar deployment, or can the system afford to move up to Ritual or Strategic?\n\nCore law of the architecture: intelligence is bounded by time-to-act. Not by compute. Not by data. By the latency tolerance of the environment. A slow correct decision is a failure in a high-velocity regime. This is why V (velocity) is an explicit variable in η = M·V/C and not just a nice-to-have.`,
+    ex:'Bystander CPR. The person doing chest compressions is not running a differential diagnosis. They have classified the situation (cardiac arrest, t→0) and deployed the only available scalar: compression at 100–120/min.'
+  },
+  feasibility:{
+    color:'#0F6E56',tags:['kin layer','deployment','social feasibility','blockers'],
+    title:'Feasibility filter — who decides, who pays',
+    sub:'The gap between medically optimal and socially executable.',
+    body:`This is the output of the kin-network layer applied to the recommended action. It answers four questions:\n\n1. Who is available? (physical presence)\n2. Who decides? (authority, consent, cultural role)\n3. Who pays? (financial capacity, insurance, credit)\n4. Who moves the patient? (transport, logistics)\n\nThe feasibility filter produces a score between 0 and 1. A score below threshold means the recommended action, however medically correct, cannot be deployed in the current social configuration.\n\nThe output is then an alternative scalar: not "do surgery" but "call the husband, obtain consent, trigger the NHIS payment, arrange ambulance — then do surgery." The intervention is at the kin layer, not the clinical layer.\n\nThis is the upgrade that transforms a diagnostic system into an execution engine. The difference between "what should we do?" and "why isn't it happening and how do we fix that?"`,
+    ex:'Strata Stone: recommended action is "proceed with Nakawa shell phase." Feasibility check: subcontractor payment 6 weeks overdue (K), two foremen quit (L). Feasibility: 0.31. Action: clear arrears in 48h, hire replacement foremen.'
+  },
+  system:{
+    color:'#854F0B',tags:['scale 3','hospital','infrastructure','capacity'],
+    title:'System capacity — the institutional layer',
+    sub:'What the institution can actually do right now, not what it is designed to do.',
+    body:`Scale 3 is where individual need meets institutional supply. In clinical terms: ICU beds, ventilators, surgical suites, specialist availability. In real estate: crane capacity, cement supply chain, licensed subcontractor pool.\n\nSystem capacity is distinct from kin-network feasibility. The kin network asks: can this person reach the system? System capacity asks: when they arrive, does the system have what they need?\n\nThe capacity signal feeds the constraint check as an X (Logistics) input: if the system is at 100% ICU occupancy, the recommended scalar must change even if the individual eigenmode points to ICU admission.\n\nThe digital twin tracks system capacity as a real-time vector — not a static number, but a dynamic state that changes hour by hour. Bed allocation, staff deployment, supply chain delays all update the capacity signal continuously.\n\nDesign rule: the capacity signal must update faster than the triage clock for each timescale. For Existential timescales: minutes. For Strategic: weekly is sufficient.`,
+    ex:'During the 2021 COVID surge, Mulago had the clinical knowledge to ventilate patients but ran out of oxygen. The eigenmode was correct. The X constraint (oxygen logistics) failed. System capacity was the binding blocker — not clinical knowledge.'
+  },
+  vector:{
+    color:'#854F0B',tags:['math layer','V','gradient','∇L','drift direction'],
+    title:'V — Vector: the gradient of loss',
+    sub:'Not just where the state is — which direction it is moving and how fast.',
+    body:`Once the tensor has been compressed by the matrix into a latent representation, the system stores it as a vector v in the latent space. This vector is a coordinate in the system's memory architecture — a distilled, low-dimensional representation of the original tensor.\n\nBut the vector is not static. The gradient ∇L tells you the direction and velocity of change. A patient whose vitals are bad but stable is different from a patient whose vitals are bad and deteriorating fast. The vector captures both position (where the state is) and velocity (where it is going).\n\nIn the Strata Stone twin, V is the key dashboard output: which variables are drifting toward high leakage, and at what rate? A site with 40% leakage and improving trend is less urgent than one at 35% leakage and accelerating.\n\nThe gradient also enables backpropagation: ∇L = (∂L/∂s)·(∂s/∂λ)·(∂λ/∂v)·(∂v/∂W). Each layer's weights update proportionally to their contribution to the loss.`,
+    ex:'In v07, the Vector layer is the "Gradient" column on the dashboard. A site with rising leakage trend gets flagged even if its absolute KPI is still acceptable — because the velocity signal predicts the future state.'
+  },
+  ritual:{
+    color:'#5F5E5A',tags:['triage clock','ritual','days–weeks','maintenance loop'],
+    title:'Ritual / Urgent Care — the maintenance loop',
+    sub:'The periodic pipeline that prevents the system from drifting into high entropy.',
+    body:`Rituals are scheduled loops that maintain system health: wound dressing changes, medication cycles, site inspections, weekly financial reconciliation, agricultural planting seasons. They operate on a days-to-weeks timescale.\n\nMathematically, this is where vector updates happen in the latent space. The system periodically re-reads its state, compares it to the target vector, and applies small corrections. Not reactive like Tactical/ER — preventive.\n\nFailing the ritual loop means the system drifts. A patient who misses three wound dressings develops infection. A construction site that skips weekly material reconciliation accumulates leakage that is invisible until it becomes structural.\n\nThe digital twin's job at this timescale: ensure the loop actually runs. Flag when a ritual has been missed. Compute the accumulated drift since the last update. In the Strata Stone twin, the weekly subcontractor payment cycle is a ritual — when it breaks, the labor health vector drifts within 2–3 cycles.`,
+    ex:'The weekly subcontractor payment cycle in Strata Stone is a ritual. When it breaks (payment lag), the labor health vector drifts noticeably within 2 missed cycles. The twin should detect this at week 2, not week 6 when workers have already left the site.'
+  },
+  capsignal:{
+    color:'#854F0B',tags:['deployment signal','real-time readiness','system constraint'],
+    title:'Capacity signal — real-time institutional readiness',
+    sub:'What is actually available right now, not what the plan says should be available.',
+    body:`The capacity signal is not a plan — it is a live reading of what the institution can execute right now. It aggregates: available beds and staff (L), procurement lead times (X), financial headroom (K), and regulatory clearances (G).\n\nThis signal modifies the recommended scalar in real time. If the capacity signal drops below a threshold, the system must either find an alternative action or escalate to the next scale (national policy) to unlock additional capacity.\n\nIn the Strata Stone twin, the capacity signal drives the "At Risk" count on the portfolio dashboard. A site with declining capacity across multiple vectors triggers an automated intervention recommendation.\n\nKey design question: which variables need Operational (continuous) tracking vs Ritual (weekly) vs Strategic (quarterly)? Putting everything on Operational is wasteful. The triage engine makes this classification automatically based on rate of change and eigenmode weight.`,
+    ex:"A hospital's capacity signal at 3am on a public holiday: ICU at 94%, two intensivists on call, blood bank running low on O-negative. This signal should automatically re-route new critical admissions to the next available facility before the constraint becomes a crisis."
+  },
+  national:{
+    color:'#534AB7',tags:['scale 4','NPA','policy','resource allocation'],
+    title:'National scorecard — the policy layer',
+    sub:'Where individual needs aggregate into resource allocation decisions.',
+    body:`Scale 4 is where the system scales from institutions to nation-states. The National Planning Authority, Ministry of Health, Ministry of Finance — these actors set the weights W of the system at population level.\n\nThe national scorecard answers: across all individual twins, all kin networks, all hospital systems — where is the system losing? What is the dominant eigenmode at population scale? Where should capital flow?\n\nThis is the Civilizational Scorecard applied domestically. It is also where KER (Knowledge, Economy, Rights) lives — the sociopolitical determinants that set structural constraints for every lower-level intervention.\n\nThe digital twin at this scale is a governance tool, not a clinical tool. It tells policymakers which interventions have the highest η (efficiency = M·V/C) at population scale. The proof-of-gradient test: show that a policy change at scale 4 measurably shifts outcomes at scale 1.`,
+    ex:"Uganda's national maternal mortality rate is not primarily a clinical failure. It is a scale-4 failure: insufficient trained midwives (L), weak referral protocols (G), inadequate road infrastructure for emergency transport (X). The national scorecard surfaces this distribution."
+  },
+  eigenmode:{
+    color:'#534AB7',tags:['math layer','E','eigenvalue','dominant pattern','identity'],
+    title:'E — Eigenmode: the dominant invariant',
+    sub:'Intelligence is the extraction of the principal component from the latent space.',
+    body:`An eigenmode is the natural resonance of the system — the principal component that explains the most variance. By isolating the dominant eigenvectors and their eigenvalues λ, the system identifies the structural invariant of the problem.\n\nPractically: what is the single most important thing driving loss right now? In the Strata Stone twin, the eigenmode decomposition showed Cement (weight 0.487) and Steel (weight 0.312) together explained more variance than all other categories combined. That is systemic leakage, not random noise.\n\nSystemic leakage is qualitatively different from distributed leakage. If one eigenvalue dominates (λ₁ > Σλᵢ for i>1), the leakage has a single structural cause — usually governance or procurement failure — that a targeted intervention can fix. If variance is spread, the problem is operational and requires distributed fixes.\n\nThe eigenmode also defines identity in the pentadic framework: E is what the system IS, not just what it is doing. The structural invariant that should be preserved even as all other variables change.`,
+    ex:'In v07 the verdict was "SYSTEMIC LEAKAGE DETECTED — eigenmode breach." That single output redirected the entire management intervention from diffuse auditing to targeted cement and steel procurement controls. One number changed the entire strategy.'
+  },
+  strategic:{
+    color:'#5F5E5A',tags:['triage clock','strategic','months–years','weight recalibration'],
+    title:'Strategic / Outpatient — long-horizon recalibration',
+    sub:'Where you change the weights W globally, not just react to the current state.',
+    body:`The Strategic timescale operates over months to years. It is not about responding to crises — it is about restructuring the system so crises occur less frequently and resolve more efficiently when they do.\n\nMathematically, this is where the Matrix W is recalibrated globally. Not updating a single weight in response to a single error — revising the entire compression architecture based on accumulated evidence.\n\nIn clinical terms: changing training curricula, building new infrastructure, shifting community health worker deployment. In real estate: renegotiating supplier contracts, redesigning procurement systems, changing site management protocols.\n\nThe digital twin at this timescale must simulate counterfactuals — "if we implement this strategic change, what does the loss curve look like in 18 months?" — to justify the investment cost. Strategic interventions are slow and their effects are delayed; the twin makes the delay legible.`,
+    ex:"Strata Stone's policy of requiring all payments through bank/mobile money (avoiding cash) is a Strategic intervention. It recalibrates the Governance weight G globally across all sites, reducing leakage risk at the source rather than detecting it after the fact."
+  },
+  budget:{
+    color:'#534AB7',tags:['K constraint','capital','NPA','treasury','disbursement'],
+    title:'Budget release — K constraint at national scale',
+    sub:'The most common reason correct decisions do not execute at institutional scale.',
+    body:`Budget release is the national-scale manifestation of the K (Capital) constraint. The recommended action is known. The implementing institution is ready. The capital has not been released.\n\nThis is not a failure of intelligence — it is a failure of governance and treasury mechanics. In Uganda, the NPA approves development projects but disbursement happens through the Ministry of Finance via Treasury Single Account. The gap between approval and disbursement is often 6–18 months — long enough to kill project velocity entirely.\n\nThe v10 architecture treats budget release as a specific signal in the K constraint layer that needs its own monitoring loop, separate from clinical or construction constraints.\n\nThe twin tracks: commitment date, expected disbursement date, actual disbursement date, and the accumulated velocity loss from the gap. That gap is the hidden cost that most national planning systems do not compute.`,
+    ex:'A new district hospital is approved by NPA. Design is complete. Site is cleared. But the supplementary budget funding the first phase has not been released by Finance. The project sits idle for 8 months. The K constraint is the binding blocker — everything else is ready.'
+  },
+  civilizational:{
+    color:'#993C1D',tags:['scale 5','economy','energy','epistemology','generational'],
+    title:'Civilizational — the longest timescale',
+    sub:'Economy, energy systems, and what a society collectively believes to be possible.',
+    body:`Scale 5 is the civilizational layer: the structural conditions that set the possibility space for everything below. Three variables dominate: economy (how resources flow), energy (the physical infrastructure of production), and epistemology (what is collectively believed to be true and achievable).\n\nEpistemology is the most underrated constraint. A society that believes maternal death during childbirth is inevitable will not build the referral systems that prevent it. A construction company that believes material leakage is "just how things work here" will not invest in reconciliation systems. The digital twin must eventually model epistemic constraints — not just physical and financial ones.\n\nThis layer moves on generational timescales. It cannot be changed by a single intervention. But it can be shifted incrementally by consistent, high-η interventions at scales 1–4 that produce visible, documented outcomes.\n\nUkubona LLC's long thesis: if you can build a civilizational scorecard that makes these slow variables legible, you can accelerate the feedback loop and compress the generational timescale.`,
+    ex:'The shift from cash to mobile-money payments in Uganda (MTN MoMo) was a civilizational-scale change in financial epistemology. It made the K constraint auditable for the first time. That single shift enabled the entire digital twin financial tracking layer.'
+  },
+  scalar:{
+    color:'#993C1D',tags:['math layer','S','decision','action','output'],
+    title:'S — Scalar: the final output',
+    sub:'Every intervention must ultimately collapse to a single executable action.',
+    body:`The scalar is the ultimate dimensionality reduction. After ingesting an N-dimensional tensor, compressing it through the matrix, storing it as a latent vector, and extracting the dominant eigenmode — the system outputs one number or binary decision a human can act on.\n\nThis is the dot product of the intelligence vector against the constraints of the environment. Examples: admit or discharge, proceed or halt, transfuse or observe, build or pause.\n\nThe scalar is not the end of the pipeline — it is the beginning of the next loop. When it meets reality, it generates a loss L. That loss propagates backward as ∇L, updating the eigenmode, the memory vectors, and the emotion weights so the next tensor is processed more accurately.\n\nFailure mode: the system outputs a scalar but it is not executed. This means the constraint layer was not correctly modelled — the feasibility score was overestimated. The backprop signal is not "the scalar was wrong" but "the constraint check failed."`,
+    ex:'The Strata Stone dashboard composite KPI (0–100) is the scalar. It collapses 120 variables across 20 sites into one number: above 70 = steady state, 45–70 = watch list, below 45 = intervention required.'
+  },
+  operational:{
+    color:'#5F5E5A',tags:['triage clock','operational','continuous','full tensor'],
+    title:'Operational / Inpatient — the continuous baseline',
+    sub:'The steady state. All variables monitored simultaneously, all the time.',
+    body:`The Operational timescale is not a crisis response — it is the baseline. This is the inpatient analogy: continuous monitoring, full tensor ingestion, all variables tracked simultaneously.\n\nAt this timescale, the digital twin maintains a high-dimensional data feed observing how all variables interact. It is the steady state where the system optimises η = M·V/C continuously rather than reacting to threshold breaches.\n\nThis is also the most expensive state in terms of compute and attention. Design question: which variables require Operational (continuous) monitoring, which require Ritual (weekly), and which only need Strategic (quarterly) review? Putting everything on Operational is wasteful; too little means fast-moving crises are missed.\n\nThe triage engine makes this classification automatically based on each variable's rate of change and its weight in the dominant eigenmode. Variables with high eigenmode weight and high volatility get Operational monitoring; the rest get downgraded.`,
+    ex:'An ICU patient on a ventilator: SpO2, HR, BP, and end-tidal CO2 are Operational (30-second sampling). Electrolytes are Ritual (every 6–12 hours). Chest X-ray is Strategic (daily). The monitoring cadence matches the rate of change of each variable.'
+  },
+  eta:{
+    color:'#993C1D',tags:['efficiency','η','M·V/C','universal metric','optimisation'],
+    title:'η = M · V / C — the universal efficiency function',
+    sub:'The formula that ranks every possible intervention across every timescale.',
+    body:`η is the Return on Restoration. It allows the system to rank every possible intervention across every timescale and every scale with a single number.\n\nM = Magnitude: how much improvement does the action produce?\nV = Velocity: how fast? In high-velocity regimes (Existential/ER), V often matters more than M.\nC = Cost: total energy or resource expenditure — biological, financial, computational.\n\nA system is "locked in" when Cost exceeds Magnitude × Velocity. That is when the twin triggers a gradient descent update to reroute the intervention.\n\nCritical insight: most healthcare and construction systems optimise M (effectiveness) OR C (cost). Almost none optimise V (speed) explicitly. But in high-velocity regimes, a slow correct decision is worse than a fast imperfect one. η makes this trade-off computable.\n\nη* = argmax η subject to kin-network and constraint bounds. The star denotes the feasibility-constrained optimum — not the best action in theory, but the best action that can actually execute given the current social and institutional configuration.`,
+    ex:'Early antibiotics in sepsis: M = moderate, V = very high (must act within 1h), C = low (generics are cheap). η is high. Waiting for culture results: M = higher (targeted therapy), V = very low (48h wait), C = same. η is low. The formula says: give empirical antibiotics now.'
+  },
+  backprop:{
+    color:'#5F5E5A',tags:['∇L','backpropagation','learning loop','gradient descent'],
+    title:'∇L — the learning loop',
+    sub:'When the scalar meets reality, the error propagates backward through every layer.',
+    body:`The dashed loop is the most important line in the architecture. It is what makes this a learning system rather than a static diagnostic tool.\n\nWhen scalar s is deployed and meets reality, it generates an outcome. The difference between expected and actual outcome is the loss L. The gradient ∇L = (∂L/∂s)·(∂s/∂λ)·(∂λ/∂v)·(∂v/∂W) propagates backward:\n\n— Updates the eigenmode (E): was the dominant pattern correctly identified?\n— Updates the memory vectors (V): was the latent representation accurate?\n— Updates the emotion weights (M): were the right signals amplified?\n— Updates tensor ingestion (T): are the right variables being collected?\n\nGradient depth must respect timescale. Tactical: only emotion heuristics W update. Existential: dominant eigenmode updates. Ritual: memory vectors update. Strategic: W updates globally. Operational: tensor ingestion itself recalibrates.\n\nWithout this loop, the system is a dashboard. With it, the system is a learning agent that improves every time an action is taken.`,
+    ex:"A hospital implements the twin's recommendation to fast-track sepsis patients. Mortality drops 12% in month 1. That 12% improvement is the ∇L signal — it propagates backward and increases the weight of 'lactate > 2.0' and 'HR > 110' in the triage matrix W."
+  },
+  labor:{
+    color:'#A32D2D',tags:['constraint','L','human resources','availability'],
+    title:'L — Labor constraint',
+    sub:'The required human is not available.',
+    body:`The Labor constraint is the most immediate deployment blocker. A correct recommendation cannot execute if the person who must perform it is absent.\n\nL constraints appear at every scale:\nScale 1: no surgeon on call, no midwife in the facility\nScale 2 (Kin): no family member to accompany, no one to give consent\nScale 3 (System): nursing staff below safe ratio, specialist waitlist 6 months\nScale 4 (National): chronic healthcare worker brain drain, teacher shortage\nScale 5 (Civilizational): entire generation of engineers not trained\n\nThe constraint attribution layer tracks L as a weighted float per variable. A variable with high L-weight means that even if M, V, and C are favourable, the action cannot execute without resolving the labor bottleneck first.\n\nIntervention for L constraints: pre-position human capacity before the crisis. Training pipelines, retention incentives, task-shifting protocols, and on-call rosters are all L-constraint mitigations.`,
+    ex:'Fort Portal Regional Referral Hospital has one general surgeon. When that surgeon is on leave, no emergency laparotomy is possible. L constraint on abdominal emergencies goes to 1.0. The twin should flag this during the leave period and re-route referrals proactively — before the crisis, not after.'
+  },
+  governance:{
+    color:'#534AB7',tags:['constraint','G','consent','authority','regulation'],
+    title:'G — Governance constraint',
+    sub:'Authority or consent is not in place.',
+    body:`Governance constraints are the most culturally specific and the hardest to model — but they are among the most common deployment blockers in African clinical and institutional contexts.\n\nG constraints include:\nClinical: patient cannot consent (unconscious, minor, incapacitated)\nCultural: decision-maker under local custom not present (spouse, elder, clan head)\nInstitutional: required approvals not obtained (procurement committee, board)\nRegulatory: license or certification missing or expired\nPolitical: ministry has not authorised release of funds or personnel\n\nIn Strata Stone, G constraints appear as "unapproved vendors" (procurement governance) and "payment without board approval" (financial governance). Both generate leakage that is not random but systemic — it compounds over time.\n\nG constraints are often invisible to clinical and technical systems that assume the authority structure is already in place. The kin-network layer is specifically designed to make G constraints legible before they block deployment.`,
+    ex:'A woman in obstructed labour needs emergency C-section. Surgeon available (L ok). Theatre available (X ok). NHIS covers it (K ok). But local custom requires husband consent and he is 4 hours away. G = 0. Escalation pathway: call the LC1 chairman as legal proxy.'
+  },
+  capital:{
+    color:'#854F0B',tags:['constraint','K','finance','payment','credit'],
+    title:'K — Capital constraint',
+    sub:'The money is not available, not accessible, or not in the right form.',
+    body:`Capital constraints are the most legible to administrators and the most politically sensitive. They manifest as:\n— Out-of-pocket payments the patient cannot make\n— Insurance claims not processed or rejected\n— Supplier invoices overdue causing supply stoppage\n— Budget lines exhausted or not released from Treasury\n— Credit facilities maxed out or requiring unavailable collateral\n\nIn Strata Stone, K constraints cascade: subcontractor payment lag → labour departure → remobilisation cost → project delay → client penalty. The original K constraint compounds through every downstream link.\n\nThe key metric is not just "is there money?" but "is the money accessible in the right form, at the right time, through the right channel?" Cash in a Kampala account does not solve a payment crisis for a subcontractor in Gulu who needs mobile money today.\n\nIntervention: pre-trigger payment protocols before the lag accumulates. Maintain a rolling float for operational continuity. Pre-approve credit lines before they are needed.`,
+    ex:'The Strata Stone action engine output for a K constraint: "Subcontractor Payment Lag rising. Capital constraint. Action: clear arrears within 48h via MTN MoMo. If float insufficient, trigger pre-approved credit line with Centenary Bank (72h disbursement)."'
+  },
+  logistics:{
+    color:'#0F6E56',tags:['constraint','X','transport','supply chain','last mile'],
+    title:'X — Logistics constraint',
+    sub:'The thing or person cannot physically move.',
+    body:`Logistics constraints are last-mile failures that make everything else irrelevant. The diagnosis is correct, the consent is obtained, the money is available — but the patient cannot reach the hospital, or the cement cannot reach the site.\n\nX constraints in clinical settings:\n— No ambulance or transport available\n— Road impassable (rain, flooding, conflict)\n— Distance exceeds the time window for the intervention\n— Cold chain broken (vaccine, blood, medication spoilage)\n— Referral network not functioning (phones down, facility closed)\n\nX constraints in construction:\n— Cement delivery delayed 3 weeks\n— Crane breakdown at critical phase\n— Fuel shortage preventing site operations\n— Road conditions preventing heavy truck access\n\nThe Strata Stone geo-map (9 trucks tracked across East Africa in v07) is specifically designed to surface X constraints in real time: status "En route," "Loading," or "Delayed." X constraints interact with K constraints — a logistics delay generates a capital cost (idle labour, contract penalties) not in the original budget.`,
+    ex:'Juba City View (s17): supply delay 18 days, weather risk 0.78, labor index 0.42. All three are X or X-adjacent constraints. The twin flags this as highest-risk in the portfolio — not because of management failure but because the physical operating environment makes every action expensive and slow.'
+  }
+};
+
+function show(key) {
+  const n = N[key];
+  if (!n) return;
+  document.getElementById('bar').style.background = n.color;
+  document.getElementById('title').textContent = n.title;
+  document.getElementById('subtitle').textContent = n.sub;
+  const tagsEl = document.getElementById('tags');
+  tagsEl.innerHTML = '';
+  n.tags.forEach(t => {
+    const s = document.createElement('span');
+    s.className = 'tag';
+    s.textContent = t;
+    tagsEl.appendChild(s);
+  });
+  const bodyEl = document.getElementById('body');
+  bodyEl.innerHTML = '';
+  n.body.split('\n\n').forEach(para => {
+    const p = document.createElement('p');
+    p.textContent = para;
+    bodyEl.appendChild(p);
+  });
+  const exBox = document.getElementById('ex');
+  const exText = document.getElementById('ex-text');
+  if (n.ex) {
+    exBox.style.display = 'block';
+    exBox.style.borderLeftColor = n.color;
+    exText.textContent = n.ex;
+  } else {
+    exBox.style.display = 'none';
+  }
+  document.getElementById('overlay').classList.add('open');
+}
+
+function close() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function closeIfBg(e) {
+  if (e.target === document.getElementById('overlay')) close();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+</script>
 
 </body>
 </html>
