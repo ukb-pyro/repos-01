@@ -1,1 +1,2364 @@
-.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona · Kidney Donor Digital Twin · v1.0</title>
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  UKUBONA KIDNEY DONOR DIGITAL TWIN — ukb-kd-dt-v1.0                        ║
+║  Sovereignty Intelligence Broker for Living Kidney Donors                   ║
+║                                                                              ║
+║  ARCHITECTURE NOTES FOR FUTURE FastAPI + React MIGRATION:                   ║
+║                                                                              ║
+║  LOSS FUNCTION:                                                              ║
+║    L_tot = L₀ + Σᵢ wᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)                  ║
+║                                                                              ║
+║  L₀ = nephron endowment at birth (Keller/NEJM 2003, PMID 12519920)         ║
+║       log-normal prior: ~700K hypertensive, ~1M normotensive per kidney     ║
+║       LATENT — estimated from birth weight, race, glomerular volume         ║
+║       THE bedrock. Precedes all covariates.                                  ║
+║                                                                              ║
+║  Σᵢ wᵢ·Lᵢ = weighted specified losses                                       ║
+║    i ∈ {ESRD_DM, ESRD_HTN, ESRD_GN, mortality_all, mortality_CV}           ║
+║    wᵢ = DONOR'S sovereign weights (not clinician's)                         ║
+║    Sources:                                                                  ║
+║      Muzaale/JAMA 2014 (PMID 24519297): NHANES-SRTR counterfactual          ║
+║        96,217 donors vs matched healthy NHANES-III nondonors                ║
+║        Lifetime ESRD: 90/10K donors vs 14/10K healthy nondonors             ║
+║        Donation multiplier by race:                                          ║
+║          Black: 74.7 vs 23.9/10K at 15yr → excess 50.8                     ║
+║          Hispanic: 32.6 vs 6.7/10K → excess 25.9                           ║
+║          White: 22.7 vs 0.0/10K → excess 22.7                              ║
+║      Anjum/AJT 2016 (PMID 27287605): Lᵢ decomposition by cause             ║
+║        125,427 donors, median 11yr follow-up, max 25yr                      ║
+║        Cumulative incidence at 25yr per 10,000:                             ║
+║          DM-ESRD:  9.3–16.6–22.7 (early vs late IRR: 7.7x)                ║
+║          HTN-ESRD: 19.0–26.8–33.7 (early vs late IRR: 2.6x)               ║
+║          GN-ESRD:  9.1–13.4–17.7 (no time trend, IRR ~0.7)                ║
+║                                                                              ║
+║  GENERALIZED GAMMA PARAMETERS (Anjum Table 4):                              ║
+║    DM:  β=5.1, r=0.41, κ=0.63  (r<1 → increasing hazard)                  ║
+║    HTN: β=5.4, r=0.40, κ=0.91  (r<1 → increasing hazard)                  ║
+║    GN:  β=11.2, r=15.8, κ=9.50 (r>1 → flat/constant hazard)               ║
+║    Interpretation: DM/HTN = chronic exposure disease (needs years)          ║
+║                    GN = susceptibility disease (can strike anytime)          ║
+║                                                                              ║
+║  GRAMS NEJM 2016 (NEJMoa1510491) — THE VARIANCE-COVARIANCE ENGINE:         ║
+║    7 cohorts, 4.9M participants, 31M person-years                           ║
+║    Meta-analytic β±SE (Table 2) = σ²(θ,X,t):                               ║
+║      eGFR<60:     β=1.89±0.16                                               ║
+║      eGFR 60-89:  β=0.49±0.03                                               ║
+║      SBP/20mmHg:  β=0.35±0.06                                               ║
+║      Noninsulin DM: β=1.10±0.23                                             ║
+║      Albumin×10:  β=1.08±0.56 (highest SE → most λ)                        ║
+║      Current smoker: β=0.57±0.16                                            ║
+║    Between-cohort τ² in random effects = λ (known unknowns)                 ║
+║    CIs from simulation over variance-covariance matrix                       ║
+║    Donation multiplier: observed/projected = 3.5–5.3x by race/sex           ║
+║                                                                              ║
+║  RUMSFELD DECOMPOSITION:                                                     ║
+║    σ²(θ,X,t) = KNOWN KNOWNS   → Cox β±SE, Grams Table 2                    ║
+║    λ(θ,Ω,t)  = KNOWN UNKNOWNS → τ² between cohorts, APOL1, GG κ           ║
+║    ε(t)       = UNKNOWN UNKNOWNS → no functional form; GN flat hazard       ║
+║                                     is nearest empirical signal              ║
+║                                                                              ║
+║  MUZAALE HIV/AJT 2017 — METHODOLOGICAL TEMPLATE:                           ║
+║    Shows how to extend framework to new populations                          ║
+║    Cumulative incidence via: 1 - exp(-∫ h₀(t)·exp(Xβ) dt)                  ║
+║    Bridge between semi-parametric Cox and parametric GG                      ║
+║    APOL1 + HIV interaction → 6.9x black risk (vs 3.2x HIV-neg)              ║
+║    Template for any future donor subgroup (elderly, HIV+, etc.)             ║
+║                                                                              ║
+║  STATISTICAL METHODS USED:                                                   ║
+║    Nonparametric:   Kaplan-Meier (no assumptions, no extrapolation)          ║
+║    Semi-parametric: Cox PH (covariate HRs; baseline hazard unspecified)     ║
+║    Parametric:      Generalized Gamma (extrapolation; hazard shape free)     ║
+║    Meta-analytic:   Random effects (between-study τ² = λ signal)            ║
+║                                                                              ║
+║  FUTURE FASTAPI ENDPOINTS TO BUILD:                                          ║
+║    POST /twin/theta0          ← initialize state from covariates             ║
+║    POST /twin/grams-risk      ← Grams ESRD projection with CIs              ║
+║    POST /twin/anjum-curves    ← GG cause-specific hazard curves             ║
+║    POST /twin/muzaale-gap     ← donor vs counterfactual trajectory          ║
+║    POST /twin/chat            ← LLM reasoning with state context            ║
+║    GET  /twin/state/{id}      ← retrieve donor state vector                 ║
+║    POST /twin/surveillance    ← post-donation update on new labs            ║
+║                                                                              ║
+║  FUTURE REACT COMPONENTS:                                                    ║
+║    <ThetaPanel>          ← covariate input + L₀ prior display               ║
+║    <CounterfactualViz>   ← 3-population Muzaale Figure 3 replica            ║
+║    <CauseSpecificGG>     ← Anjum Figure 1 GG curves (DM/HTN/GN)            ║
+║    <RumsfeldDisplay>     ← σ²/λ/ε honest uncertainty labeling               ║
+║    <SovereigntyGate>     ← η gate with gate conditions                      ║
+║    <LLMReasoningEngine>  ← Claude API chat with state context               ║
+║    <SurveillanceTracker> ← post-donation lab tracking                       ║
+║                                                                              ║
+║  DATA SOURCES FOR BACKEND:                                                   ║
+║    NHANES III (1988-1994): matched nondonor pool                             ║
+║    SRTR (1987-2014): 125,427 donors, cause-specific ESRD                    ║
+║    USRDS: population ESRD incidence calibration                              ║
+║    CKD-PC 7 cohorts: 4.9M participants for Grams coefficients                ║
+║                                                                              ║
+║  Powered by Ukubona LLC · Not a substitute for clinical judgement           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=IBM+Plex+Mono:wght@300;400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:      #080705;
+  --bg2:     #0f0e0b;
+  --bg3:     #171512;
+  --surf:    #1c1a16;
+  --surf2:   #232017;
+  --surf3:   #2a271d;
+  --ink:     #ede8d6;
+  --ink2:    #b8b09a;
+  --ink3:    #6b6145;
+  --brd:     rgba(255,248,220,0.07);
+  --brd2:    rgba(255,248,220,0.13);
+
+  /* semantic palette */
+  --gold:    #c8a84b;
+  --gold2:   #e8c86a;
+  --amber:   #d4822a;
+  --teal:    #4aaa8e;
+  --coral:   #c85a45;
+  --violet:  #8870c8;
+  --steel:   #5888b8;
+  --sage:    #7aaa6a;
+
+  /* loss function colors */
+  --L0:      #c8a84b;   /* nephron endowment — gold */
+  --sigma:   #4aaa8e;   /* known knowns — teal */
+  --lambda:  #d4822a;   /* known unknowns — amber */
+  --epsilon: #c85a45;   /* unknown unknowns — coral */
+
+  /* cause-specific */
+  --DM:      #d4822a;
+  --HTN:     #c85a45;
+  --GN:      #8870c8;
+
+  --r: 8px;
+  --r2: 5px;
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Source Serif 4',Georgia,serif;
+  font-size:14px;
+  line-height:1.6;
+  min-height:100vh;
+  cursor:default;
+}
+
+/* grain overlay */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:0.5;
+}
+
+/* spectrum strip */
+.spectrum{
+  height:2px;
+  background:linear-gradient(90deg,var(--L0),var(--sigma),var(--lambda),var(--epsilon),var(--violet));
+  position:fixed;top:0;left:0;right:0;z-index:200;
+}
+
+/* ── TYPOGRAPHY ── */
+.mono{font-family:'IBM Plex Mono',monospace}
+.serif{font-family:'Cormorant Garamond',serif}
+.label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--ink3);
+}
+
+/* ── LAYOUT ── */
+.page{
+  max-width:1100px;
+  margin:0 auto;
+  padding:0 1.5rem 4rem;
+}
+
+/* ── HEADER ── */
+.hdr{
+  padding:3.5rem 0 2rem;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:2rem;
+  flex-wrap:wrap;
+  border-bottom:0.5px solid var(--brd);
+  margin-bottom:2rem;
+}
+.hdr-brand{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.65rem;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--ink3);
+  margin-bottom:0.5rem;
+}
+.hdr-brand span{color:var(--gold)}
+.hdr h1{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(1.8rem,4vw,2.8rem);
+  font-weight:300;
+  line-height:1.15;
+  color:var(--ink);
+}
+.hdr h1 em{
+  font-style:italic;
+  color:var(--gold);
+}
+.hdr-sub{
+  font-size:0.8rem;
+  color:var(--ink3);
+  margin-top:0.6rem;
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:0.05em;
+}
+
+/* loss equation display */
+.loss-eq{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.72rem;
+  line-height:2;
+  background:var(--surf);
+  border:0.5px solid var(--brd2);
+  border-radius:var(--r);
+  padding:1rem 1.2rem;
+  max-width:380px;
+  flex-shrink:0;
+}
+.loss-eq .eq-line{display:flex;align-items:center;gap:0.5rem}
+.eq-l0{color:var(--L0)}
+.eq-wi{color:var(--gold2)}
+.eq-sig{color:var(--sigma)}
+.eq-lam{color:var(--lambda)}
+.eq-eps{color:var(--epsilon)}
+.eq-mut{color:var(--ink3)}
+
+/* ── GRID ── */
+.grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1.2rem;
+}
+.grid-3{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:1.2rem;
+}
+@media(max-width:800px){
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+.grid-main{
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:1.2rem;
+}
+@media(max-width:900px){
+  .grid-main{grid-template-columns:1fr}
+}
+
+/* ── CARDS ── */
+.card{
+  background:var(--surf);
+  border:0.5px solid var(--brd);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.card-head{
+  padding:0.85rem 1.2rem 0.7rem;
+  border-bottom:0.5px solid var(--brd);
+  display:flex;
+  align-items:center;
+  gap:0.6rem;
+  flex-wrap:wrap;
+}
+.card-head h2{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1rem;
+  font-weight:400;
+  color:var(--ink);
+}
+.card-sub{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;
+  color:var(--ink3);
+  margin-left:auto;
+  letter-spacing:0.06em;
+}
+.card-body{padding:1rem 1.2rem}
+
+/* node badges */
+.badge{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.58rem;
+  font-weight:500;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  padding:2px 7px;
+  border-radius:20px;
+  white-space:nowrap;
+}
+.badge-L0    {background:rgba(200,168,75,0.15); color:var(--L0)}
+.badge-sig   {background:rgba(74,170,142,0.15); color:var(--sigma)}
+.badge-lam   {background:rgba(212,130,42,0.15); color:var(--lambda)}
+.badge-eps   {background:rgba(200,90,69,0.15);  color:var(--epsilon)}
+.badge-DM    {background:rgba(212,130,42,0.15); color:var(--DM)}
+.badge-HTN   {background:rgba(200,90,69,0.15);  color:var(--HTN)}
+.badge-GN    {background:rgba(136,112,200,0.15);color:var(--GN)}
+.badge-gate  {background:rgba(255,255,255,0.05);color:var(--ink3)}
+.badge-twin  {background:rgba(200,168,75,0.12); color:var(--gold2)}
+
+/* ── COVARIATE INPUTS (θ₀) ── */
+.theta-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:0.7rem;
+}
+.theta-field{
+  display:flex;
+  flex-direction:column;
+  gap:0.25rem;
+}
+.theta-field label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;
+  color:var(--ink3);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+}
+.theta-field input,
+.theta-field select{
+  background:var(--bg2);
+  border:0.5px solid var(--brd);
+  border-radius:var(--r2);
+  padding:0.45rem 0.65rem;
+  color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.75rem;
+  outline:none;
+  transition:border-color 0.2s;
+  width:100%;
+  -webkit-appearance:none;
+}
+.theta-field input:focus,
+.theta-field select:focus{border-color:var(--gold)}
+.theta-field select option{background:var(--bg3)}
+.theta-note{
+  font-size:0.58rem;
+  color:var(--ink3);
+  font-family:'IBM Plex Mono',monospace;
+  font-style:italic;
+}
+
+/* ── L₀ PRIOR DISPLAY ── */
+.L0-display{
+  background:linear-gradient(135deg,rgba(200,168,75,0.08),rgba(200,168,75,0.03));
+  border:0.5px solid rgba(200,168,75,0.25);
+  border-radius:var(--r2);
+  padding:0.9rem;
+  margin-top:0.8rem;
+}
+.L0-value{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:2.2rem;
+  color:var(--gold);
+  line-height:1;
+}
+.L0-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;
+  color:var(--ink3);
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  margin-top:0.3rem;
+}
+.L0-note{
+  font-size:0.72rem;
+  color:var(--ink2);
+  margin-top:0.5rem;
+  font-style:italic;
+  font-family:'Cormorant Garamond',serif;
+}
+
+/* ── PROBABILITY BARS ── */
+.prob-bar-row{
+  display:flex;
+  flex-direction:column;
+  gap:0.4rem;
+  margin-bottom:0.6rem;
+}
+.prob-meta{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+}
+.prob-name{font-size:0.78rem;color:var(--ink2)}
+.prob-val{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.72rem;
+  font-weight:500;
+}
+.prob-track{
+  height:5px;
+  background:var(--bg2);
+  border-radius:3px;
+  overflow:hidden;
+}
+.prob-fill{
+  height:100%;
+  border-radius:3px;
+  transition:width 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+.prob-note{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.58rem;
+  color:var(--ink3);
+}
+
+/* ── GG CURVES (canvas-based) ── */
+.gg-panel{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:0.8rem;
+}
+@media(max-width:700px){.gg-panel{grid-template-columns:1fr}}
+.gg-curve-card{
+  background:var(--bg2);
+  border:0.5px solid var(--brd);
+  border-radius:var(--r2);
+  padding:0.8rem;
+}
+.gg-title{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.65rem;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  margin-bottom:0.5rem;
+}
+.gg-canvas{width:100%;height:120px;display:block}
+.gg-params{
+  margin-top:0.5rem;
+  display:flex;
+  gap:0.5rem;
+  flex-wrap:wrap;
+}
+.gg-param{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.58rem;
+  color:var(--ink3);
+  background:rgba(255,255,255,0.04);
+  padding:2px 6px;
+  border-radius:3px;
+}
+
+/* ── THREE-POPULATION DISPLAY ── */
+.three-pop{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0.8rem;
+}
+@media(max-width:600px){.three-pop{grid-template-columns:1fr}}
+.pop-card{
+  border-radius:var(--r2);
+  padding:0.9rem;
+  border:0.5px solid;
+  text-align:center;
+}
+.pop-card.general{
+  background:rgba(200,90,69,0.06);
+  border-color:rgba(200,90,69,0.25);
+}
+.pop-card.donor{
+  background:rgba(212,130,42,0.06);
+  border-color:rgba(212,130,42,0.25);
+}
+.pop-card.healthy{
+  background:rgba(74,170,142,0.08);
+  border-color:rgba(74,170,142,0.25);
+}
+.pop-num{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:2.4rem;
+  line-height:1;
+  font-weight:300;
+}
+.pop-unit{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;
+  color:var(--ink3);
+  letter-spacing:0.08em;
+  margin-top:0.25rem;
+}
+.pop-label{
+  font-size:0.8rem;
+  color:var(--ink2);
+  margin-top:0.4rem;
+}
+.pop-source{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.55rem;
+  color:var(--ink3);
+  margin-top:0.3rem;
+  font-style:italic;
+}
+
+/* ── RUMSFELD TIERS ── */
+.rumsfeld-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:0.8rem;
+}
+@media(max-width:700px){.rumsfeld-grid{grid-template-columns:1fr}}
+
+.rf-card{
+  border-radius:var(--r2);
+  padding:1rem;
+  border:0.5px solid;
+}
+.rf-card.sigma{
+  background:rgba(74,170,142,0.06);
+  border-color:rgba(74,170,142,0.22);
+}
+.rf-card.lambda{
+  background:rgba(212,130,42,0.06);
+  border-color:rgba(212,130,42,0.22);
+}
+.rf-card.epsilon{
+  background:rgba(200,90,69,0.06);
+  border-color:rgba(200,90,69,0.22);
+}
+.rf-tier{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  margin-bottom:0.4rem;
+}
+.rf-tier.sigma{color:var(--sigma)}
+.rf-tier.lambda{color:var(--lambda)}
+.rf-tier.epsilon{color:var(--epsilon)}
+
+.rf-symbol{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:1.8rem;
+  line-height:1;
+  margin-bottom:0.3rem;
+}
+.rf-name{
+  font-size:0.82rem;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:0.4rem;
+  font-family:'Cormorant Garamond',serif;
+}
+.rf-rumsfeld{
+  font-size:0.75rem;
+  color:var(--ink2);
+  font-style:italic;
+  font-family:'Cormorant Garamond',serif;
+  margin-bottom:0.5rem;
+  line-height:1.4;
+}
+.rf-stat{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;
+  color:var(--ink3);
+  line-height:1.8;
+  border-top:0.5px solid rgba(255,255,255,0.06);
+  padding-top:0.5rem;
+}
+.rf-stat .hi{color:var(--ink2)}
+
+/* ── IRR TABLE ── */
+.irr-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.76rem;
+}
+.irr-table th{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--ink3);
+  padding:0.4rem 0.6rem;
+  border-bottom:0.5px solid var(--brd);
+  text-align:left;
+}
+.irr-table td{
+  padding:0.4rem 0.6rem;
+  border-bottom:0.5px solid rgba(255,255,255,0.04);
+  color:var(--ink2);
+  vertical-align:top;
+}
+.irr-table tr:last-child td{border-bottom:none}
+.irr-dm  {color:var(--DM);font-family:'IBM Plex Mono',monospace;font-size:0.68rem}
+.irr-htn {color:var(--HTN);font-family:'IBM Plex Mono',monospace;font-size:0.68rem}
+.irr-gn  {color:var(--GN);font-family:'IBM Plex Mono',monospace;font-size:0.68rem}
+
+/* ── GATE DISPLAY ── */
+.gate{
+  border-radius:var(--r2);
+  padding:1rem;
+  border:0.5px solid;
+  transition:all 0.4s;
+  margin-bottom:0.8rem;
+}
+.gate.closed{
+  background:rgba(200,90,69,0.07);
+  border-color:rgba(200,90,69,0.3);
+}
+.gate.warn{
+  background:rgba(212,130,42,0.07);
+  border-color:rgba(212,130,42,0.3);
+}
+.gate.open{
+  background:rgba(74,170,142,0.07);
+  border-color:rgba(74,170,142,0.3);
+}
+.gate-status{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.65rem;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  margin-bottom:0.35rem;
+}
+.gate.closed .gate-status{color:var(--coral)}
+.gate.warn   .gate-status{color:var(--amber)}
+.gate.open   .gate-status{color:var(--teal)}
+.gate-msg{font-size:0.8rem;color:var(--ink2);line-height:1.5}
+.gate-conditions{
+  margin-top:0.5rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.2rem;
+}
+.gate-cond{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;
+  color:var(--coral);
+  display:flex;
+  align-items:center;
+  gap:0.35rem;
+}
+.gate-cond::before{content:'✗'}
+.gate-cond.met{color:var(--teal)}
+.gate-cond.met::before{content:'✓'}
+
+/* ── ETA LADDER ── */
+.eta-ladder{display:flex;flex-direction:column;gap:0.35rem}
+.eta-step{
+  display:grid;
+  grid-template-columns:52px 1fr 52px;
+  gap:0.4rem;
+  align-items:center;
+  padding:0.5rem 0.6rem;
+  border-radius:var(--r2);
+  border:0.5px solid var(--brd);
+  background:var(--bg2);
+  transition:border-color 0.2s;
+  font-size:0.76rem;
+}
+.eta-step.done{opacity:0.35}
+.eta-step.current{border-color:var(--gold);background:rgba(200,168,75,0.05)}
+.eta-step.blocked{border-color:rgba(200,90,69,0.3);background:rgba(200,90,69,0.04)}
+.eta-val{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.68rem;
+  color:var(--amber);
+  font-weight:500;
+}
+.eta-desc{color:var(--ink2);line-height:1.3}
+.eta-desc small{
+  display:block;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.58rem;
+  color:var(--ink3);
+}
+.eta-rev{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.55rem;
+  text-align:right;
+}
+.rev-y{color:var(--teal)}
+.rev-p{color:var(--amber)}
+.rev-n{color:var(--coral)}
+
+/* ── CHAT ── */
+.chat-area{
+  max-height:320px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:0.65rem;
+  padding:1rem 1.2rem;
+  scroll-behavior:smooth;
+}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+
+.msg{
+  display:flex;
+  gap:0.55rem;
+  align-items:flex-start;
+  animation:fadeUp 0.3s ease;
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(5px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.msg-av{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.55rem;
+  width:28px;height:28px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  font-weight:500;
+  letter-spacing:0.03em;
+}
+.msg.twin .msg-av {background:rgba(200,168,75,0.18);color:var(--gold)}
+.msg.user .msg-av {background:rgba(74,170,142,0.18);color:var(--teal)}
+.msg.sys  .msg-av {background:rgba(255,255,255,0.04);color:var(--ink3)}
+.msg-bubble{
+  flex:1;
+  font-size:0.8rem;
+  line-height:1.7;
+  color:var(--ink2);
+  padding:0.55rem 0.75rem;
+  border-radius:0 var(--r2) var(--r2) var(--r2);
+  background:var(--bg2);
+  border:0.5px solid var(--brd);
+}
+.msg.user .msg-bubble{
+  border-radius:var(--r2) 0 var(--r2) var(--r2);
+  background:rgba(74,170,142,0.06);
+  border-color:rgba(74,170,142,0.15);
+}
+.msg.sys .msg-bubble{
+  background:transparent;border-color:transparent;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;color:var(--ink3);padding:0.15rem 0;
+}
+.msg-bubble p{margin-bottom:0.35rem}
+.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble code{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.7rem;
+  background:rgba(255,255,255,0.06);
+  padding:1px 4px;border-radius:3px;
+  color:var(--amber);
+}
+.msg-bubble .update-block{
+  margin-top:0.5rem;
+  padding:0.4rem 0.6rem;
+  background:rgba(200,168,75,0.06);
+  border-left:2px solid var(--gold);
+  border-radius:0 var(--r2) var(--r2) 0;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;color:var(--ink3);
+  line-height:1.7;
+}
+
+.chat-input-row{
+  padding:0.65rem 1.2rem 1rem;
+  border-top:0.5px solid var(--brd);
+  display:flex;gap:0.4rem;align-items:flex-end;
+}
+.chat-input{
+  flex:1;
+  background:var(--bg2);
+  border:0.5px solid var(--brd);
+  border-radius:var(--r2);
+  padding:0.5rem 0.7rem;
+  color:var(--ink);
+  font-family:'Source Serif 4',serif;
+  font-size:0.8rem;
+  resize:none;outline:none;
+  transition:border-color 0.2s;
+  min-height:38px;max-height:90px;
+}
+.chat-input:focus{border-color:var(--gold)}
+.chat-input::placeholder{color:var(--ink3)}
+
+/* ── BUTTONS ── */
+.btn{
+  border:none;border-radius:var(--r2);
+  padding:0.45rem 0.9rem;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.68rem;font-weight:500;
+  letter-spacing:0.07em;cursor:pointer;
+  transition:opacity 0.15s,transform 0.1s;
+  white-space:nowrap;
+}
+.btn:hover:not(:disabled){opacity:0.82}
+.btn:active:not(:disabled){transform:scale(0.97)}
+.btn:disabled{opacity:0.35;cursor:not-allowed}
+.btn-gold  {background:var(--gold);color:#080705}
+.btn-teal  {background:var(--teal);color:#080705}
+.btn-ghost {background:var(--surf2);color:var(--ink2);border:0.5px solid var(--brd2)}
+
+/* spinner */
+.spin{
+  display:inline-block;width:11px;height:11px;
+  border:1.5px solid rgba(200,168,75,0.25);
+  border-top-color:var(--gold);
+  border-radius:50%;
+  animation:rotate 0.7s linear infinite;
+  vertical-align:middle;
+}
+@keyframes rotate{to{transform:rotate(360deg)}}
+
+/* ── API KEY ── */
+.api-bar{
+  background:var(--surf);
+  border:0.5px solid var(--brd2);
+  border-radius:var(--r);
+  padding:0.8rem 1.2rem;
+  display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;
+  margin-bottom:1.5rem;
+}
+.api-bar label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;letter-spacing:0.1em;
+  color:var(--ink3);text-transform:uppercase;white-space:nowrap;
+}
+.api-bar input{
+  flex:1;min-width:180px;
+  background:var(--bg2);
+  border:0.5px solid var(--brd);border-radius:var(--r2);
+  padding:0.45rem 0.7rem;color:var(--ink2);
+  font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+  outline:none;transition:border-color 0.2s;
+}
+.api-bar input:focus{border-color:var(--gold)}
+.key-status{font-family:'IBM Plex Mono',monospace;font-size:0.62rem}
+.key-ok{color:var(--teal)}
+.key-empty{color:var(--ink3)}
+
+/* ── DIFF LOG ── */
+.diff-log{
+  display:flex;flex-direction:column;gap:0.25rem;
+  max-height:140px;overflow-y:auto;
+}
+.diff-entry{
+  display:flex;gap:0.5rem;align-items:flex-start;
+  font-size:0.7rem;line-height:1.4;
+  padding:0.3rem 0;
+  border-bottom:0.5px solid var(--brd);
+}
+.diff-entry:last-child{border-bottom:none}
+.diff-t{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.58rem;color:var(--ink3);
+  white-space:nowrap;padding-top:1px;
+}
+.diff-txt{color:var(--ink2);flex:1}
+.up{color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:0.62rem}
+.dn{color:var(--coral);font-family:'IBM Plex Mono',monospace;font-size:0.62rem}
+
+/* completeness meter */
+.completeness{
+  display:flex;align-items:center;gap:0.5rem;
+  margin-bottom:0.8rem;
+}
+.compl-label{
+  font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;
+}
+.compl-track{
+  flex:1;height:3px;background:var(--bg2);border-radius:2px;overflow:hidden;
+}
+.compl-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--steel),var(--teal));
+  transition:width 0.5s;
+}
+.compl-pct{
+  font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  color:var(--teal);font-weight:500;min-width:28px;text-align:right;
+}
+
+/* section headers */
+.section-hdr{
+  display:flex;align-items:center;gap:0.8rem;
+  margin:2rem 0 1rem;
+  padding-bottom:0.5rem;
+  border-bottom:0.5px solid var(--brd);
+}
+.section-hdr h3{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.1rem;font-weight:400;color:var(--ink);
+}
+.section-hdr .section-note{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;color:var(--ink3);
+  margin-left:auto;
+  letter-spacing:0.06em;
+}
+
+/* reference pills */
+.ref-pill{
+  display:inline-block;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.55rem;
+  color:var(--ink3);
+  background:rgba(255,255,255,0.04);
+  border:0.5px solid var(--brd);
+  border-radius:3px;
+  padding:1px 5px;
+  margin-left:4px;
+  vertical-align:middle;
+  cursor:help;
+}
+
+/* code blocks */
+.code-block{
+  background:var(--bg3);
+  border:0.5px solid var(--brd);
+  border-radius:var(--r2);
+  padding:0.75rem 0.9rem;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.65rem;
+  line-height:1.8;
+  color:var(--ink3);
+  white-space:pre-wrap;
+  overflow-x:auto;
+}
+.code-block .hl{color:var(--gold)}
+.code-block .hl2{color:var(--teal)}
+.code-block .hl3{color:var(--amber)}
+.code-block .hl4{color:var(--coral)}
+.code-block .comment{color:rgba(107,97,69,0.6)}
+
+/* footnote */
+.footnote{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;
+  color:var(--ink3);
+  padding:0.4rem 0.6rem;
+  border-left:2px solid var(--brd2);
+  margin-top:0.6rem;
+  line-height:1.7;
+}
+
+/* quick probes */
+.probe-grid{
+  display:flex;flex-direction:column;gap:0.4rem;
+}
+.probe-btn{
+  background:var(--surf2);
+  border:0.5px solid var(--brd);
+  border-radius:var(--r2);
+  padding:0.5rem 0.75rem;
+  color:var(--ink2);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.65rem;
+  cursor:pointer;
+  text-align:left;
+  transition:border-color 0.15s,background 0.15s;
+  width:100%;
+}
+.probe-btn:hover{
+  border-color:var(--gold);
+  background:rgba(200,168,75,0.06);
+  color:var(--ink);
+}
+
+/* footer */
+footer{
+  border-top:0.5px solid var(--brd);
+  padding:1.2rem 0 2rem;
+  margin-top:3rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;gap:0.5rem;
+}
+footer p{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;
+  color:var(--ink3);
+  letter-spacing:0.05em;
+}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+
+/* pentad strip header */
+.pentad-nav{
+  display:flex;gap:0;
+  border-radius:var(--r2);overflow:hidden;
+  border:0.5px solid var(--brd);
+  align-self:flex-end;
+  min-width:240px;max-width:300px;
+}
+.pnode{
+  flex:1;padding:0.55rem 0.3rem;
+  text-align:center;cursor:pointer;
+  transition:filter 0.15s;
+}
+.pnode:hover{filter:brightness(1.4)}
+.pnode-sym{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.7rem;font-weight:500;display:block;
+}
+.pnode-lbl{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.5rem;opacity:0.65;display:block;
+  margin-top:1px;text-transform:uppercase;letter-spacing:0.05em;
+}
+.pn-T{background:rgba(88,136,184,0.12);color:var(--steel)}
+.pn-M{background:rgba(74,170,142,0.12);color:var(--teal)}
+.pn-V{background:rgba(200,168,75,0.12);color:var(--gold)}
+.pn-E{background:rgba(136,112,200,0.12);color:var(--violet)}
+.pn-S{background:rgba(200,90,69,0.12);color:var(--coral)}
+</style>
+</head>
+<body>
+
+<div class="spectrum"></div>
+
+<div class="page">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="hdr">
+    <div>
+      <div class="hdr-brand"><span>Ukubona</span> · Kidney Donor Digital Twin · v1.0</div>
+      <h1>The Living Kidney Donor<br><em>Sovereignty Intelligence Broker</em></h1>
+      <p class="hdr-sub">
+        L_tot = L₀ + Σᵢ wᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)
+      </p>
+    </div>
+
+    <!-- loss equation -->
+    <div class="loss-eq">
+      <div class="eq-line"><span class="eq-mut">L_tot =</span> <span class="eq-l0">L₀</span></div>
+      <div class="eq-line"><span class="eq-mut">     +</span> <span class="eq-wi">Σᵢ wᵢ·Lᵢ</span></div>
+      <div class="eq-line"><span class="eq-mut">     +</span> <span class="eq-sig">σ²(θ,X,t)</span></div>
+      <div class="eq-line"><span class="eq-mut">     +</span> <span class="eq-lam">λ(θ,Ω,t)</span></div>
+      <div class="eq-line"><span class="eq-mut">     +</span> <span class="eq-eps">ε(t)</span></div>
+      <div style="height:0.5px;background:var(--brd);margin:0.5rem 0"></div>
+      <div class="eq-line eq-mut" style="font-size:0.58rem">
+        <span class="eq-l0">●</span>&nbsp;nephron endowment&nbsp;
+        <span class="eq-sig">●</span>&nbsp;known knowns&nbsp;
+        <span class="eq-lam">●</span>&nbsp;k.unknowns&nbsp;
+        <span class="eq-eps">●</span>&nbsp;unk.unknowns
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ API KEY BAR ═══ -->
+  <div class="api-bar">
+    <label>Anthropic API Key</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-…" autocomplete="off">
+    <span class="key-status key-empty" id="keyStatus">● no key</span>
+    <!--
+      FUTURE FASTAPI NOTE:
+      Remove this bar entirely when running backend.
+      Key goes in .env as ANTHROPIC_API_KEY.
+      Frontend calls your /twin/chat endpoint (JWT-protected).
+    -->
+  </div>
+
+  <!-- ═══ MAIN GRID ═══ -->
+  <div class="grid-main">
+
+    <!-- ── LEFT COLUMN ── -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+      <!-- ══ θ₀ STATE ENGINE ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-L0">T — θ₀</span>
+          <h2>Baseline State · Covariate Vector</h2>
+          <span class="card-sub">Operational · Tensor</span>
+        </div>
+        <div class="card-body">
+          <div class="completeness">
+            <span class="compl-label">N-completeness</span>
+            <div class="compl-track"><div class="compl-fill" id="complFill" style="width:40%"></div></div>
+            <span class="compl-pct" id="complPct">40%</span>
+          </div>
+
+          <div class="theta-grid" id="thetaGrid">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- L₀ prior display -->
+          <div class="L0-display" id="L0Display">
+            <div style="display:flex;align-items:baseline;gap:0.8rem">
+              <div>
+                <div class="L0-value" id="L0Value">~840K</div>
+                <div class="L0-label">Estimated nephrons per kidney (L₀ prior)</div>
+              </div>
+              <div style="flex:1">
+                <div class="prob-track" style="height:8px;margin-top:0.5rem">
+                  <div class="prob-fill" id="L0Bar" style="width:55%;background:linear-gradient(90deg,var(--L0),var(--gold2))"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:3px">
+                  <span class="label" style="font-size:0.52rem">300K (low)</span>
+                  <span class="label" style="font-size:0.52rem">1.8M (high)</span>
+                </div>
+              </div>
+            </div>
+            <div class="L0-note" id="L0Note">
+              Latent prior. Cannot be directly measured in living persons.
+              Estimated from birth weight and race per Keller et al., NEJM 2003.
+            </div>
+            <!--
+              FUTURE BACKEND NOTE:
+              POST /twin/theta0 → returns L₀ posterior given:
+                {birth_weight_kg, race, sex, age}
+              Uses log-normal prior from Keller/NEJM 2003 (PMID 12519920):
+                log(N_nephrons) ~ N(μ, σ²)
+                μ: 13.7 (normotensive), 13.4 (hypertensive)
+                σ: ~0.4 both groups
+              Glomerular volume on biopsy would update posterior if available.
+            -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ THREE-POPULATION DISPLAY (Muzaale JAMA 2014) ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-sig">M — Muzaale 2014</span>
+          <h2>The Three Populations · ESRD Lifetime Risk</h2>
+          <span class="card-sub">NHANES-SRTR Counterfactual</span>
+        </div>
+        <div class="card-body">
+          <div class="three-pop">
+            <div class="pop-card general">
+              <div class="pop-num" style="color:var(--coral)">326</div>
+              <div class="pop-unit">per 10,000</div>
+              <div class="pop-label">General population<br><small>(unscreened)</small></div>
+              <div class="pop-source">NHANES-III unmatched</div>
+            </div>
+            <div class="pop-card donor">
+              <div class="pop-num" style="color:var(--amber)" id="donorRisk">90</div>
+              <div class="pop-unit">per 10,000</div>
+              <div class="pop-label">Live kidney donors<br><small>(lifetime)</small></div>
+              <div class="pop-source">SRTR 96,217 donors</div>
+            </div>
+            <div class="pop-card healthy">
+              <div class="pop-num" style="color:var(--teal)">14</div>
+              <div class="pop-unit">per 10,000</div>
+              <div class="pop-label">Matched healthy<br>nondonors</div>
+              <div class="pop-source">NHANES-III screened</div>
+            </div>
+          </div>
+
+          <div class="footnote">
+            Absolute risk increase from donation: <strong style="color:var(--amber)">76 per 10,000</strong> over lifetime.
+            Donation multiplier at 15yr: <strong style="color:var(--amber)">3.5–5.3×</strong> vs matched nondonors (Grams 2016).
+            The sovereignty gap: donors owed the <em>healthy nondonor</em> counterfactual — not the general population.
+          </div>
+
+          <!-- Race-stratified 15yr risks -->
+          <div style="margin-top:0.8rem">
+            <div class="label" style="margin-bottom:0.5rem">15-year ESRD risk by race (donors vs matched healthy nondonors)</div>
+            <div id="raceRisks">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+          <!--
+            FUTURE FASTAPI NOTE:
+            GET /twin/muzaale-gap?race=black&sex=male&age=40
+            Returns {donor_risk, nondonor_risk, absolute_increase, multiplier}
+            from Muzaale JAMA 2014 Table 2 / Figure 1B
+          -->
+        </div>
+      </div>
+
+      <!-- ══ CAUSE-SPECIFIC GG CURVES (Anjum AJT 2016) ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-lam">V — Anjum 2016</span>
+          <h2>Generalized Gamma · Cause-Specific ESRD Hazard</h2>
+          <span class="card-sub">Bellissimo · Parametric</span>
+        </div>
+        <div class="card-body">
+          <div class="gg-panel">
+            <div class="gg-curve-card">
+              <div class="gg-title" style="color:var(--DM)">Diabetic ESRD</div>
+              <canvas class="gg-canvas" id="ggDM"></canvas>
+              <div class="gg-params">
+                <span class="gg-param">β=5.1</span>
+                <span class="gg-param">r=0.41</span>
+                <span class="gg-param">κ=0.63</span>
+              </div>
+              <div class="footnote" style="margin-top:0.4rem">
+                r&lt;1 → increasing hazard. Late disease. IRR early→late: <strong style="color:var(--DM)">7.7×</strong>
+              </div>
+            </div>
+            <div class="gg-curve-card">
+              <div class="gg-title" style="color:var(--HTN)">Hypertensive ESRD</div>
+              <canvas class="gg-canvas" id="ggHTN"></canvas>
+              <div class="gg-params">
+                <span class="gg-param">β=5.4</span>
+                <span class="gg-param">r=0.40</span>
+                <span class="gg-param">κ=0.91</span>
+              </div>
+              <div class="footnote" style="margin-top:0.4rem">
+                r&lt;1 → increasing hazard. Late disease. IRR early→late: <strong style="color:var(--HTN)">2.6×</strong>
+              </div>
+            </div>
+            <div class="gg-curve-card">
+              <div class="gg-title" style="color:var(--GN)">GN ESRD</div>
+              <canvas class="gg-canvas" id="ggGN"></canvas>
+              <div class="gg-params">
+                <span class="gg-param">β=11.2</span>
+                <span class="gg-param">r=15.8</span>
+                <span class="gg-param">κ=9.50</span>
+              </div>
+              <div class="footnote" style="margin-top:0.4rem">
+                r&gt;1 → flat hazard. Susceptibility model. IRR: <strong style="color:var(--GN)">0.7</strong> (no time trend)
+              </div>
+            </div>
+          </div>
+
+          <!-- IRR table -->
+          <div style="margin-top:1rem">
+            <div class="label" style="margin-bottom:0.5rem">Cumulative incidence per 10,000 donors (Anjum AJT 2016, Table 2)</div>
+            <table class="irr-table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>DM-ESRD</th>
+                  <th>HTN-ESRD</th>
+                  <th>GN-ESRD</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>5yr</td><td class="irr-dm">0.0–0.1–0.7</td><td class="irr-htn">0.1–0.3–0.9</td><td class="irr-gn">0.3–0.7–1.5</td></tr>
+                <tr><td>10yr</td><td class="irr-dm">0.1–0.4–1.2</td><td class="irr-htn">1.2–2.0–3.2</td><td class="irr-gn">2.3–3.4–4.9</td></tr>
+                <tr><td>15yr</td><td class="irr-dm">1.1–2.0–3.6</td><td class="irr-htn">5.4–7.4–10.1</td><td class="irr-gn">4.6–6.3–8.6</td></tr>
+                <tr><td>20yr</td><td class="irr-dm">5.8–8.9–13.6</td><td class="irr-htn">11.5–15.3–20.7</td><td class="irr-gn">8.1–11.1–15.3</td></tr>
+                <tr><td>25yr</td><td class="irr-dm">9.7–14.8–22.7</td><td class="irr-htn">20.2–28.2–39.2</td><td class="irr-gn">9.2–12.8–17.8</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!--
+            FUTURE FASTAPI NOTE:
+            POST /twin/anjum-curves
+            Body: {race, sex, age, dm_risk_factor, htn_risk_factor, gn_risk_factor}
+            Returns: {dm_curve, htn_curve, gn_curve} — arrays of (year, hazard, cumulative)
+            
+            GG hazard function: h(t) = (r/b) * (t/b)^(r-1)
+              where b = exp(β), shape r, cluster κ
+            For DM: h(t) = (0.41/exp(5.1)) * (t/exp(5.1))^(0.41-1)
+            This gives the exponentially increasing hazard visible in Figure 1.
+            
+            Donor-specific adjustment: multiply by exp(Grams β_i * X_i)
+              where X_i are their specific covariate deviations from base-case.
+          -->
+        </div>
+      </div>
+
+      <!-- ══ RUMSFELD UNCERTAINTY TIERS ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-eps">E — Rumsfeld</span>
+          <h2>Uncertainty Architecture · Three Tiers</h2>
+          <span class="card-sub">Epistemic · Aleatoric · Ontological</span>
+        </div>
+        <div class="card-body">
+          <div class="rumsfeld-grid">
+
+            <div class="rf-card sigma">
+              <div class="rf-tier sigma">Tier 1 · σ²(θ,X,t)</div>
+              <div class="rf-symbol" style="color:var(--sigma)">σ²</div>
+              <div class="rf-name">Known Knowns</div>
+              <div class="rf-rumsfeld">"There are things we know we know."</div>
+              <div class="rf-stat">
+                <div class="hi">Statistical form:</div>
+                Variance-covariance matrix of β from Grams random-effects meta-analysis (Table 2). CIs from simulation over this matrix.<br>
+                <div class="hi" style="margin-top:0.4rem">Key β±SE:</div>
+                eGFR&lt;60: 1.89±0.16<br>
+                SBP/20: 0.35±0.06<br>
+                DM: 1.10±0.23<br>
+                Albumin×10: 1.08±<span style="color:var(--lambda)">0.56 ← highest SE</span><br>
+                <div class="hi" style="margin-top:0.4rem">Nature: aleatoric</div>
+                Irreducible scatter even with perfect model.
+              </div>
+            </div>
+
+            <div class="rf-card lambda">
+              <div class="rf-tier lambda">Tier 2 · λ(θ,Ω,t)</div>
+              <div class="rf-symbol" style="color:var(--lambda)">λ</div>
+              <div class="rf-name">Known Unknowns</div>
+              <div class="rf-rumsfeld">"There are things we know we don't know."</div>
+              <div class="rf-stat">
+                <div class="hi">Statistical form:</div>
+                τ² in random-effects meta-analysis (between-cohort heterogeneity). GG κ parameter (event clustering). APOL1 genotype (unmeasured in NHANES/SRTR).<br>
+                <div class="hi" style="margin-top:0.4rem">DM HR spread across 7 cohorts:</div>
+                NHANES: 9.73 · ARIC: 2.95<br>
+                Maccabi: 2.21 · Geisinger: 4.50<br>
+                <span style="color:var(--lambda)">This spread = λ made visible.</span><br>
+                <div class="hi" style="margin-top:0.4rem">Nature: epistemic</div>
+                Reducible with APOL1 genotyping, longer follow-up, individual nephron count.
+              </div>
+            </div>
+
+            <div class="rf-card epsilon">
+              <div class="rf-tier epsilon">Tier 3 · ε(t)</div>
+              <div class="rf-symbol" style="color:var(--epsilon)">ε</div>
+              <div class="rf-name">Unknown Unknowns</div>
+              <div class="rf-rumsfeld">"There are things we don't know we don't know."</div>
+              <div class="rf-stat">
+                <div class="hi">Statistical form: NONE.</div>
+                No functional form can capture what has not yet happened. The GN flat hazard (r&gt;1, uniform over time) is the nearest empirical signal — it tells you GN arrives on a schedule nobody can predict.<br>
+                <div class="hi" style="margin-top:0.4rem">Empirical signals:</div>
+                NSAIDs at 67 · pandemic follow-up gaps<br>
+                Dehydration · undiagnosed GN<br>
+                APOL1 + "second hit" (Muzaale HIV 2017)<br>
+                <div class="hi" style="margin-top:0.4rem">Nature: ontological.</div>
+                Acknowledged · not modeled · updated on shock.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Architecture code block -->
+          <div style="margin-top:1rem">
+            <div class="label" style="margin-bottom:0.5rem">Complete loss function — grounded architecture</div>
+            <div class="code-block">
+<span class="hl">L_tot</span> <span class="comment">= # Full sovereignty loss</span>
+  <span class="hl">L₀</span>                   <span class="comment"># Keller/NEJM 2003 (PMID 12519920)</span>
+                         <span class="comment"># nephron endowment at birth</span>
+                         <span class="comment"># log-normal prior: ~700K HTN, ~1M norm</span>
+                         <span class="comment"># latent — never directly measured</span>
+
++ <span class="hl2">Σᵢ wᵢ·Lᵢ</span>           <span class="comment"># Muzaale/JAMA 2014 (PMID 24519297)</span>
+                         <span class="comment"># i ∈ {ESRD_DM, ESRD_HTN, ESRD_GN,</span>
+                         <span class="comment">#        mortality_all, mortality_CV}</span>
+                         <span class="comment"># wᵢ = DONOR'S weights (not clinician's)</span>
+                         <span class="comment"># GG models per Anjum/AJT 2016</span>
+                         <span class="comment"># donation multiplier: 3.5–5.3× by race/sex</span>
+
++ <span class="hl2">σ²(θ,X,t)</span>           <span class="comment"># Grams/NEJM 2016 (NEJMoa1510491)</span>
+                         <span class="comment"># β±SE Table 2 from 7-cohort meta-analysis</span>
+                         <span class="comment"># CIs from variance-covariance simulation</span>
+                         <span class="comment"># KNOWN KNOWNS · aleatoric</span>
+
++ <span class="hl3">λ(θ,Ω,t)</span>            <span class="comment"># between-cohort τ² · APOL1 · GG κ</span>
+                         <span class="comment"># DM HR: 2.21–9.73 across 7 cohorts</span>
+                         <span class="comment"># KNOWN UNKNOWNS · epistemic</span>
+                         <span class="comment"># reducible with genotyping + follow-up</span>
+
++ <span class="hl4">ε(t)</span>                <span class="comment"># no functional form</span>
+                         <span class="comment"># GN flat hazard = nearest signal</span>
+                         <span class="comment"># UNKNOWN UNKNOWNS · ontological</span>
+                         <span class="comment"># acknowledged · not modeled</span>
+                         <span class="comment"># updated when shock arrives</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ LLM REASONING ENGINE ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-twin">S — Twin</span>
+          <h2>Clinical Reasoning Engine · Sovereignty Broker</h2>
+          <span class="card-sub">Claude API · Stateful</span>
+        </div>
+        <div class="chat-area" id="chatArea">
+          <!-- messages here -->
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chatInput" rows="1"
+            placeholder="Ask about your risk, your counterfactual trajectory, what a covariate means for you personally…"
+            onkeydown="handleKey(event)"></textarea>
+          <button class="btn btn-gold" id="sendBtn" onclick="sendMessage()">Send ∇</button>
+        </div>
+        <!--
+          FUTURE FASTAPI NOTE:
+          POST /twin/chat
+          Headers: Authorization: Bearer <JWT>
+          Body: {donor_id, message, conversation_history}
+          Backend builds system prompt from donor's full state vector,
+          calls Anthropic API server-side (key in env), returns response.
+          State updates parsed from LLM response and persisted to DB.
+          
+          The system prompt template is at the bottom of this file in comments.
+        -->
+      </div>
+
+      <!-- ══ STATE DIFF LOG ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-sig">V — θ′</span>
+          <h2>State Diff · Update Log</h2>
+          <span class="card-sub">Ritual · θ → θ′</span>
+        </div>
+        <div class="card-body">
+          <div class="diff-log" id="diffLog">
+            <div class="diff-entry">
+              <span class="diff-t">init</span>
+              <span class="diff-txt">Twin initialized · kidney donor case · Ukubona v1.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end left column -->
+
+    <!-- ── RIGHT SIDEBAR ── -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+      <!-- ══ η IRREVERSIBILITY GATE ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-eps">S — η Gate</span>
+          <h2>Sovereignty Gate</h2>
+          <span class="card-sub">Pre-donation · η=1.0</span>
+        </div>
+        <div class="card-body">
+          <div class="gate closed" id="gateDisplay">
+            <div class="gate-status" id="gateLabel">GATE CLOSED</div>
+            <div class="gate-msg" id="gateMsg">
+              Irreversible nephrectomy not yet permissible under this architecture.
+            </div>
+            <div class="gate-conditions" id="gateConditions"></div>
+          </div>
+
+          <div class="label" style="margin-bottom:0.5rem">η Descent Ladder · ordered by irreversibility</div>
+          <div class="eta-ladder" id="etaLadder"></div>
+
+          <!--
+            GATE LOGIC NOTE:
+            Gate opens iff ALL THREE conditions met:
+              1. Donor has seen their SPECIFIC Grams projection (not pop average)
+              2. Donor has seen Muzaale counterfactual (3-population figure)
+              3. Donor has seen cause-specific Anjum curves (DM/HTN/GN)
+            
+            This is not a clinical safety gate — it's a SOVEREIGNTY gate.
+            The donor may proceed even with elevated risk IF they have
+            full epistemic access to their own trajectory.
+            
+            η = 1.0 at moment of nephrectomy (maximally irreversible).
+            All pre-donation interactions occur in η < 1.0 regime.
+            Post-donation: twin shifts to surveillance mode (no gate).
+            
+            FUTURE: 𝕀_consent · L_tot as hard gate multiplier
+          -->
+        </div>
+      </div>
+
+      <!-- ══ GRAMS RISK PROJECTION ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-sig">σ² — Grams 2016</span>
+          <h2>ESRD Risk Projection</h2>
+          <span class="card-sub">NEJMoa1510491</span>
+        </div>
+        <div class="card-body">
+          <div id="gramsProjection">
+            <!-- Populated by JS from covariate inputs -->
+          </div>
+          <div class="footnote">
+            Base-case: eGFR age-specific, SBP 120, albumin:creat 4, BMI 26, no DM, no anti-HTN. Grams 2016 online tool: <span style="color:var(--gold)">transplantmodels.com/esrdrisk</span>
+          </div>
+          <!--
+            FUTURE FASTAPI NOTE:
+            POST /twin/grams-risk
+            Body: {age, race, sex, egfr, albumin_creat, sbp, dm, antihtn, smoking, bmi}
+            
+            Algorithm (Grams NEJM 2016, Section 4 of Supplementary):
+            1. Compute linear predictor: Xβ from Table 2 coefficients
+            2. Center on base-case within age/sex/race stratum
+            3. Apply to calibrated ESRD incidence from USRDS
+            4. Compound annual rates to 15yr and lifetime
+            5. Return point estimate + CIs from variance-covariance simulation
+            
+            Key coefficients (β±SE from Table 2):
+              eGFR<60:      1.89±0.16  eGFR 60-89:   0.49±0.03
+              eGFR 90-119:  0.02±0.09  eGFR≥120:    -0.24±0.17
+              SBP/20mmHg:   0.35±0.06  Anti-HTN:     0.30±0.15
+              DM (non-ins):  1.10±0.23  BMI>30/5pt:  0.15±0.05
+              Former smk:   0.37±0.08  Current smk:  0.57±0.16
+              Albumin×10:   1.08±0.56
+          -->
+        </div>
+      </div>
+
+      <!-- ══ QUICK PROBES ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-gate">Actions</span>
+          <h2>Quick Probes</h2>
+        </div>
+        <div class="card-body">
+          <div class="probe-grid">
+            <button class="probe-btn" onclick="probe('What is my personal counterfactual trajectory? Compare me specifically to a matched healthy nondonor — not the general population. Use Muzaale JAMA 2014 as the reference.')">
+              ∇ My counterfactual trajectory
+            </button>
+            <button class="probe-btn" onclick="probe('Explain the three causes of post-donation ESRD to me — diabetes, hypertension, and glomerulonephritis — and which one I should be most worried about given my profile, and why the time pattern matters.')">
+              ⊕ Cause-specific ESRD risk (Anjum)
+            </button>
+            <button class="probe-btn" onclick="probe('What is my L₀ — my nephron endowment at birth — and how does it affect my risk of ESRD after donation? What would change if my nephron number is in the bottom quartile?')">
+              ● L₀ nephron endowment (Keller)
+            </button>
+            <button class="probe-btn" onclick="probe('Walk me through the Rumsfeld uncertainty tiers for my specific case. What do we know, what do we know we do not know, and what might we not know at all?')">
+              ? σ² · λ · ε uncertainty tiers
+            </button>
+            <button class="probe-btn" onclick="probe('I am considering donation at age 84. Walk me through how competing mortality risk changes the ESRD calculation — why does the Grams model suggest older donors may have paradoxically lower ESRD risk?')">
+              ♦ Older donor (84yr) risk logic
+            </button>
+            <button class="probe-btn" onclick="probe('What would my surveillance plan look like post-donation? When should I check for de novo diabetes, hypertension, and glomerulonephritis, and what labs would trigger an update to my loss function?')">
+              ⚑ Post-donation surveillance plan
+            </button>
+            <button class="probe-btn" onclick="probe('Generate a sovereignty statement for me — a plain-language summary of what I know, what I do not know, and what nobody can know about my donation risk, written as if to hand to my family.')">
+              ✦ Generate sovereignty statement
+            </button>
+            <button class="probe-btn btn-ghost" style="margin-top:0.3rem" onclick="resetTwin()">
+              ↺ Reset twin to θ₀
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ ARCHITECTURE NOTE CARD ══ -->
+      <div class="card">
+        <div class="card-head">
+          <span class="badge badge-gate">Migration Notes</span>
+          <h2>FastAPI · React Roadmap</h2>
+        </div>
+        <div class="card-body">
+          <div class="code-block" style="font-size:0.58rem">
+<span class="comment"># PHASE 1 (current): HTML + Claude API</span>
+<span class="hl2">✓</span> Loss function architecture
+<span class="hl2">✓</span> Rumsfeld uncertainty tiers
+<span class="hl2">✓</span> Grams/Muzaale/Anjum grounded
+<span class="hl2">✓</span> LLM reasoning via Claude API
+<span class="hl2">✓</span> Covariate input → L₀ prior
+
+<span class="comment"># PHASE 2: Flask prototype</span>
+<span class="hl">→</span> /compute/grams-risk  (Table 2 β)
+<span class="hl">→</span> /compute/gg-curves   (Anjum params)
+<span class="hl">→</span> /compute/counterfactual
+<span class="hl">→</span> Session persistence
+<span class="hl">→</span> API key in .env
+
+<span class="comment"># PHASE 3: FastAPI + React</span>
+<span class="hl3">→</span> JWT auth + donor profiles
+<span class="hl3">→</span> PostgreSQL state persistence
+<span class="hl3">→</span> &lt;CounterfactualViz&gt; component
+<span class="hl3">→</span> &lt;CauseSpecificGG&gt; component
+<span class="hl3">→</span> &lt;RumsfeldDisplay&gt; component
+<span class="hl3">→</span> &lt;SurveillanceTracker&gt;
+<span class="hl3">→</span> Render.com deployment
+
+<span class="comment"># DATA PIPELINE (future)</span>
+<span class="hl4">→</span> NHANES III linkage
+<span class="hl4">→</span> SRTR donor registry
+<span class="hl4">→</span> Grams variance-covariance matrix
+<span class="hl4">→</span> Anjum GG parameter fits
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end sidebar -->
+  </div><!-- end grid-main -->
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    <p>Ukubona LLC · Kidney Donor Digital Twin · ukb-kd-dt-v1.0 · Kampala 2026</p>
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:0.75rem">
+      L₀ + Σwᵢ·Lᵢ + σ² + λ + ε · The donor owns the wᵢ
+    </p>
+    <p>Not a substitute for clinical judgement · © Ukubona LLC 2026</p>
+  </footer>
+
+</div><!-- end page -->
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SYSTEM PROMPT TEMPLATE FOR FUTURE FASTAPI BACKEND                          ║
+║  Use this as the system prompt for POST /twin/chat                          ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║
+║  You are the Ukubona Kidney Donor Sovereignty Intelligence Broker.
+║  You are NOT a general medical assistant. You are a live digital twin
+║  operating on a specific living kidney donor candidate.
+║
+║  DONOR STATE VECTOR (θ₀):
+║  {age}: {age} years old
+║  {sex}: {sex}
+║  {race}: {race}
+║  {egfr}: eGFR = {egfr} ml/min/1.73m²
+║  {sbp}: SBP = {sbp} mmHg
+║  {albumin_creat}: Albumin:creat = {albumin_creat} mg/g
+║  {dm}: Diabetes = {dm}
+║  {antihtn}: Antihypertensive use = {antihtn}
+║  {smoking}: Smoking status = {smoking}
+║  {bmi}: BMI = {bmi}
+║  {birth_weight}: Birth weight (if known) = {birth_weight}
+║
+║  LOSS FUNCTION ARCHITECTURE:
+║  L_tot = L₀ + Σᵢ wᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)
+║
+║  L₀: Estimated nephron endowment = {L0_estimate}
+║      (Keller/NEJM 2003 — log-normal prior from birth weight + race)
+║      This is latent. Cannot be directly measured. Inform the donor.
+║
+║  Σᵢ wᵢ·Lᵢ (from Muzaale JAMA 2014 + Anjum AJT 2016):
+║    ESRD_DM:  GG(β=5.1, r=0.41, κ=0.63) — late, exponential rise
+║    ESRD_HTN: GG(β=5.4, r=0.40, κ=0.91) — late, exponential rise
+║    ESRD_GN:  GG(β=11.2, r=15.8, κ=9.5) — flat, susceptibility-driven
+║    wᵢ are the donor's sovereign weights. Ask them, don't assign.
+║
+║  σ²(θ,X,t) — KNOWN KNOWNS (Grams NEJM 2016):
+║    {donor_grams_15yr_risk} (15-year projected ESRD, in absence of donation)
+║    {donor_grams_lifetime_risk} (lifetime projected)
+║    Donation multiplier: {donation_multiplier}× vs matched healthy nondonors
+║    CIs from variance-covariance simulation of meta-analytic β
+║
+║  λ(θ,Ω,t) — KNOWN UNKNOWNS:
+║    APOL1 genotype: NOT MEASURED (critical for Black donors)
+║    Future DM/HTN incidence: rates known, individual timing unknown
+║    Nephron number: structural unknown — L₀ is a prior, not a measurement
+║    Between-cohort τ²: DM HR ranges 2.21–9.73 across 7 Grams cohorts
+║
+║  ε(t) — UNKNOWN UNKNOWNS:
+║    No model. GN flat hazard is nearest signal.
+║    Acknowledge explicitly. Do not pretend to quantify.
+║
+║  ARCHITECTURE RULES:
+║  1. The donor owns the wᵢ. Never assign weights for them.
+║  2. Always show the THREE populations (Muzaale): general / donor / healthy nondonor.
+║     The healthy nondonor is the correct counterfactual. Not the general population.
+║  3. For ESRD risk: ALWAYS distinguish pre-donation projection (Grams)
+║     from post-donation observed risk (donation multiplier ×3.5–5.3).
+║  4. For older donors (>65): competing mortality compresses ESRD risk.
+║     The Grams model captures this. Explain it explicitly.
+║  5. Label every uncertainty claim with its tier: σ² / λ / ε.
+║  6. The η gate is a SOVEREIGNTY gate, not a clinical safety gate.
+║     The donor may donate even with elevated risk — IF they have
+║     full epistemic access to their own trajectory.
+║  7. GN-ESRD is an early risk (flat hazard, r>1).
+║     DM/HTN-ESRD are late risks (increasing hazard, r<1).
+║     This is not intuitive. Explain it.
+║  8. APOL1 risk in Black donors: ~13% carry high-risk haplotype.
+║     Not measured in standard workup. This is λ, not ε —
+║     it could be reduced with genotyping.
+║
+║  RESPONSE FORMAT:
+║  Speak as a clinical reasoning partner — precise, warm, sovereign-affirming.
+║  When updating the loss tensor, show a brief UPDATE block.
+║  Keep responses focused. This is a decision support tool, not a lecture.
+║  End every substantive response by asking: what matters most to YOU?
+║  (This elicits wᵢ — the sovereign weights.)
+║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+
+let state = {
+  covariates: {
+    age: 45, sex: 'female', race: 'white',
+    egfr: 98, sbp: 118, albumin_creat: 4,
+    dm: 'no', antihtn: 'no', smoking: 'never', bmi: 26,
+    birth_weight_kg: null, relationship: 'biological'
+  },
+  L0_estimate: 940000,
+  grams_15yr: 0.06,
+  grams_lifetime: 0.3,
+  donation_multiplier: 4.9,
+  completeness: 0.40,
+  gate_status: 'closed',
+  seen_counterfactual: false,
+  seen_grams: false,
+  seen_anjum: false,
+  conversation: [],
+  update_count: 0,
+  wᵢ: {dm: null, htn: null, gn: null, mortality: null}
+};
+
+// ═══════════════════════════════════════════════════════════════
+// COVARIATE FIELDS
+// ═══════════════════════════════════════════════════════════════
+
+const FIELDS = [
+  {id:'age',       label:'Age (years)',        type:'number', min:18, max:90, default:45,     note:'Older donors: competing mortality compresses ESRD risk'},
+  {id:'sex',       label:'Sex',                type:'select', opts:['female','male'],          note:''},
+  {id:'race',      label:'Race/ethnicity',     type:'select', opts:['white','black','hispanic','other'], note:'APOL1 risk: ~13% Black donors carry high-risk haplotype (λ)'},
+  {id:'egfr',      label:'eGFR (ml/min/1.73m²)', type:'number', min:45, max:160, default:98, note:'Grams: <60 → β=1.89; 60-89 → β=0.49'},
+  {id:'sbp',       label:'SBP (mmHg)',         type:'number', min:90, max:180, default:118,   note:'Grams β=0.35 per 20mmHg'},
+  {id:'albumin_creat', label:'Albumin:creat (mg/g)', type:'number', min:0, max:300, default:4, note:'Highest SE in Grams (β=1.08±0.56) → most λ'},
+  {id:'dm',        label:'Diabetes (non-insulin)', type:'select', opts:['no','yes'],           note:'Grams β=1.10 → HR 3.01 for ESRD'},
+  {id:'antihtn',   label:'Antihypertensive use', type:'select', opts:['no','yes'],             note:'Grams β=0.30 → HR 1.35'},
+  {id:'smoking',   label:'Smoking status',     type:'select', opts:['never','former','current'], note:'Current: β=0.57 → HR 1.76'},
+  {id:'bmi',       label:'BMI (kg/m²)',        type:'number', min:16, max:60, default:26,      note:'Grams: BMI>30 → β=0.15/5pts (weak association)'},
+  {id:'birth_weight_kg', label:'Birth weight (kg, if known)', type:'number', min:0.5, max:6, default:'', note:'L₀ prior: low birth weight → fewer nephrons (Keller 2003)'},
+  {id:'relationship', label:'Donor relationship', type:'select', opts:['biological','unrelated'], note:'Muzaale: biological 34.1 vs unrelated 15.1/10K (not sig)'},
+];
+
+function buildThetaGrid() {
+  const grid = document.getElementById('thetaGrid');
+  grid.innerHTML = FIELDS.map(f => {
+    const val = state.covariates[f.id] ?? f.default ?? '';
+    if (f.type === 'select') {
+      return `
+        <div class="theta-field">
+          <label>${f.label}</label>
+          <select id="f_${f.id}" onchange="updateCovariate('${f.id}',this.value)">
+            ${f.opts.map(o => `<option value="${o}"${o==val?'selected':''}>${o}</option>`).join('')}
+          </select>
+          ${f.note ? `<div class="theta-note">${f.note}</div>` : ''}
+        </div>`;
+    }
+    return `
+      <div class="theta-field">
+        <label>${f.label}</label>
+        <input type="number" id="f_${f.id}" min="${f.min}" max="${f.max}"
+          value="${val}" placeholder="${f.default||''}"
+          onchange="updateCovariate('${f.id}',this.value)"
+          oninput="updateCovariate('${f.id}',this.value)">
+        ${f.note ? `<div class="theta-note">${f.note}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function updateCovariate(id, val) {
+  state.covariates[id] = isNaN(+val) ? val : (val === '' ? null : +val);
+  computeL0();
+  computeGrams();
+  computeCompleteness();
+  updateGate();
+  renderRaceRisks();
+  addDiff(`θ update: ${id} → ${val}`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// L₀ PRIOR (Keller NEJM 2003)
+// ═══════════════════════════════════════════════════════════════
+
+function computeL0() {
+  const {race, birth_weight_kg, sex} = state.covariates;
+  // Log-normal prior: μ varies by race/HTN status
+  // Keller 2003: hypertensive ~702K, normotensive ~984K per kidney
+  // Brenner: low birth weight → reduced nephron endowment
+  let base = race === 'black' ? 830000 : 940000;
+  if (sex === 'male') base *= 1.05; // males have ~5% more nephrons
+  if (birth_weight_kg && birth_weight_kg < 2.5) base *= 0.75; // low birth weight
+  if (birth_weight_kg && birth_weight_kg < 1.5) base *= 0.60; // very low
+  if (birth_weight_kg && birth_weight_kg > 3.5) base *= 1.1;
+  state.L0_estimate = Math.round(base);
+
+  const el = document.getElementById('L0Value');
+  if (el) el.textContent = state.L0_estimate >= 1000000
+    ? `~${(state.L0_estimate/1e6).toFixed(2)}M`
+    : `~${Math.round(state.L0_estimate/1000)}K`;
+
+  // bar: 300K = 0%, 1.8M = 100%
+  const pct = Math.min(100, Math.max(0, (state.L0_estimate - 300000) / 1500000 * 100));
+  const bar = document.getElementById('L0Bar');
+  if (bar) bar.style.width = pct + '%';
+
+  // note
+  const note = document.getElementById('L0Note');
+  if (note) {
+    let msg = `Estimated from race and birth weight per Keller et al. NEJM 2003. `;
+    if (state.L0_estimate < 700000) msg += `LOW endowment — this donor has fewer nephrons in reserve. Post-donation hyperfiltration risk elevated. This is L₀ uncertainty (λ).`;
+    else if (state.L0_estimate > 1100000) msg += `HIGH endowment — more reserve capacity. GFR decline post-donation less clinically significant.`;
+    else msg += `Mid-range endowment. Standard post-donation trajectory expected, conditioned on other covariates.`;
+    note.textContent = msg;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRAMS PROJECTION (approximated from Table 2 + Table 3)
+// ═══════════════════════════════════════════════════════════════
+
+function computeGrams() {
+  const {age, race, sex, egfr, sbp, albumin_creat, dm, antihtn, smoking, bmi} = state.covariates;
+  if (!age || !egfr) return;
+
+  // Base-case 15yr risks (Grams Table 3, approximate)
+  // For 40yr base-case: black men 0.24%, black women 0.15%, white men 0.06%, white women 0.04%
+  const baseRisks = {
+    'black-male':   {r15: 0.24, rLife: 1.4},
+    'black-female': {r15: 0.15, rLife: 0.9},
+    'white-male':   {r15: 0.06, rLife: 0.4},
+    'white-female': {r15: 0.04, rLife: 0.25},
+    'hispanic-male':{r15: 0.10, rLife: 0.6},
+    'hispanic-female':{r15:0.07, rLife:0.4},
+    'other-male':   {r15: 0.06, rLife: 0.4},
+    'other-female': {r15: 0.04, rLife: 0.25},
+  };
+  const raceKey = `${race}-${sex}`;
+  let base = baseRisks[raceKey] || {r15: 0.06, rLife: 0.4};
+
+  // Age adjustment (Grams: highest risk in middle-aged)
+  const ageFactor = age < 30 ? 0.5 : age < 40 ? 0.8 : age < 50 ? 1.0 : age < 60 ? 1.3 : age < 70 ? 0.9 : 0.6;
+
+  // Covariate adjustments using Grams β (Table 2)
+  let logHR = 0;
+  // eGFR
+  if (egfr < 60) logHR += 1.89;
+  else if (egfr < 90) logHR += 0.49 * ((90-egfr)/30);
+  else if (egfr < 120) logHR += 0.02;
+  else logHR += -0.24;
+  // SBP
+  logHR += 0.35 * ((sbp - 120) / 20);
+  // DM
+  if (dm === 'yes') logHR += 1.10;
+  // Antihtn
+  if (antihtn === 'yes') logHR += 0.30;
+  // Smoking
+  if (smoking === 'former') logHR += 0.37;
+  if (smoking === 'current') logHR += 0.57;
+  // BMI
+  if (bmi > 30) logHR += 0.15 * ((bmi-30)/5);
+  // Albumin
+  if (albumin_creat > 4) logHR += 1.08 * Math.log10(albumin_creat/4);
+
+  const HR = Math.exp(logHR);
+  state.grams_15yr = parseFloat((base.r15 * ageFactor * HR).toFixed(3));
+  state.grams_lifetime = parseFloat((base.rLife * ageFactor * HR).toFixed(3));
+  state.donation_multiplier = race === 'black' ? 4.9 : race === 'hispanic' ? 4.8 : 4.6;
+
+  renderGramsProjection();
+}
+
+function renderGramsProjection() {
+  const el = document.getElementById('gramsProjection');
+  if (!el) return;
+  const col15 = state.grams_15yr > 0.5 ? 'var(--coral)' : state.grams_15yr > 0.2 ? 'var(--amber)' : 'var(--teal)';
+  const donorRisk = (state.grams_15yr * state.donation_multiplier).toFixed(2);
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.6rem">
+      <div style="background:var(--bg2);border:0.5px solid var(--brd);border-radius:var(--r2);padding:0.7rem;text-align:center">
+        <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.8rem;color:${col15};line-height:1">${state.grams_15yr}%</div>
+        <div class="label" style="margin-top:3px">15-yr pre-donation risk</div>
+        <div class="theta-note" style="margin-top:2px">absence of donation</div>
+      </div>
+      <div style="background:var(--bg2);border:0.5px solid var(--brd);border-radius:var(--r2);padding:0.7rem;text-align:center">
+        <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.8rem;color:var(--amber);line-height:1">${state.grams_lifetime}%</div>
+        <div class="label" style="margin-top:3px">Lifetime pre-donation</div>
+        <div class="theta-note" style="margin-top:2px">model-based projection</div>
+      </div>
+    </div>
+    <div style="background:rgba(212,130,42,0.06);border:0.5px solid rgba(212,130,42,0.2);border-radius:var(--r2);padding:0.6rem;text-align:center">
+      <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.4rem;color:var(--amber)">${donorRisk}%</div>
+      <div class="label" style="margin-top:2px">Est. 15yr POST-donation risk</div>
+      <div class="theta-note">× ${state.donation_multiplier} donation multiplier (Grams 2016)</div>
+    </div>
+  `;
+
+  // update donor risk in three-pop display
+  const dr = document.getElementById('donorRisk');
+  if (dr) dr.textContent = Math.round(state.grams_15yr * state.donation_multiplier * 1000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RACE-STRATIFIED RISKS
+// ═══════════════════════════════════════════════════════════════
+
+const RACE_DATA = [
+  {label:'Black donors',    donor:74.7, nondonor:23.9, col:'var(--coral)'},
+  {label:'Hispanic donors', donor:32.6, nondonor:6.7,  col:'var(--amber)'},
+  {label:'White donors',    donor:22.7, nondonor:0.0,  col:'var(--teal)'},
+];
+
+function renderRaceRisks() {
+  const el = document.getElementById('raceRisks');
+  if (!el) return;
+  el.innerHTML = RACE_DATA.map(r => `
+    <div class="prob-bar-row" style="margin-bottom:0.6rem">
+      <div class="prob-meta">
+        <span class="prob-name">${r.label}</span>
+        <span class="prob-val" style="color:${r.col}">${r.donor} <span style="color:var(--ink3);font-weight:300">vs ${r.nondonor}/10K</span></span>
+      </div>
+      <div class="prob-track">
+        <div class="prob-fill" style="width:${Math.min(100,r.donor/80*100).toFixed(0)}%;background:${r.col}"></div>
+      </div>
+      <div class="prob-note">Donor 15yr risk vs matched healthy nondonor · Muzaale JAMA 2014</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GG CURVES (Anjum AJT 2016 parameters)
+// ═══════════════════════════════════════════════════════════════
+
+// GG hazard: h(t) = (r/b) * (t/b)^(r-1)  where b = exp(β/r)
+// Cumulative hazard: H(t) = (t/b)^r
+// Cumulative incidence: 1 - exp(-H(t))
+
+function ggHazard(t, beta, r) {
+  if (t <= 0) return 0;
+  const b = Math.exp(beta / r);
+  return (r / b) * Math.pow(t / b, r - 1);
+}
+
+function ggCumInc(t, beta, r) {
+  if (t <= 0) return 0;
+  const b = Math.exp(beta / r);
+  return 1 - Math.exp(-Math.pow(t / b, r));
+}
+
+function drawGGCanvas(canvasId, beta, r, color, labelYears) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 200;
+  const H = 120;
+  canvas.width = W;
+  canvas.height = H;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const maxT = 25;
+  const pts = [];
+  for (let t = 0; t <= maxT; t += 0.25) {
+    pts.push({t, h: ggHazard(t, beta, r), c: ggCumInc(t, beta, r)});
+  }
+
+  const maxH = Math.max(...pts.map(p => p.h)) * 1.15;
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,248,220,0.05)';
+  ctx.lineWidth = 0.5;
+  [0.25, 0.5, 0.75].forEach(f => {
+    ctx.beginPath();
+    ctx.moveTo(0, H * (1-f));
+    ctx.lineTo(W, H * (1-f));
+    ctx.stroke();
+  });
+  [5,10,15,20,25].forEach(t => {
+    const x = (t/maxT) * W;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  });
+
+  // hazard curve (top half)
+  const halfH = H * 0.45;
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  pts.forEach((p, i) => {
+    const x = (p.t / maxT) * W;
+    const y = halfH - (p.h / maxH) * halfH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // cumulative incidence (bottom half)
+  const maxC = Math.max(...pts.map(p => p.c));
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3,3]);
+  pts.forEach((p, i) => {
+    const x = (p.t / maxT) * W;
+    const y = H - (p.c / Math.max(maxC, 0.001)) * halfH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // separator
+  ctx.strokeStyle = 'rgba(255,248,220,0.08)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(0, halfH);
+  ctx.lineTo(W, halfH);
+  ctx.stroke();
+
+  // labels
+  ctx.fillStyle = 'rgba(107,97,69,0.8)';
+  ctx.font = '9px IBM Plex Mono, monospace';
+  ctx.fillText('hazard', 3, 10);
+  ctx.fillText('cum. inc.', 3, halfH + 12);
+}
+
+function drawAllGG() {
+  drawGGCanvas('ggDM',  5.1,  0.41, '#d4822a');
+  drawGGCanvas('ggHTN', 5.4,  0.40, '#c85a45');
+  drawGGCanvas('ggGN',  11.2, 15.8, '#8870c8');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// η LADDER
+// ═══════════════════════════════════════════════════════════════
+
+const ETA_STEPS = [
+  {eta:'≈0',   desc:'Review Grams projection',     sub:'Your specific ESRD risk — not population average', rev:'fully',   done:false, current:true,  blocked:false},
+  {eta:'0.05', desc:'Review Muzaale counterfactual',sub:'3-population figure — donor vs healthy nondonor', rev:'fully',   done:false, current:false, blocked:false},
+  {eta:'0.10', desc:'Review Anjum cause-specific',  sub:'DM/HTN/GN — which pathway, what timing',          rev:'fully',   done:false, current:false, blocked:false},
+  {eta:'0.15', desc:'Elicit sovereign wᵢ weights',  sub:'What matters most to you personally?',            rev:'fully',   done:false, current:false, blocked:false},
+  {eta:'0.20', desc:'APOL1 genotyping (Black donors)',sub:'Reduces λ — recommended before proceeding',     rev:'fully',   done:false, current:false, blocked:false},
+  {eta:'0.40', desc:'Pre-donation nephrology review',sub:'Final clinical assessment + labs',               rev:'mostly',  done:false, current:false, blocked:false},
+  {eta:'0.80', desc:'Informed consent documented',  sub:'Sovereignty gate must be open',                  rev:'partial', done:false, current:false, blocked:true},
+  {eta:'1.0',  desc:'Nephrectomy (η=1.0)',          sub:'IRREVERSIBLE — twin shifts to surveillance mode', rev:'NO',      done:false, current:false, blocked:true},
+];
+
+function renderEtaLadder() {
+  const el = document.getElementById('etaLadder');
+  if (!el) return;
+  el.innerHTML = ETA_STEPS.map(s => {
+    let cls = 'eta-step';
+    if (s.done) cls += ' done';
+    else if (s.current) cls += ' current';
+    else if (s.blocked) cls += ' blocked';
+    const rc = s.rev === 'fully' ? 'rev-y' : s.rev === 'mostly' || s.rev === 'partial' ? 'rev-p' : 'rev-n';
+    return `
+      <div class="${cls}">
+        <span class="eta-val">η=${s.eta}</span>
+        <div class="eta-desc">${s.desc}<small>${s.sub}</small></div>
+        <span class="eta-rev ${rc}">${s.rev}</span>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════════════════════════════
+
+function updateGate() {
+  const conditions = [
+    {label:'Grams projection reviewed (σ²)', met: state.seen_grams},
+    {label:'Muzaale counterfactual reviewed', met: state.seen_counterfactual},
+    {label:'Anjum cause-specific curves reviewed', met: state.seen_anjum},
+    {label:'Sovereign weights (wᵢ) elicited', met: Object.values(state.wᵢ).some(v => v !== null)},
+  ];
+  const allMet = conditions.every(c => c.met);
+  const someMet = conditions.some(c => c.met);
+
+  const gd = document.getElementById('gateDisplay');
+  const gl = document.getElementById('gateLabel');
+  const gm = document.getElementById('gateMsg');
+  const gc = document.getElementById('gateConditions');
+
+  if (!gd) return;
+  gd.className = 'gate ' + (allMet ? 'open' : someMet ? 'warn' : 'closed');
+  gl.textContent = allMet ? 'SOVEREIGNTY GATE OPEN' : someMet ? 'GATE PARTIAL' : 'GATE CLOSED';
+  gm.textContent = allMet
+    ? 'All sovereignty conditions met. The donor has full epistemic access to their trajectory. Irreversible intervention may proceed with documented consent.'
+    : 'This is not a clinical safety gate. It is a sovereignty gate. Donation may carry elevated risk AND still proceed — if the donor has seen their own trajectory.';
+  gc.innerHTML = conditions.map(c => `
+    <div class="gate-cond ${c.met ? 'met' : ''}">${c.label}</div>
+  `).join('');
+  state.gate_status = allMet ? 'open' : someMet ? 'warn' : 'closed';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPLETENESS
+// ═══════════════════════════════════════════════════════════════
+
+function computeCompleteness() {
+  const keys = ['age','sex','race','egfr','sbp','albumin_creat','dm','antihtn','smoking','bmi'];
+  const filled = keys.filter(k => state.covariates[k] !== null && state.covariates[k] !== '').length;
+  state.completeness = filled / keys.length;
+  document.getElementById('complFill').style.width = (state.completeness*100).toFixed(0)+'%';
+  document.getElementById('complPct').textContent = (state.completeness*100).toFixed(0)+'%';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════════
+
+function buildSystemPrompt() {
+  const c = state.covariates;
+  return `You are the Ukubona Kidney Donor Sovereignty Intelligence Broker — a digital twin for a specific living kidney donor candidate. You are NOT a general assistant.
+
+DONOR STATE VECTOR (θ₀):
+Age: ${c.age || 'unknown'}  Sex: ${c.sex}  Race: ${c.race}
+eGFR: ${c.egfr || 'unknown'} ml/min/1.73m²  SBP: ${c.sbp || 'unknown'} mmHg
+Albumin:creat: ${c.albumin_creat || 4} mg/g  DM: ${c.dm}  Anti-HTN: ${c.antihtn}
+Smoking: ${c.smoking}  BMI: ${c.bmi || 'unknown'}
+Birth weight: ${c.birth_weight_kg || 'unknown'} kg  Relationship: ${c.relationship}
+
+L₀ PRIOR (Keller/NEJM 2003, PMID 12519920):
+Estimated nephron endowment: ~${state.L0_estimate >= 1e6 ? (state.L0_estimate/1e6).toFixed(2)+'M' : Math.round(state.L0_estimate/1000)+'K'} per kidney
+LATENT — cannot be directly measured. Estimated from birth weight and race.
+
+LOSS FUNCTION: L_tot = L₀ + Σᵢ wᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)
+
+σ²(θ,X,t) — KNOWN KNOWNS (Grams/NEJM 2016, NEJMoa1510491):
+Estimated 15-yr pre-donation ESRD risk: ${state.grams_15yr}%
+Estimated lifetime pre-donation ESRD risk: ${state.grams_lifetime}%
+Donation multiplier: ~${state.donation_multiplier}× vs matched healthy nondonors
+Source: 7-cohort meta-analysis, 4.9M participants, 31M person-years
+The healthy nondonor (not the general population) is the correct counterfactual.
+
+λ(θ,Ω,t) — KNOWN UNKNOWNS:
+- L₀ uncertainty: nephron number estimated, not measured
+- APOL1 genotype: NOT measured — critical for Black donors (~13% carry high-risk haplotype)
+- Future DM/HTN incidence: rates known (Anjum), individual timing unknown
+- Between-cohort τ² in Grams: DM HR ranges 2.21–9.73 across 7 cohorts
+
+ε(t) — UNKNOWN UNKNOWNS:
+No functional form. GN flat hazard (r>1) is nearest empirical signal.
+Acknowledge. Do not quantify.
+
+GENERALIZED GAMMA MODELS (Anjum AJT 2016, PMID 27287605):
+DM-ESRD:  β=5.1, r=0.41, κ=0.63  → r<1: INCREASING hazard (late disease, 7.7× IRR)
+HTN-ESRD: β=5.4, r=0.40, κ=0.91  → r<1: INCREASING hazard (late disease, 2.6× IRR)
+GN-ESRD:  β=11.2, r=15.8, κ=9.50 → r>1: FLAT hazard (susceptibility model, IRR ~0.7)
+
+THREE POPULATIONS (Muzaale JAMA 2014, PMID 24519297):
+General population: 326/10,000 lifetime ESRD
+Live donors: 90/10,000 lifetime ESRD
+Matched healthy nondonors: 14/10,000 lifetime ESRD
+Absolute risk increase: 76/10,000 over lifetime
+
+RULES:
+1. The donor owns the wᵢ. Never assign weights for them. Ask what matters most.
+2. Always show THREE populations — the healthy nondonor is the correct counterfactual.
+3. Distinguish pre-donation Grams projection from post-donation multiplied risk.
+4. For older donors (>65): competing mortality compresses ESRD risk — explain this.
+5. Label every uncertainty: σ² (known knowns) / λ (known unknowns) / ε (unknown unknowns).
+6. The η gate is a SOVEREIGNTY gate — the donor may proceed even with elevated risk if they have full epistemic access.
+7. GN is an early risk (flat hazard). DM/HTN are late risks (increasing hazard). Explain.
+8. End every substantive response by asking: what matters most to YOU? (This elicits wᵢ.)
+9. Be precise, warm, and sovereign-affirming. This donor is owed honesty at every tier.
+
+When updating state, include a brief UPDATE block at the end.`;
+}
+
+function addMsg(role, content, updateBlock) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const av = role === 'twin' ? 'UKB' : role === 'user' ? 'you' : '···';
+  const txt = content.replace(/\n/g, '<br>');
+  let ub = updateBlock ? `<div class="update-block">${updateBlock}</div>` : '';
+  div.innerHTML = `
+    <div class="msg-av">${av}</div>
+    <div class="msg-bubble"><p>${txt}</p>${ub}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addDiff(text) {
+  const log = document.getElementById('diffLog');
+  const now = new Date();
+  const t = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const div = document.createElement('div');
+  div.className = 'diff-entry';
+  div.innerHTML = `<span class="diff-t">${t}</span><span class="diff-txt">${text}</span>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showThinking() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg twin'; div.id = 'thinkingMsg';
+  div.innerHTML = `<div class="msg-av">UKB</div><div class="msg-bubble"><span class="spin"></span> computing loss gradient…</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+function removeThinking() {
+  const el = document.getElementById('thinkingMsg');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) {
+    addMsg('sys', '⚠ No API key. Enter your Anthropic key above to activate the reasoning engine.');
+    return;
+  }
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+  addMsg('user', text);
+  state.conversation.push({role:'user', content: text});
+  showThinking();
+
+  // Mark seen flags based on content
+  if (text.toLowerCase().includes('counterfactual') || text.toLowerCase().includes('muzaale')) {
+    state.seen_counterfactual = true;
+  }
+  if (text.toLowerCase().includes('grams') || text.toLowerCase().includes('projection')) {
+    state.seen_grams = true;
+  }
+  if (text.toLowerCase().includes('anjum') || text.toLowerCase().includes('cause') || text.toLowerCase().includes('diabetes') || text.toLowerCase().includes('glomerulonephritis')) {
+    state.seen_anjum = true;
+  }
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: state.conversation,
+      })
+    });
+    const data = await resp.json();
+    removeThinking();
+
+    if (data.error) {
+      addMsg('sys', `⚠ API error: ${data.error.message}`);
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    }
+
+    const full = data.content.map(c => c.text||'').join('');
+    state.conversation.push({role:'assistant', content: full});
+    state.update_count++;
+
+    const ubMatch = full.match(/UPDATE[:\s]*([\s\S]*?)(?:\n\n|$)/i);
+    let ub = null, display = full;
+    if (ubMatch) {
+      ub = ubMatch[1].trim();
+      display = full.replace(ubMatch[0],'').trim();
+    }
+
+    // Detect wᵢ elicitation responses
+    if (full.toLowerCase().includes('matters most')) {
+      state.wᵢ.dm = state.wᵢ.dm || 'pending';
+    }
+
+    addMsg('twin', display, ub);
+    addDiff(`Update #${state.update_count} · ${text.slice(0,45)}${text.length>45?'…':''}`);
+    updateGate();
+    renderEtaLadder();
+
+  } catch(err) {
+    removeThinking();
+    addMsg('sys', `⚠ Network error: ${err.message}`);
+  }
+  document.getElementById('sendBtn').disabled = false;
+}
+
+async function probe(text) {
+  document.getElementById('chatInput').value = text;
+  await sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+  const t = e.target;
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 90)+'px';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+
+function resetTwin() {
+  state.seen_counterfactual = false;
+  state.seen_grams = false;
+  state.seen_anjum = false;
+  state.conversation = [];
+  state.update_count = 0;
+  state.wᵢ = {dm:null, htn:null, gn:null, mortality:null};
+  document.getElementById('chatArea').innerHTML = '';
+  document.getElementById('diffLog').innerHTML = `
+    <div class="diff-entry">
+      <span class="diff-t">reset</span>
+      <span class="diff-txt">Twin reset to θ₀ · kidney donor case · Ukubona v1.0</span>
+    </div>`;
+  updateGate();
+  renderEtaLadder();
+  addMsg('twin',
+    `Twin reset to θ₀.\n\nSawubona. The Ukubona Kidney Donor Sovereignty Intelligence Broker is re-initialized.\n\nI hold the full loss function for your donation decision:\n• L₀ (your nephron endowment at birth — estimated, not measured)\n• Σwᵢ·Lᵢ (cause-specific ESRD risks — DM, HTN, GN — yours to weight)\n• σ² (what we know we know — the Grams projections)\n• λ (what we know we don't know — APOL1, nephron count, future disease timing)\n• ε (what no model can tell you — acknowledged, not quantified)\n\nThe sovereignty gate is closed until you have seen all three: your Grams projection, the Muzaale counterfactual, and the Anjum cause-specific curves.\n\nWhat do you want to understand first?`
+  );
+  addMsg('sys', '── session reset · '+new Date().toLocaleString()+' ──');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API KEY STATUS
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById('apiKey').addEventListener('input', function() {
+  const ks = document.getElementById('keyStatus');
+  if (this.value.trim().startsWith('sk-ant')) {
+    ks.textContent = '● active';
+    ks.className = 'key-status key-ok';
+  } else {
+    ks.textContent = '● no key';
+    ks.className = 'key-status key-empty';
+  }
+  try { sessionStorage.setItem('ukb_kd_key', this.value.trim()); } catch(e){}
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+(function init() {
+  // restore key
+  try {
+    const k = sessionStorage.getItem('ukb_kd_key');
+    if (k) {
+      document.getElementById('apiKey').value = k;
+      if (k.startsWith('sk-ant')) {
+        document.getElementById('keyStatus').textContent = '● active';
+        document.getElementById('keyStatus').className = 'key-status key-ok';
+      }
+    }
+  } catch(e){}
+
+  buildThetaGrid();
+  computeL0();
+  computeGrams();
+  computeCompleteness();
+  renderRaceRisks();
+  renderEtaLadder();
+  updateGate();
+
+  // draw GG curves after layout
+  requestAnimationFrame(() => {
+    setTimeout(drawAllGG, 100);
+  });
+  window.addEventListener('resize', drawAllGG);
+
+  // initial twin message
+  addMsg('twin',
+    `Sawubona. I am the Ukubona Kidney Donor Sovereignty Intelligence Broker.\n\nThis twin holds your complete loss function:\n• <code>L₀</code> — your nephron endowment at birth (estimated ~${Math.round(state.L0_estimate/1000)}K per kidney from Keller/NEJM 2003)\n• <code>Σwᵢ·Lᵢ</code> — cause-specific ESRD risks (DM, HTN, GN) from Anjum/AJT 2016\n• <code>σ²</code> — what we know we know: your Grams projection from 7 cohorts\n• <code>λ</code> — what we know we don't know: APOL1, nephron number, disease timing\n• <code>ε</code> — what no model can tell you: acknowledged, not quantified\n\nEnter your covariates above, then use the Quick Probes or ask me anything. The sovereignty gate opens when you have seen all three key evidence sources.\n\nThis is not a calculator. It is a companion through uncertainty.`
+  );
+  addMsg('sys', '── session start · '+new Date().toLocaleString()+' ──');
+})();
+</script>
+
+</body>
+</html>
