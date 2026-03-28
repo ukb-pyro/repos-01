@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona Digital Twin OS — v10 Architecture</title>
+<style>
+  /* ── reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── colour tokens (light default) ── */
+  :root {
+    --bg:   #f9f8f5;
+    --surf: #ffffff;
+    --ink:  #1a1a18;
+    --mut:  #6b6b63;
+    --brd:  rgba(0,0,0,0.10);
+
+    /* ramp fills — light */
+    --blue-fill:   #E6F1FB; --blue-stroke:  #185FA5; --blue-text:   #0C447C;
+    --teal-fill:   #E1F5EE; --teal-stroke:  #0F6E56; --teal-text:   #085041;
+    --amber-fill:  #FAEEDA; --amber-stroke: #854F0B; --amber-text:  #633806;
+    --purple-fill: #EEEDFE; --purple-stroke:#534AB7; --purple-text: #3C3489;
+    --coral-fill:  #FAECE7; --coral-stroke: #993C1D; --coral-text:  #712B13;
+    --red-fill:    #FCEBEB; --red-stroke:   #A32D2D; --red-text:    #791F1F;
+    --gray-fill:   #F1EFE8; --gray-stroke:  #5F5E5A; --gray-text:   #444441;
+
+    --arr: #5F5E5A;
+    --back-dash: rgba(0,0,0,0.20);
+    --panel-dash: rgba(0,0,0,0.18);
+    --col-label: rgba(0,0,0,0.38);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:   #0f0f0d;
+      --surf: #1a1a17;
+      --ink:  #e8e6de;
+      --mut:  #9a9890;
+      --brd:  rgba(255,255,255,0.10);
+
+      --blue-fill:   #0c2540; --blue-stroke:  #85B7EB; --blue-text:   #B5D4F4;
+      --teal-fill:   #04231c; --teal-stroke:  #5DCAA5; --teal-text:   #9FE1CB;
+      --amber-fill:  #2a1a04; --amber-stroke: #EF9F27; --amber-text:  #FAC775;
+      --purple-fill: #1a1840; --purple-stroke:#AFA9EC; --purple-text: #CECBF6;
+      --coral-fill:  #2a100a; --coral-stroke: #F0997B; --coral-text:  #F5C4B3;
+      --red-fill:    #280c0c; --red-stroke:   #F09595; --red-text:    #F7C1C1;
+      --gray-fill:   #252520; --gray-stroke:  #B4B2A9; --gray-text:   #D3D1C7;
+
+      --arr: #9a9890;
+      --back-dash: rgba(255,255,255,0.18);
+      --panel-dash: rgba(255,255,255,0.14);
+      --col-label: rgba(255,255,255,0.30);
+    }
+  }
+
+  body {
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem 1rem 3rem;
+  }
+
+  h1 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.01em;
+  }
+  p.sub {
+    font-size: 0.75rem;
+    color: var(--mut);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  .diagram-wrap {
+    background: var(--surf);
+    border: 0.5px solid var(--brd);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 900px;
+    width: 100%;
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── SVG node interactivity ── */
+  .node { cursor: pointer; }
+  .node:hover rect, .node:hover circle { opacity: 0.80; }
+
+  /* ── colour classes (applied to <g> wrapping rect + text) ── */
+  .c-blue   rect { fill: var(--blue-fill);   stroke: var(--blue-stroke);   }
+  .c-blue   text { fill: var(--blue-text);   }
+  .c-teal   rect { fill: var(--teal-fill);   stroke: var(--teal-stroke);   }
+  .c-teal   text { fill: var(--teal-text);   }
+  .c-amber  rect { fill: var(--amber-fill);  stroke: var(--amber-stroke);  }
+  .c-amber  text { fill: var(--amber-text);  }
+  .c-purple rect { fill: var(--purple-fill); stroke: var(--purple-stroke); }
+  .c-purple text { fill: var(--purple-text); }
+  .c-coral  rect { fill: var(--coral-fill);  stroke: var(--coral-stroke);  }
+  .c-coral  text { fill: var(--coral-text);  }
+  .c-red    rect { fill: var(--red-fill);    stroke: var(--red-stroke);    }
+  .c-red    text { fill: var(--red-text);    }
+  .c-gray   rect { fill: var(--gray-fill);   stroke: var(--gray-stroke);   }
+  .c-gray   text { fill: var(--gray-text);   }
+
+  /* ── SVG text base styles ── */
+  text      { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink); }
+  text.th   { font-size: 13px; font-weight: 500; }
+  text.ts   { font-size: 11px; font-weight: 400; fill: var(--mut); }
+  text.tlabel { font-size: 10px; font-weight: 400; fill: var(--col-label); }
+
+  /* arrows and leaders */
+  line.arr  { stroke: var(--arr); stroke-width: 1.2; }
+  line.leader { stroke: var(--arr); stroke-width: 0.5; stroke-dasharray: 3 3; }
+  path.back { fill: none; stroke: var(--back-dash); stroke-width: 1; stroke-dasharray: 5 4; }
+  rect.panel-dash { fill: none; stroke: var(--panel-dash); stroke-width: 0.5; stroke-dasharray: 4 3; }
+
+  footer {
+    margin-top: 2rem;
+    font-size: 0.7rem;
+    color: var(--mut);
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body>
+
+<h1>Ukubona Digital Twin OS — v10 Architecture</h1>
+<p class="sub">T → M → V → E → S  ↺  ∇L  ·  pentadic at every scale  ·  Ukubona LLC</p>
+
+<div class="diagram-wrap">
+<svg viewBox="0 0 680 820" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5"
+          markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- ═══════════════════════════════════════════════
+     TITLE
+═══════════════════════════════════════════════ -->
+<text class="th" x="340" y="36" text-anchor="middle"
+      style="font-size:14px">Ukubona Digital Twin OS — v10 architecture</text>
+<text class="ts" x="340" y="54" text-anchor="middle">
+  T → M → V → E → S  ↺  ∇L  ·  pentadic at every scale
+</text>
+
+<!-- ═══════════════════════════════════════════════
+     COLUMN HEADERS
+═══════════════════════════════════════════════ -->
+<text class="tlabel" x="120" y="76" text-anchor="middle">scale</text>
+<text class="tlabel" x="265" y="76" text-anchor="middle">math layer</text>
+<text class="tlabel" x="400" y="76" text-anchor="middle">triage clock</text>
+<text class="tlabel" x="559" y="76" text-anchor="middle">deployment signal</text>
+
+<!-- ═══════════════════════════════════════════════
+     ROW 1 — INDIVIDUAL  (blue)
+═══════════════════════════════════════════════ -->
+<g class="node c-blue">
+  <rect x="50" y="90" width="140" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="120" y="112" text-anchor="middle" dominant-baseline="central">Individual</text>
+  <text class="ts" x="120" y="130" text-anchor="middle" dominant-baseline="central">vitals · symptoms · context</text>
+</g>
+<g class="node c-blue">
+  <rect x="210" y="90" width="110" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="265" y="112" text-anchor="middle" dominant-baseline="central">T — Tensor</text>
+  <text class="ts" x="265" y="130" text-anchor="middle" dominant-baseline="central">raw state · N-dim</text>
+</g>
+<g class="node c-gray">
+  <rect x="340" y="90" width="120" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="400" y="112" text-anchor="middle" dominant-baseline="central">Existential / ER</text>
+  <text class="ts" x="400" y="130" text-anchor="middle" dominant-baseline="central">t &lt; 1h · eigenmode</text>
+</g>
+<g class="node c-gray">
+  <rect x="480" y="90" width="158" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="559" y="112" text-anchor="middle" dominant-baseline="central">Constraint check</text>
+  <text class="ts" x="559" y="130" text-anchor="middle" dominant-baseline="central">L · G · K · X</text>
+</g>
+<!-- row 1 horizontal connectors -->
+<line class="arr" x1="190" y1="118" x2="208" y2="118" marker-end="url(#arrow)"/>
+<line class="arr" x1="320" y1="118" x2="338" y2="118" marker-end="url(#arrow)"/>
+<line class="arr" x1="460" y1="118" x2="478" y2="118" marker-end="url(#arrow)"/>
+
+<!-- ═══════════════════════════════════════════════
+     ROW 2 — KIN NETWORK  (teal)
+═══════════════════════════════════════════════ -->
+<g class="node c-teal">
+  <rect x="50" y="188" width="140" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="120" y="210" text-anchor="middle" dominant-baseline="central">Kin network</text>
+  <text class="ts" x="120" y="228" text-anchor="middle" dominant-baseline="central">family · trust · logistics</text>
+</g>
+<g class="node c-teal">
+  <rect x="210" y="188" width="110" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="265" y="210" text-anchor="middle" dominant-baseline="central">M — Matrix</text>
+  <text class="ts" x="265" y="228" text-anchor="middle" dominant-baseline="central">attention · weights W</text>
+</g>
+<g class="node c-gray">
+  <rect x="340" y="188" width="120" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="400" y="210" text-anchor="middle" dominant-baseline="central">Tactical / First Aid</text>
+  <text class="ts" x="400" y="228" text-anchor="middle" dominant-baseline="central">t → 0 · hard heuristic</text>
+</g>
+<g class="node c-teal">
+  <rect x="480" y="188" width="158" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="559" y="210" text-anchor="middle" dominant-baseline="central">Feasibility filter</text>
+  <text class="ts" x="559" y="228" text-anchor="middle" dominant-baseline="central">who decides · who pays</text>
+</g>
+<line class="arr" x1="190" y1="216" x2="208" y2="216" marker-end="url(#arrow)"/>
+<line class="arr" x1="320" y1="216" x2="338" y2="216" marker-end="url(#arrow)"/>
+<line class="arr" x1="460" y1="216" x2="478" y2="216" marker-end="url(#arrow)"/>
+
+<!-- ═══════════════════════════════════════════════
+     ROW 3 — SYSTEM CAPACITY  (amber)
+═══════════════════════════════════════════════ -->
+<g class="node c-amber">
+  <rect x="50" y="286" width="140" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="120" y="308" text-anchor="middle" dominant-baseline="central">System capacity</text>
+  <text class="ts" x="120" y="326" text-anchor="middle" dominant-baseline="central">beds · staff · infra</text>
+</g>
+<g class="node c-amber">
+  <rect x="210" y="286" width="110" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="265" y="308" text-anchor="middle" dominant-baseline="central">V — Vector</text>
+  <text class="ts" x="265" y="326" text-anchor="middle" dominant-baseline="central">gradient · drift ∇L</text>
+</g>
+<g class="node c-gray">
+  <rect x="340" y="286" width="120" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="400" y="308" text-anchor="middle" dominant-baseline="central">Ritual / Urgent</text>
+  <text class="ts" x="400" y="326" text-anchor="middle" dominant-baseline="central">days–weeks · vector</text>
+</g>
+<g class="node c-amber">
+  <rect x="480" y="286" width="158" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="559" y="308" text-anchor="middle" dominant-baseline="central">Capacity signal</text>
+  <text class="ts" x="559" y="326" text-anchor="middle" dominant-baseline="central">beds · labs · logistics</text>
+</g>
+<line class="arr" x1="190" y1="314" x2="208" y2="314" marker-end="url(#arrow)"/>
+<line class="arr" x1="320" y1="314" x2="338" y2="314" marker-end="url(#arrow)"/>
+<line class="arr" x1="460" y1="314" x2="478" y2="314" marker-end="url(#arrow)"/>
+
+<!-- ═══════════════════════════════════════════════
+     ROW 4 — NATIONAL SCORECARD  (purple)
+═══════════════════════════════════════════════ -->
+<g class="node c-purple">
+  <rect x="50" y="384" width="140" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="120" y="406" text-anchor="middle" dominant-baseline="central">National scorecard</text>
+  <text class="ts" x="120" y="424" text-anchor="middle" dominant-baseline="central">policy · finance · NPA</text>
+</g>
+<g class="node c-purple">
+  <rect x="210" y="384" width="110" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="265" y="406" text-anchor="middle" dominant-baseline="central">E — Eigenmode</text>
+  <text class="ts" x="265" y="424" text-anchor="middle" dominant-baseline="central">identity · λ dominant</text>
+</g>
+<g class="node c-gray">
+  <rect x="340" y="384" width="120" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="400" y="406" text-anchor="middle" dominant-baseline="central">Strategic / Outpatient</text>
+  <text class="ts" x="400" y="424" text-anchor="middle" dominant-baseline="central">months–years · matrix W</text>
+</g>
+<g class="node c-purple">
+  <rect x="480" y="384" width="158" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="559" y="406" text-anchor="middle" dominant-baseline="central">Budget release</text>
+  <text class="ts" x="559" y="424" text-anchor="middle" dominant-baseline="central">K constraint · capital</text>
+</g>
+<line class="arr" x1="190" y1="412" x2="208" y2="412" marker-end="url(#arrow)"/>
+<line class="arr" x1="320" y1="412" x2="338" y2="412" marker-end="url(#arrow)"/>
+<line class="arr" x1="460" y1="412" x2="478" y2="412" marker-end="url(#arrow)"/>
+
+<!-- ═══════════════════════════════════════════════
+     ROW 5 — CIVILIZATIONAL  (coral)
+═══════════════════════════════════════════════ -->
+<g class="node c-coral">
+  <rect x="50" y="482" width="140" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="120" y="504" text-anchor="middle" dominant-baseline="central">Civilizational</text>
+  <text class="ts" x="120" y="522" text-anchor="middle" dominant-baseline="central">economy · energy · epistemology</text>
+</g>
+<g class="node c-coral">
+  <rect x="210" y="482" width="110" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="265" y="504" text-anchor="middle" dominant-baseline="central">S — Scalar</text>
+  <text class="ts" x="265" y="522" text-anchor="middle" dominant-baseline="central">decision · action · s</text>
+</g>
+<g class="node c-gray">
+  <rect x="340" y="482" width="120" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="400" y="504" text-anchor="middle" dominant-baseline="central">Operational / Inpatient</text>
+  <text class="ts" x="400" y="522" text-anchor="middle" dominant-baseline="central">continuous · full tensor</text>
+</g>
+<g class="node c-coral">
+  <rect x="480" y="482" width="158" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="559" y="504" text-anchor="middle" dominant-baseline="central">η = M · V / C</text>
+  <text class="ts" x="559" y="522" text-anchor="middle" dominant-baseline="central">efficiency · deployment</text>
+</g>
+<line class="arr" x1="190" y1="510" x2="208" y2="510" marker-end="url(#arrow)"/>
+<line class="arr" x1="320" y1="510" x2="338" y2="510" marker-end="url(#arrow)"/>
+<line class="arr" x1="460" y1="510" x2="478" y2="510" marker-end="url(#arrow)"/>
+
+<!-- ═══════════════════════════════════════════════
+     VERTICAL FLOW ARROWS  (col 1, between rows)
+═══════════════════════════════════════════════ -->
+<line class="arr" x1="120" y1="146" x2="120" y2="186" marker-end="url(#arrow)"/>
+<line class="arr" x1="120" y1="244" x2="120" y2="284" marker-end="url(#arrow)"/>
+<line class="arr" x1="120" y1="342" x2="120" y2="382" marker-end="url(#arrow)"/>
+<line class="arr" x1="120" y1="440" x2="120" y2="480" marker-end="url(#arrow)"/>
+
+<!-- ═══════════════════════════════════════════════
+     BACKPROP LOOP  (right side, dashed)
+═══════════════════════════════════════════════ -->
+<path class="back"
+  d="M638 538 L638 580 Q638 600 618 600 L56 600 Q36 600 36 580 L36 118 Q36 90 56 90"
+  marker-end="url(#arrow)" stroke="var(--back-dash)"/>
+<text class="ts" x="648" y="572" text-anchor="start">∇L</text>
+
+<!-- ═══════════════════════════════════════════════
+     CONSTRAINT ATTRIBUTION PANEL  (bottom, dashed)
+═══════════════════════════════════════════════ -->
+<rect class="panel-dash" x="50" y="620" width="598" height="168" rx="10"/>
+<text class="th" x="349" y="644" text-anchor="middle">
+  Constraint attribution layer  —  the missing piece
+</text>
+
+<!-- four constraint boxes -->
+<g class="node c-red">
+  <rect x="66" y="658" width="128" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="130" y="680" text-anchor="middle" dominant-baseline="central">L — Labor</text>
+  <text class="ts" x="130" y="698" text-anchor="middle" dominant-baseline="central">no surgeon · no driver</text>
+</g>
+<g class="node c-purple">
+  <rect x="210" y="658" width="128" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="274" y="680" text-anchor="middle" dominant-baseline="central">G — Governance</text>
+  <text class="ts" x="274" y="698" text-anchor="middle" dominant-baseline="central">no consent · no authority</text>
+</g>
+<g class="node c-amber">
+  <rect x="354" y="658" width="128" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="418" y="680" text-anchor="middle" dominant-baseline="central">K — Capital</text>
+  <text class="ts" x="418" y="698" text-anchor="middle" dominant-baseline="central">no payment · no credit</text>
+</g>
+<g class="node c-teal">
+  <rect x="498" y="658" width="134" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="565" y="680" text-anchor="middle" dominant-baseline="central">X — Logistics</text>
+  <text class="ts" x="565" y="698" text-anchor="middle" dominant-baseline="central">no transport · no supply</text>
+</g>
+
+<!-- constraint panel footer text -->
+<text class="ts" x="349" y="752" text-anchor="middle">
+  output: "action feasible" vs "blocked by [L|G|K|X] at [scale 1–5]"
+</text>
+<text class="ts" x="349" y="772" text-anchor="middle" style="opacity:0.6">
+  η* = argmax M·V/C  subject to kin-network + constraint bounds
+</text>
+
+</svg>
+</div>
+
+<footer>Ukubona LLC · ukb-dt-ssp-v10 · Kampala, Uganda · T → M → V → E → S ↺ ∇L</footer>
+
+</body>
+</html>
