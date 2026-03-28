@@ -1,352 +1,345 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans)}
-.wrap{padding:1rem 0}
-.header{margin-bottom:1.5rem}
-.header h2{font-size:18px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
-.header p{font-size:13px;color:var(--color-text-secondary);line-height:1.5}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:1.5rem}
-@media(max-width:700px){.layout{grid-template-columns:1fr}}
-.chart-area{position:relative}
-.canvas-wrap{position:relative;width:100%;height:340px}
-.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px;font-size:12px;color:var(--color-text-secondary)}
+body,div,span,p,h2,h3,label,input,button{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.wrap{padding:1rem 0;background:transparent}
+.hdr{margin-bottom:1rem}
+.hdr h2{font-size:18px;font-weight:500;color:#1a1a1a;margin-bottom:4px}
+.hdr p{font-size:13px;color:#555;line-height:1.6}
+@media(prefers-color-scheme:dark){
+  .hdr h2{color:#e8e8e8}
+  .hdr p{color:#999}
+  .card{background:#1e1e1e;border-color:#333}
+  .sl-name,.tgl-lbl,.reh-label,.foot-note{color:#999}
+  .sl-val,.reh-n,.stat-num{color:#e8e8e8}
+  .stat-card{background:#252525}
+  .stat-lbl{color:#888}
+  .insight-strip{border-color:#333}
+  .insight-row{border-color:#333}
+  .insight-text{color:#999}
+  .tag-eigen{background:#04342C;color:#5DCAA5}
+  .tag-constraint{background:#042C53;color:#85B7EB}
+  .tag-rehearsal{background:#412402;color:#EF9F27}
+  .tag-violation{background:#501313;color:#F09595}
+  .profile-note{color:#777;border-color:#333}
+  .reset-btn{color:#888;border-color:#444}
+  .ask-btn{color:#888;border-color:#444}
+  .ask-btn:hover{background:#252525}
+  .violation-strip{background:#2a1010;border-color:#7a2020;color:#f09595}
+}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:1.5rem}
+@media(max-width:720px){.layout{grid-template-columns:1fr}}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:12px;color:#555;align-items:center}
 .leg-item{display:flex;align-items:center;gap:5px}
-.leg-swatch{width:28px;height:3px;border-radius:2px}
-.leg-swatch.dashed{background:repeating-linear-gradient(90deg,currentColor 0,currentColor 4px,transparent 4px,transparent 8px)}
-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-.stat-card{background:var(--color-background-secondary);border-radius:8px;padding:10px 12px;text-align:center}
-.stat-num{font-size:20px;font-weight:500;color:var(--color-text-primary)}
-.stat-lbl{font-size:11px;color:var(--color-text-secondary);margin-top:2px;line-height:1.3}
+.swatch{width:24px;height:3px;border-radius:2px;flex-shrink:0}
+.swatch-dash{width:24px;height:0;border-top:2.5px dashed #D85A30;flex-shrink:0}
+.canvas-wrap{position:relative;width:100%;height:320px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.stat-card{background:#f5f5f5;border-radius:8px;padding:10px 12px;text-align:center}
+.stat-num{font-size:20px;font-weight:500;color:#1a1a1a}
+.stat-lbl{font-size:11px;color:#666;margin-top:2px;line-height:1.3}
+.insight-strip{margin-top:12px;border:0.5px solid #ddd;border-radius:8px;overflow:hidden}
+.insight-row{display:flex;border-bottom:0.5px solid #ddd}
+.insight-row:last-child{border-bottom:none}
+.insight-tag{font-size:11px;font-weight:500;padding:8px 10px;min-width:90px;flex-shrink:0;border-right:0.5px solid #ddd}
+.insight-text{font-size:12px;color:#555;padding:8px 10px;line-height:1.5}
+.tag-eigen{background:#E1F5EE;color:#0F6E56}
+.tag-constraint{background:#E6F1FB;color:#185FA5}
+.tag-rehearsal{background:#FAEEDA;color:#854F0B}
+.tag-violation{background:#FCEBEB;color:#A32D2D}
+.violation-strip{display:none;background:#fff0f0;border:0.5px solid #f0a0a0;border-radius:8px;padding:8px 12px;font-size:12px;color:#a32d2d;margin-top:8px;line-height:1.5}
 .panel{display:flex;flex-direction:column;gap:1rem}
-.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem}
-.card h3{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:12px}
-.slider-group{display:flex;flex-direction:column;gap:10px}
-.slider-row{display:flex;flex-direction:column;gap:3px}
+.card{background:#fff;border:0.5px solid #ddd;border-radius:12px;padding:1rem}
+.card h3{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:10px}
+.slider-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.slider-row:last-child{margin-bottom:0}
 .slider-meta{display:flex;justify-content:space-between;align-items:baseline}
-.slider-name{font-size:12px;color:var(--color-text-secondary)}
-.slider-val{font-size:12px;font-weight:500;color:var(--color-text-primary);min-width:40px;text-align:right}
-.violation{background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--color-text-danger);display:none}
-.gate-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
-.gate-ok{background:var(--color-background-success);color:var(--color-text-success)}
-.gate-warn{background:var(--color-background-warning);color:var(--color-text-warning)}
-.gate-fail{background:var(--color-background-danger);color:var(--color-text-danger)}
-.profile-note{font-size:11px;color:var(--color-text-secondary);line-height:1.5;margin-top:8px;font-style:italic}
-.rehearsal-count{font-size:11px;color:var(--color-text-secondary)}
-.reset-btn{font-size:12px;color:var(--color-text-secondary);cursor:pointer;background:none;border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:3px 8px}
+.sl-name{font-size:12px;color:#666}
+.sl-val{font-size:12px;font-weight:500;color:#1a1a1a;min-width:38px;text-align:right}
+input[type=range]{width:100%;height:4px;accent-color:#378ADD;cursor:pointer}
+input[type=checkbox]{cursor:pointer}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.toggle-row:last-child{margin-bottom:0}
+.tgl-lbl{font-size:12px;color:#666}
+.foot-note{font-size:11px;color:#888;margin-top:8px;line-height:1.5}
+.profile-note{font-size:11px;color:#888;line-height:1.5;margin-top:10px;font-style:italic;border-top:0.5px solid #eee;padding-top:8px}
+.reh-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.reh-label{font-size:12px;color:#666}
+.reh-n{font-size:13px;font-weight:500;color:#1a1a1a}
+.reset-btn{font-size:12px;color:#666;cursor:pointer;background:none;border:0.5px solid #ccc;border-radius:6px;padding:3px 9px}
+.gate-badge{display:inline-flex;align-items:center;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.gate-ok{background:#E1F5EE;color:#0F6E56}
+.gate-warn{background:#FAEEDA;color:#854F0B}
+.gate-fail{background:#FCEBEB;color:#A32D2D}
+.ask-btn{width:100%;margin-top:10px;font-size:12px;color:#555;cursor:pointer;background:none;border:0.5px solid #ccc;border-radius:8px;padding:7px 10px;text-align:left}
+.ask-btn:hover{background:#f5f5f5}
 </style>
 
 <div class="wrap">
-<div class="header">
+<div class="hdr">
   <h2>KM rails — constrained coefficient explorer</h2>
-  <p>Empirical anchors from Muzaale JAMA 2014. Synthetic curve must stay within the rails.<br>Slide coefficients to rehearse priors. Constraint violation = prior needs revision.</p>
+  <p>Empirical anchors from Muzaale JAMA 2014. Teal and blue curves are fixed rails — the synthetic dashed curve must stay coherent with the envelope. Each slider move is one rehearsal: iteratively updating your prior toward the literature constraint.</p>
 </div>
 
 <div class="layout">
-  <div class="chart-area">
-    <div class="legend">
-      <div class="leg-item"><div class="leg-swatch" style="background:#1D9E75"></div><span>Healthy nondonors — 14/10K (eigenmode)</span></div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#378ADD"></div><span>SRTR live donors — 90/10K</span></div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#D85A30;height:2px;border-top:2px dashed #D85A30;border-radius:0"></div><span>Your synthetic profile</span></div>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-        <span class="rehearsal-count">Rehearsal <span id="rehearsalN">1</span></span>
-        <button class="reset-btn" onclick="resetRehearsal()">↺ reset</button>
-      </div>
+<div>
+  <div class="legend">
+    <div class="leg-item"><div class="swatch" style="background:#1D9E75"></div><span style="color:#555">Healthy nondonors — 14/10K (eigenmode E)</span></div>
+    <div class="leg-item"><div class="swatch" style="background:#378ADD"></div><span style="color:#555">SRTR live donors — 90/10K</span></div>
+    <div class="leg-item"><div class="swatch-dash"></div><span style="color:#555">Synthetic profile</span></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <span class="reh-label">Rehearsal <span id="rehearsalN" class="reh-n">1</span></span>
+      <button class="reset-btn" onclick="resetRehearsal()">reset</button>
     </div>
-    <div class="canvas-wrap"><canvas id="kmChart"></canvas></div>
-    <div class="violation" id="violation">
-      ⚠ Constraint violation — synthetic curve exits Muzaale envelope. Your prior needs revision.
-    </div>
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-num" id="stat-r15" style="color:#D85A30">—</div>
-        <div class="stat-lbl">15yr ESRD risk<br>synthetic profile</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num" id="stat-hr" style="color:#378ADD">—</div>
-        <div class="stat-lbl">hazard ratio<br>vs eigenmode</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num" id="stat-gate">—</div>
-        <div class="stat-lbl">constraint<br>gate</div>
-      </div>
-    </div>
-    <p class="profile-note" id="profileNote"></p>
   </div>
 
-  <div class="panel">
-    <div class="card">
-      <h3>coefficient sliders — menu.csv priors</h3>
-      <div class="slider-group" id="sliders"></div>
+  <div class="canvas-wrap"><canvas id="kmChart"></canvas></div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-r15" style="color:#D85A30">—</div>
+      <div class="stat-lbl">15yr ESRD risk<br>synthetic profile</div>
     </div>
-    <div class="card">
-      <h3>profile toggles</h3>
-      <div class="slider-group" id="toggles"></div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-hr" style="color:#378ADD">—</div>
+      <div class="stat-lbl">hazard ratio<br>vs eigenmode</div>
     </div>
-    <div class="card">
-      <h3>multiplier (Muzaale)</h3>
-      <div class="slider-row">
-        <div class="slider-meta">
-          <span class="slider-name">donation multiplier ×</span>
-          <span class="slider-val" id="val-mult">4.6</span>
-        </div>
-        <input type="range" min="2.0" max="8.0" step="0.1" value="4.6" id="sl-mult" oninput="update()">
-      </div>
-      <p class="profile-note">Range: Black 4.9×, White 4.6×, Hispanic 4.8× (Muzaale). Drag to explore sensitivity.</p>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-gate">—</div>
+      <div class="stat-lbl">constraint<br>gate</div>
     </div>
   </div>
+
+  <div class="violation-strip" id="violation">—</div>
+
+  <div class="insight-strip">
+    <div class="insight-row">
+      <div class="insight-tag tag-eigen">eigenmode E</div>
+      <div class="insight-text">The teal curve is the donor's counterfactual self — who they would have been without donation. The gap to the blue curve is the cost of donation: 76 per 10,000 lifetime. The healthy nondonor is the correct comparator, not the general population (326/10K).</div>
+    </div>
+    <div class="insight-row">
+      <div class="insight-tag tag-constraint">constraint logic</div>
+      <div class="insight-text">Try: toggle diabetes on, then slide its beta down toward 0.8. At some point the synthetic curve drops below the eigenmode. That crossing means you cannot believe diabetes matters that little and still be consistent with Muzaale. The rails are the literature speaking back.</div>
+    </div>
+    <div class="insight-row">
+      <div class="insight-tag tag-rehearsal">rehearsal</div>
+      <div class="insight-text">Each slider move is one rehearsal cycle. By rehearsal N, you have internalized the loss function — when a new donor arrives, you already know where they sit relative to the rails. This is Bayesian updating through visual rehearsal: prior revision without a single formula.</div>
+    </div>
+    <div class="insight-row" id="violation-note" style="display:none">
+      <div class="insight-tag tag-violation">violation</div>
+      <div class="insight-text" id="violation-detail">—</div>
+    </div>
+  </div>
+
+  <p class="profile-note" id="profileNote"></p>
+  <button class="ask-btn" onclick="sendPrompt('Add Anjum GG cause-specific rails for DM, HTN, and GN so the synthetic curve must sum to the all-cause Muzaale envelope within tolerance')">Add Anjum GG cause-specific rails (DM / HTN / GN) ↗</button>
+</div>
+
+<div class="panel">
+  <div class="card">
+    <h3>coefficient sliders — menu.csv priors</h3>
+    <div id="sliders"></div>
+  </div>
+  <div class="card">
+    <h3>profile toggles</h3>
+    <div id="toggles"></div>
+    <p class="foot-note">Base case (no toggles) should hug the eigenmode. A healthy profile with no comorbidities is the healthy nondonor — that is the prior working correctly.</p>
+  </div>
+  <div class="card">
+    <h3>donation multiplier</h3>
+    <div class="slider-row">
+      <div class="slider-meta">
+        <span class="sl-name">Muzaale multiplier ×</span>
+        <span class="sl-val" id="val-mult">4.6</span>
+      </div>
+      <input type="range" min="2.0" max="8.0" step="0.1" value="4.6" id="sl-mult" oninput="update()">
+    </div>
+    <p class="foot-note">Black 4.9×, White 4.6×, Hispanic 4.8×. Drag to explore post-donation projection sensitivity.</p>
+  </div>
+</div>
 </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-const TIMES = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
+const TIMES=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
+const S0_ND=[1,0.9997,0.9993,0.9988,0.9982,0.9975,0.9967,0.9957,0.9944,0.9928,0.9908,0.9884,0.9855,0.9821,0.9781,0.9734,0.9681,0.9620,0.9551,0.9475,0.9389,0.9296,0.9194,0.9083,0.8963,0.8834];
+const S0_DN=[1,0.9990,0.9978,0.9963,0.9944,0.9920,0.9890,0.9854,0.9811,0.9760,0.9701,0.9633,0.9555,0.9468,0.9370,0.9260,0.9140,0.9008,0.8864,0.8709,0.8543,0.8366,0.8178,0.7980,0.7772,0.7554];
 
-const S0_NONDONOR = [1,0.9997,0.9993,0.9988,0.9982,0.9975,0.9967,0.9957,0.9944,0.9928,0.9908,0.9884,0.9855,0.9821,0.9781,0.9734,0.9681,0.9620,0.9551,0.9475,0.9389,0.9296,0.9194,0.9083,0.8963,0.8834];
-
-const S0_DONOR_RAW = [1,0.9990,0.9978,0.9963,0.9944,0.9920,0.9890,0.9854,0.9811,0.9760,0.9701,0.9633,0.9555,0.9468,0.9370,0.9260,0.9140,0.9008,0.8864,0.8709,0.8543,0.8366,0.8178,0.7980,0.7772,0.7554];
-
-const BETA_DEF = {
-  diabetes:      {label:'diabetes (Yes)',     def:1.435, min:0.0, max:3.0, step:0.05, ref:0},
-  hypertension:  {label:'hypertension (Yes)', def:1.321, min:0.0, max:3.0, step:0.05, ref:0},
-  smoke:         {label:'smoking (Yes)',      def:1.455, min:0.0, max:3.0, step:0.05, ref:0},
-  male:          {label:'sex male',           def:1.446, min:0.0, max:3.0, step:0.05, ref:0},
-  black:         {label:'race Black',         def:0.901, min:0.0, max:2.5, step:0.05, ref:0},
-  htn_pill:      {label:'BP medication',      def:0.942, min:0.0, max:2.5, step:0.05, ref:0},
-  age_per10:     {label:'age effect /10yr',   def:0.778, min:0.0, max:2.0, step:0.05, ref:0},
-  egfr_per10:    {label:'eGFR effect /10',    def:-0.022,min:-0.5,max:0.1, step:0.01, ref:0},
+const BETA_DEF={
+  diabetes:    {label:'diabetes (Yes)',     def:1.435,min:0.0,max:3.0,step:0.05},
+  hypertension:{label:'hypertension (Yes)', def:1.321,min:0.0,max:3.0,step:0.05},
+  smoke:       {label:'smoking (Yes)',      def:1.455,min:0.0,max:3.0,step:0.05},
+  male:        {label:'sex male',           def:1.446,min:0.0,max:3.0,step:0.05},
+  black:       {label:'race Black',         def:0.901,min:0.0,max:2.5,step:0.05},
+  htn_pill:    {label:'BP medication',      def:0.942,min:0.0,max:2.5,step:0.05},
+  age_per10:   {label:'age effect /10yr',   def:0.778,min:0.0,max:2.0,step:0.05},
+  egfr_per10:  {label:'eGFR effect /10',    def:-0.022,min:-0.5,max:0.1,step:0.01},
+};
+const PROFILE_DEF={
+  diabetes:    {label:'has diabetes',    def:false},
+  hypertension:{label:'has hypertension',def:false},
+  smoke:       {label:'current smoker',  def:false},
+  male:        {label:'male sex',        def:false},
+  black:       {label:'Black race',      def:false},
+  htn_pill:    {label:'on BP medication',def:false},
 };
 
-const PROFILE_DEF = {
-  diabetes:     {label:'has diabetes',     def:false},
-  hypertension: {label:'has hypertension', def:false},
-  smoke:        {label:'current smoker',   def:false},
-  male:         {label:'male sex',         def:false},
-  black:        {label:'Black race',       def:false},
-  htn_pill:     {label:'on BP medication', def:false},
-};
+let betas={},profile={},rehearsalN=1;
+const age=45,egfr=98;
+Object.keys(BETA_DEF).forEach(k=>betas[k]=BETA_DEF[k].def);
+Object.keys(PROFILE_DEF).forEach(k=>profile[k]=PROFILE_DEF[k].def);
 
-let betas = {};
-let profile = {};
-let rehearsalN = 1;
-let age = 45;
-let egfr = 98;
-
-Object.keys(BETA_DEF).forEach(k => betas[k] = BETA_DEF[k].def);
-Object.keys(PROFILE_DEF).forEach(k => profile[k] = PROFILE_DEF[k].def);
-
-function buildSliders() {
-  const sg = document.getElementById('sliders');
-  const tg = document.getElementById('toggles');
-  sg.innerHTML = '';
-  tg.innerHTML = '';
-
-  ['diabetes','hypertension','smoke','male','black','htn_pill','age_per10','egfr_per10'].forEach(k => {
-    const d = BETA_DEF[k];
-    const row = document.createElement('div');
-    row.className = 'slider-row';
-    row.innerHTML = `<div class="slider-meta">
-      <span class="slider-name">${d.label}</span>
-      <span class="slider-val" id="bv-${k}">${d.def.toFixed(2)}</span>
-    </div>
-    <input type="range" min="${d.min}" max="${d.max}" step="${d.step}" value="${d.def}" id="bs-${k}" oninput="setBeta('${k}',this.value)">`;
+function buildSliders(){
+  const sg=document.getElementById('sliders');
+  const tg=document.getElementById('toggles');
+  sg.innerHTML='';tg.innerHTML='';
+  Object.keys(BETA_DEF).forEach(k=>{
+    const d=BETA_DEF[k];
+    const row=document.createElement('div');
+    row.className='slider-row';
+    row.innerHTML=`<div class="slider-meta"><span class="sl-name">${d.label}</span><span class="sl-val" id="bv-${k}">${d.def.toFixed(2)}</span></div><input type="range" min="${d.min}" max="${d.max}" step="${d.step}" value="${d.def}" id="bs-${k}" oninput="setBeta('${k}',this.value)">`;
     sg.appendChild(row);
   });
-
-  Object.keys(PROFILE_DEF).forEach(k => {
-    const d = PROFILE_DEF[k];
-    const row = document.createElement('div');
-    row.className = 'slider-row';
-    row.style.flexDirection = 'row';
-    row.style.alignItems = 'center';
-    row.style.justifyContent = 'space-between';
-    row.innerHTML = `<span class="slider-name" style="font-size:12px;color:var(--color-text-secondary)">${d.label}</span>
-      <input type="checkbox" id="pt-${k}" ${d.def?'checked':''} onchange="setProfile('${k}',this.checked)" style="width:16px;height:16px;cursor:pointer">`;
+  Object.keys(PROFILE_DEF).forEach(k=>{
+    const d=PROFILE_DEF[k];
+    const row=document.createElement('div');
+    row.className='toggle-row';
+    row.innerHTML=`<span class="tgl-lbl">${d.label}</span><input type="checkbox" id="pt-${k}" ${d.def?'checked':''} onchange="setProfile('${k}',this.checked)" style="width:16px;height:16px;cursor:pointer">`;
     tg.appendChild(row);
   });
 }
 
-function setBeta(k, v) {
-  betas[k] = parseFloat(v);
-  document.getElementById('bv-'+k).textContent = parseFloat(v).toFixed(2);
+function setBeta(k,v){
+  betas[k]=parseFloat(v);
+  document.getElementById('bv-'+k).textContent=parseFloat(v).toFixed(2);
   rehearsalN++;
-  document.getElementById('rehearsalN').textContent = rehearsalN;
+  document.getElementById('rehearsalN').textContent=rehearsalN;
   update();
 }
+function setProfile(k,v){profile[k]=v;update();}
 
-function setProfile(k, v) {
-  profile[k] = v;
-  update();
-}
-
-function computeLP() {
-  let lp = 0;
-  if (profile.diabetes)     lp += betas.diabetes;
-  if (profile.hypertension) lp += betas.hypertension;
-  if (profile.smoke)        lp += betas.smoke;
-  if (profile.male)         lp += betas.male;
-  if (profile.black)        lp += betas.black;
-  if (profile.htn_pill)     lp += betas.htn_pill;
-  lp += ((age - 40) / 10) * betas.age_per10;
-  lp += ((egfr - 98) / 10) * betas.egfr_per10;
+function computeLP(){
+  let lp=0;
+  if(profile.diabetes)     lp+=betas.diabetes;
+  if(profile.hypertension) lp+=betas.hypertension;
+  if(profile.smoke)        lp+=betas.smoke;
+  if(profile.male)         lp+=betas.male;
+  if(profile.black)        lp+=betas.black;
+  if(profile.htn_pill)     lp+=betas.htn_pill;
+  lp+=((age-40)/10)*betas.age_per10;
+  lp+=((egfr-98)/10)*betas.egfr_per10;
   return lp;
 }
 
-function synthSurvival(t, hr) {
-  const s0 = getS0(t);
-  return Math.pow(s0, hr);
+function getS0(t){
+  const i=Math.min(Math.floor(t),S0_ND.length-2);
+  const f=t-i;
+  return S0_ND[i]+f*(S0_ND[i+1]-S0_ND[i]);
 }
 
-function getS0(t) {
-  const i = Math.min(Math.floor(t), S0_NONDONOR.length - 2);
-  const f = t - i;
-  return S0_NONDONOR[i] + f * (S0_NONDONOR[i+1] - S0_NONDONOR[i]);
-}
+function update(){
+  const lp=computeLP();
+  const hr=Math.exp(lp);
+  document.getElementById('val-mult').textContent=parseFloat(document.getElementById('sl-mult').value).toFixed(1);
 
-function update() {
-  const lp = computeLP();
-  const hr = Math.exp(lp);
-  const mult = parseFloat(document.getElementById('sl-mult').value);
-  document.getElementById('val-mult').textContent = mult.toFixed(1);
+  const synthData=TIMES.map(t=>(1-Math.pow(getS0(t),hr))*10000);
+  const r15=1-Math.pow(getS0(15),hr);
+  const r15_nd=1-S0_ND[15];
+  const hr_eigen=r15/(r15_nd||0.0001);
 
-  const synthData = TIMES.map(t => (1 - synthSurvival(t, hr)) * 10000);
-  const nondonorData = S0_NONDONOR.map(s => (1 - s) * 10000);
-  const donorData = S0_DONOR_RAW.map(s => (1 - s) * 10000);
+  const upper15=(1-S0_DN[15])*10000;
+  const lower15=(1-S0_ND[15])*10000;
+  const synth15=synthData[15];
 
-  const r15_synth = (1 - synthSurvival(15, hr));
-  const r15_nondonor = 1 - S0_NONDONOR[15];
-  const hr_vs_eigen = r15_synth / (r15_nondonor || 0.0001);
+  const aboveRail=synth15>upper15*2.2;
+  const belowRail=synth15<lower15*0.4;
+  const violated=aboveRail||belowRail;
 
-  const upper_at15 = donorData[15];
-  const lower_at15 = nondonorData[15];
-  const synth_at15 = synthData[15];
-
-  const inEnvelope = synth_at15 >= lower_at15 * 0.5 && synth_at15 <= upper_at15 * 2.2;
-
-  const viol = document.getElementById('violation');
-  viol.style.display = inEnvelope ? 'none' : 'block';
-
-  document.getElementById('stat-r15').textContent = (r15_synth * 100).toFixed(1) + '%';
-  document.getElementById('stat-hr').textContent = hr_vs_eigen.toFixed(1) + '×';
-
-  const gateEl = document.getElementById('stat-gate');
-  if (inEnvelope) {
-    gateEl.innerHTML = '<span class="gate-badge gate-ok">within rails</span>';
-  } else if (synth_at15 > upper_at15 * 2.2) {
-    gateEl.innerHTML = '<span class="gate-badge gate-fail">above donor</span>';
+  const vs=document.getElementById('violation');
+  const vn=document.getElementById('violation-note');
+  const vd=document.getElementById('violation-detail');
+  vs.style.display=violated?'block':'none';
+  if(violated){
+    vn.style.display='flex';
+    if(aboveRail){
+      vs.textContent=`Constraint violation — synthetic curve (${synth15.toFixed(0)}/10K at 15yr) exceeds twice the donor rail (${upper15.toFixed(0)}/10K). No real cohort exhibits this. Pull back active betas.`;
+      vd.textContent=`Synthetic (${synth15.toFixed(0)}/10K) exceeds 2× donor rail (${upper15.toFixed(0)}/10K). Your coefficients imply a risk profile no real cohort has shown. Revise downward.`;
+    } else {
+      vs.textContent=`Constraint violation — synthetic curve (${synth15.toFixed(0)}/10K at 15yr) falls below the eigenmode floor (${lower15.toFixed(0)}/10K). You cannot believe this profile is safer than the healthiest nondonors.`;
+      vd.textContent=`Synthetic (${synth15.toFixed(0)}/10K) below eigenmode floor (${lower15.toFixed(0)}/10K). Prior is too optimistic — inconsistent with Muzaale's healthiest matched controls.`;
+    }
   } else {
-    gateEl.innerHTML = '<span class="gate-badge gate-warn">below eigenmode</span>';
+    vn.style.display='none';
   }
 
-  let profileParts = [];
-  if (profile.diabetes) profileParts.push('DM');
-  if (profile.hypertension) profileParts.push('HTN');
-  if (profile.smoke) profileParts.push('smoker');
-  if (profile.male) profileParts.push('male');
-  if (profile.black) profileParts.push('Black');
-  if (profile.htn_pill) profileParts.push('on BP meds');
-  const profileStr = profileParts.length ? profileParts.join(' · ') : 'base case — no risk factors';
-  document.getElementById('profileNote').textContent =
-    `Profile: ${profileStr} · LP = ${lp.toFixed(3)} · HR = ${hr.toFixed(2)}× · Rehearsal ${rehearsalN}`;
+  document.getElementById('stat-r15').textContent=(r15*100).toFixed(1)+'%';
+  document.getElementById('stat-hr').textContent=hr_eigen.toFixed(1)+'×';
 
-  chart.data.datasets[2].data = synthData;
+  const gEl=document.getElementById('stat-gate');
+  if(!violated) gEl.innerHTML='<span class="gate-badge gate-ok">within rails</span>';
+  else if(aboveRail) gEl.innerHTML='<span class="gate-badge gate-fail">above donor</span>';
+  else gEl.innerHTML='<span class="gate-badge gate-warn">below eigenmode</span>';
+
+  let parts=[];
+  if(profile.diabetes)parts.push('DM');
+  if(profile.hypertension)parts.push('HTN');
+  if(profile.smoke)parts.push('smoker');
+  if(profile.male)parts.push('male');
+  if(profile.black)parts.push('Black');
+  if(profile.htn_pill)parts.push('BP meds');
+  const pStr=parts.length?parts.join(' · '):'base case — no risk factors';
+  document.getElementById('profileNote').textContent=`Profile: ${pStr} · LP = ${lp.toFixed(3)} · HR = ${hr.toFixed(2)}× · rehearsal ${rehearsalN}`;
+
+  chart.data.datasets[2].data=synthData;
   chart.update('none');
 }
 
-function resetRehearsal() {
-  Object.keys(BETA_DEF).forEach(k => {
-    betas[k] = BETA_DEF[k].def;
-    const sl = document.getElementById('bs-'+k);
-    const vl = document.getElementById('bv-'+k);
-    if (sl) sl.value = BETA_DEF[k].def;
-    if (vl) vl.textContent = BETA_DEF[k].def.toFixed(2);
+function resetRehearsal(){
+  Object.keys(BETA_DEF).forEach(k=>{
+    betas[k]=BETA_DEF[k].def;
+    const sl=document.getElementById('bs-'+k);
+    const vl=document.getElementById('bv-'+k);
+    if(sl)sl.value=BETA_DEF[k].def;
+    if(vl)vl.textContent=BETA_DEF[k].def.toFixed(2);
   });
-  Object.keys(PROFILE_DEF).forEach(k => {
-    profile[k] = PROFILE_DEF[k].def;
-    const cb = document.getElementById('pt-'+k);
-    if (cb) cb.checked = PROFILE_DEF[k].def;
+  Object.keys(PROFILE_DEF).forEach(k=>{
+    profile[k]=PROFILE_DEF[k].def;
+    const cb=document.getElementById('pt-'+k);
+    if(cb)cb.checked=PROFILE_DEF[k].def;
   });
-  rehearsalN = 1;
-  document.getElementById('rehearsalN').textContent = 1;
-  document.getElementById('sl-mult').value = 4.6;
+  rehearsalN=1;
+  document.getElementById('rehearsalN').textContent=1;
+  document.getElementById('sl-mult').value=4.6;
   update();
 }
 
 buildSliders();
 
-const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-const textColor = isDark ? '#aaa' : '#666';
+const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
+const gridC=isDark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)';
+const textC=isDark?'#999':'#666';
 
-const ctx = document.getElementById('kmChart').getContext('2d');
-const chart = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: TIMES,
-    datasets: [
-      {
-        label: 'Healthy nondonors (eigenmode)',
-        data: S0_NONDONOR.map(s => (1-s)*10000),
-        borderColor: '#1D9E75',
-        borderWidth: 2.5,
-        pointRadius: 0,
-        tension: 0.3,
-        fill: false,
-      },
-      {
-        label: 'SRTR live donors',
-        data: S0_DONOR_RAW.map(s => (1-s)*10000),
-        borderColor: '#378ADD',
-        borderWidth: 2.5,
-        pointRadius: 0,
-        tension: 0.3,
-        fill: {
-          target: 0,
-          above: isDark ? 'rgba(55,138,221,0.08)' : 'rgba(55,138,221,0.06)',
-        },
-      },
-      {
-        label: 'Synthetic profile',
-        data: S0_NONDONOR.map(s => (1-s)*10000),
-        borderColor: '#D85A30',
-        borderWidth: 2,
-        borderDash: [5,4],
-        pointRadius: 0,
-        tension: 0.3,
-        fill: false,
-      }
+const ctx=document.getElementById('kmChart').getContext('2d');
+const chart=new Chart(ctx,{
+  type:'line',
+  data:{
+    labels:TIMES,
+    datasets:[
+      {label:'Healthy nondonors (eigenmode E)',data:S0_ND.map(s=>(1-s)*10000),borderColor:'#1D9E75',borderWidth:2.5,pointRadius:0,tension:0.3,fill:false},
+      {label:'SRTR live donors',data:S0_DN.map(s=>(1-s)*10000),borderColor:'#378ADD',borderWidth:2.5,pointRadius:0,tension:0.3,fill:{target:0,above:isDark?'rgba(55,138,221,0.08)':'rgba(55,138,221,0.06)'}},
+      {label:'Synthetic profile',data:S0_ND.map(s=>(1-s)*10000),borderColor:'#D85A30',borderWidth:2,borderDash:[5,4],pointRadius:0,tension:0.3,fill:false}
     ]
   },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-        callbacks: {
-          label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} per 10K`
-        }
-      }
+  options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(1)} per 10K`}}
     },
-    scales: {
-      x: {
-        title: { display: true, text: 'years post-baseline', color: textColor, font: { size: 12 } },
-        ticks: { color: textColor, font: { size: 11 }, maxTicksLimit: 10 },
-        grid: { color: gridColor },
-      },
-      y: {
-        title: { display: true, text: 'cumulative ESRD incidence per 10,000', color: textColor, font: { size: 12 } },
-        ticks: {
-          color: textColor, font: { size: 11 },
-          callback: v => v.toFixed(0)
-        },
-        grid: { color: gridColor },
-        min: 0,
-        suggestedMax: 700,
-      }
+    scales:{
+      x:{title:{display:true,text:'years post-baseline',color:textC,font:{size:12}},ticks:{color:textC,font:{size:11},maxTicksLimit:10},grid:{color:gridC}},
+      y:{title:{display:true,text:'cumulative ESRD incidence per 10,000',color:textC,font:{size:12}},ticks:{color:textC,font:{size:11},callback:v=>v.toFixed(0)},grid:{color:gridC},min:0,suggestedMax:700}
     }
   }
 });
