@@ -85,6 +85,59 @@ h1 em{font-style:italic;color:var(--c1)}
   color:var(--ink3);letter-spacing:.04em;line-height:2.1;margin-bottom:1.8rem;
 }
 
+/* ── YOUTUBE EMBED ── */
+.yt-wrap{
+  margin:2.4rem 0 2rem;
+  position:relative;
+}
+.yt-label{
+  display:flex;align-items:center;gap:.8rem;
+  margin-bottom:.9rem;
+}
+.yt-label-pill{
+  font-family:'JetBrains Mono',monospace;font-size:.58rem;
+  letter-spacing:.14em;text-transform:uppercase;
+  padding:3px 11px;border-radius:20px;
+  background:rgba(200,176,64,.12);color:var(--c1);
+  border:.5px solid rgba(200,176,64,.3);
+}
+.yt-label-text{
+  font-family:'Playfair Display',serif;font-style:italic;
+  font-size:.95rem;color:var(--ink3);
+}
+.yt-label-attr{
+  font-family:'JetBrains Mono',monospace;font-size:.58rem;
+  color:var(--ink4);letter-spacing:.06em;
+}
+.yt-frame-outer{
+  position:relative;
+  border-radius:var(--r);overflow:hidden;
+  border:.5px solid var(--brd2);
+  background:var(--bg2);
+  /* subtle golden glow */
+  box-shadow:0 0 0 .5px rgba(200,176,64,.08),
+             0 8px 40px rgba(0,0,0,.55),
+             0 0 60px rgba(200,176,64,.04);
+  /* 16:9 aspect ratio */
+  padding-bottom:56.25%;
+  height:0;
+}
+.yt-frame-outer iframe{
+  position:absolute;
+  top:0;left:0;
+  width:100%;height:100%;
+  border:none;
+}
+.yt-caption{
+  margin-top:.75rem;
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;
+  color:var(--ink4);letter-spacing:.08em;
+  display:flex;align-items:center;gap:.5rem;
+}
+.yt-caption::before{
+  content:'♪';color:var(--c1);font-size:.75rem;
+}
+
 /* ── SEQUENCE ARROW ── */
 .seq{
   display:flex;align-items:center;gap:0;
@@ -324,7 +377,7 @@ footer{
 
 <!-- ═══ HERO ═══ -->
 <header class="hero">
-  <div class="eyebrow">Ukubona LLC · Kampala 2026 · v1.2</div>
+  <div class="eyebrow">Ukubona LLC · Kampala 2026 · v1.3</div>
   <h1>3+ → 2 → 1 → E → 0<br><em>Unambiguous lossy compression</em></h1>
   <p class="hero-sub">
     The pentad is not an abstraction. It is the operation every enduring system performs.<br>
@@ -332,6 +385,27 @@ footer{
     Busoga naming performs it. Same structure, different substrate.<br><br>
     Tensor (chaos) → Matrix (filter) → Vector (direction) → Eigenmode (identity) → Scalar (incarnation)
   </p>
+
+  <!-- ═══ YOUTUBE EMBED ═══ -->
+  <div class="yt-wrap">
+    <div class="yt-label">
+      <span class="yt-label-pill">♪ overture</span>
+      <span class="yt-label-text">Let's Do It, Let's Fall in Love</span>
+      <span class="yt-label-attr">Cole Porter, 1928 · rec. Ella Fitzgerald</span>
+    </div>
+    <div class="yt-frame-outer">
+      <iframe
+        src="https://www.youtube.com/embed/lXYKGL6MgKM"
+        title="Let's Do It, Let's Fall in Love — Ella Fitzgerald (Cole Porter)"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+        loading="lazy">
+      </iframe>
+    </div>
+    <div class="yt-caption">
+      Birds do it, bees do it — even educated fleas do it. Every enduring system performs the compression. Let's do it.
+    </div>
+  </div>
 
   <!-- SEQUENCE NAVIGATOR -->
   <div class="seq" id="seqNav">
@@ -678,7 +752,7 @@ footer{
 
 <div class="page" style="padding-top:0">
   <footer>
-    <span>Ukubona LLC · ukb-pentad-v1.2 · Kampala 2026</span>
+    <span>Ukubona LLC · ukb-pentad-v1.3 · Kampala 2026</span>
     <span style="font-family:'Playfair Display',serif;font-style:italic;color:var(--c1)">T → M → V → E → S</span>
     <span>Unambiguous lossy compression · Move over Freud</span>
   </footer>
