@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona · Clinical Digital Twin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;1,8..60,300;1,8..60,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #0c0b09;
+  --bg2: #131210;
+  --bg3: #1a1917;
+  --surf: #1f1e1b;
+  --surf2: #252421;
+  --ink: #e8e4d9;
+  --ink2: #b8b4a8;
+  --ink3: #7a776e;
+  --brd: rgba(255,255,255,0.07);
+  --brd2: rgba(255,255,255,0.12);
+
+  /* pentad colors — ROYGBIV-adjacent */
+  --c1: #4a9eff;   /* T — Tensor / Operational — blue */
+  --c2: #52c4a0;   /* M — Matrix / Strategic — teal */
+  --c3: #f0a030;   /* V — Vector / Ritual — amber */
+  --c4: #b088f0;   /* E — Eigenmode / Existential — purple */
+  --c5: #f06050;   /* S — Scalar / Tactical — coral */
+
+  --gate-open: #52c4a0;
+  --gate-warn: #f0a030;
+  --gate-closed: #f06050;
+
+  --r: 10px;
+  --r2: 6px;
+  --shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Source Serif 4', Georgia, serif;
+  min-height: 100vh;
+  cursor: default;
+}
+
+/* ── GRAIN OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* ── SPECTRUM STRIP ── */
+.spectrum {
+  height: 3px;
+  background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5));
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 3rem 2rem 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.brand span { color: var(--c2); }
+
+h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-top: 0.4rem;
+}
+h1 em { font-style: italic; color: var(--c4); }
+
+.tagline {
+  font-size: 0.82rem;
+  color: var(--ink3);
+  margin-top: 0.5rem;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.06em;
+}
+
+/* ── API KEY BAR ── */
+.api-bar {
+  background: var(--surf);
+  border: 0.5px solid var(--brd2);
+  border-radius: var(--r);
+  padding: 0.9rem 1.2rem;
+  max-width: 900px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.api-bar label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.api-bar input {
+  flex: 1;
+  min-width: 200px;
+  background: var(--bg2);
+  border: 0.5px solid var(--brd);
+  border-radius: var(--r2);
+  padding: 0.5rem 0.75rem;
+  color: var(--ink2);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.api-bar input:focus { border-color: var(--c2); }
+.api-bar .key-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+.key-status.ok { color: var(--gate-open); }
+.key-status.empty { color: var(--ink3); }
+
+/* ── MAIN LAYOUT ── */
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+}
+@media (max-width: 700px) {
+  main { grid-template-columns: 1fr; }
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--surf);
+  border: 0.5px solid var(--brd);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.card-head {
+  padding: 0.9rem 1.2rem 0.7rem;
+  border-bottom: 0.5px solid var(--brd);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.card-head .node-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+.n1 { background: rgba(74,158,255,0.15); color: var(--c1); }
+.n2 { background: rgba(82,196,160,0.15); color: var(--c2); }
+.n3 { background: rgba(240,160,48,0.15);  color: var(--c3); }
+.n4 { background: rgba(176,136,240,0.15); color: var(--c4); }
+.n5 { background: rgba(240,96,80,0.15);   color: var(--c5); }
+.ng { background: rgba(255,255,255,0.07); color: var(--ink3); }
+
+.card-head h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.card-head .card-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--ink3);
+  margin-left: auto;
+  letter-spacing: 0.06em;
+}
+.card-body { padding: 1rem 1.2rem; }
+
+/* ── THETA STATE — parameter grid ── */
+.param-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.param-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.param-tier {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ink3);
+  text-align: center;
+}
+.param-label {
+  font-size: 0.78rem;
+  color: var(--ink2);
+  line-height: 1.3;
+}
+.param-label small {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.param-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+.param-status:hover { opacity: 0.75; }
+.s-known   { background: rgba(82,196,160,0.18);  color: var(--c2); }
+.s-null    { background: rgba(240,96,80,0.18);   color: var(--c5); }
+.s-partial { background: rgba(240,160,48,0.18);  color: var(--c3); }
+
+/* ── LOSS TENSOR — distribution bars ── */
+.loss-dist { display: flex; flex-direction: column; gap: 0.55rem; }
+.loss-item {}
+.loss-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+.loss-name {
+  font-size: 0.78rem;
+  color: var(--ink2);
+}
+.loss-prob {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+.loss-bar-track {
+  height: 5px;
+  background: var(--bg2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.loss-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+.loss-note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+
+/* ── ETA GATE ── */
+.gate-display {
+  border-radius: var(--r2);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 0.5px solid;
+  transition: all 0.4s ease;
+}
+.gate-open   { background: rgba(82,196,160,0.08);  border-color: rgba(82,196,160,0.3);  }
+.gate-warn   { background: rgba(240,160,48,0.08);  border-color: rgba(240,160,48,0.3);  }
+.gate-closed { background: rgba(240,96,80,0.08);   border-color: rgba(240,96,80,0.3);   }
+
+.gate-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+.gate-open   .gate-label { color: var(--gate-open); }
+.gate-warn   .gate-label { color: var(--gate-warn); }
+.gate-closed .gate-label { color: var(--gate-closed); }
+
+.gate-message {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink2);
+}
+.gate-blockers {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.blocker {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--c5);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.blocker::before { content: '✗'; }
+
+/* ── ETA LADDER ── */
+.eta-ladder { display: flex; flex-direction: column; gap: 0.4rem; }
+.eta-step {
+  display: grid;
+  grid-template-columns: 60px 1fr 50px;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--r2);
+  border: 0.5px solid var(--brd);
+  background: var(--bg2);
+  transition: border-color 0.2s;
+}
+.eta-step.current {
+  border-color: var(--c2);
+  background: rgba(82,196,160,0.06);
+}
+.eta-step.done {
+  opacity: 0.4;
+}
+.eta-step.blocked {
+  border-color: rgba(240,96,80,0.3);
+  background: rgba(240,96,80,0.04);
+}
+.eta-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--c3);
+  font-weight: 500;
+}
+.eta-desc {
+  font-size: 0.76rem;
+  color: var(--ink2);
+  line-height: 1.3;
+}
+.eta-desc small {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ink3);
+}
+.eta-rev {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  text-align: right;
+}
+.rev-y { color: var(--gate-open); }
+.rev-p { color: var(--c3); }
+.rev-n { color: var(--gate-closed); }
+
+/* ── CHAT INTERFACE ── */
+.chat-area {
+  max-height: 340px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.2rem;
+  scroll-behavior: smooth;
+}
+.chat-area::-webkit-scrollbar { width: 3px; }
+.chat-area::-webkit-scrollbar-thumb { background: var(--brd2); border-radius: 2px; }
+
+.msg {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  animation: fadeUp 0.3s ease;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.msg-avatar {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+.msg.twin .msg-avatar  { background: rgba(176,136,240,0.2); color: var(--c4); }
+.msg.user .msg-avatar  { background: rgba(82,196,160,0.2);  color: var(--c2); }
+.msg.sys  .msg-avatar  { background: rgba(255,255,255,0.05); color: var(--ink3); }
+
+.msg-bubble {
+  flex: 1;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--ink2);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0 var(--r2) var(--r2) var(--r2);
+  background: var(--bg2);
+  border: 0.5px solid var(--brd);
+}
+.msg.user .msg-bubble {
+  border-radius: var(--r2) 0 var(--r2) var(--r2);
+  background: rgba(82,196,160,0.07);
+  border-color: rgba(82,196,160,0.15);
+}
+.msg.sys .msg-bubble {
+  background: transparent;
+  border-color: transparent;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--ink3);
+  padding: 0.2rem 0;
+}
+.msg-bubble p { margin-bottom: 0.4rem; }
+.msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  background: rgba(255,255,255,0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--c3);
+}
+.msg-bubble .tensor-update {
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  background: rgba(176,136,240,0.07);
+  border-left: 2px solid var(--c4);
+  border-radius: 0 var(--r2) var(--r2) 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--ink3);
+  line-height: 1.6;
+}
+
+.chat-input-row {
+  padding: 0.75rem 1.2rem 1rem;
+  border-top: 0.5px solid var(--brd);
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg2);
+  border: 0.5px solid var(--brd);
+  border-radius: var(--r2);
+  padding: 0.55rem 0.75rem;
+  color: var(--ink);
+  font-family: 'Source Serif 4', serif;
+  font-size: 0.82rem;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+  min-height: 40px;
+  max-height: 100px;
+}
+.chat-input:focus { border-color: var(--c4); }
+.chat-input::placeholder { color: var(--ink3); }
+
+.btn {
+  border: none;
+  border-radius: var(--r2);
+  padding: 0.5rem 1rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { opacity: 0.85; }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--c4); color: #fff; }
+.btn-secondary { background: var(--surf2); color: var(--ink2); border: 0.5px solid var(--brd2); }
+.btn-teal { background: var(--c2); color: #0c0b09; }
+
+/* ── SPINNER ── */
+.spinner {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border: 1.5px solid rgba(176,136,240,0.3);
+  border-top-color: var(--c4);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── COMPLETENESS METER ── */
+.completeness {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.completeness-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--ink3);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.completeness-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bg2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.completeness-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--c1), var(--c2));
+  transition: width 0.5s ease;
+}
+.completeness-pct {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--c2);
+  font-weight: 500;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── STATE DIFF LOG ── */
+.diff-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.diff-entry {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.73rem;
+  line-height: 1.4;
+  padding: 0.35rem 0;
+  border-bottom: 0.5px solid var(--brd);
+}
+.diff-entry:last-child { border-bottom: none; }
+.diff-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ink3);
+  white-space: nowrap;
+  padding-top: 1px;
+}
+.diff-text { color: var(--ink2); flex: 1; }
+.diff-text .up   { color: var(--c2); font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; }
+.diff-text .down { color: var(--c5); font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; }
+
+/* ── SIDEBAR CARDS ── */
+.sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* ── PENTAD STRIP ── */
+.pentad-strip {
+  display: flex;
+  gap: 0;
+  border-radius: var(--r2);
+  overflow: hidden;
+  border: 0.5px solid var(--brd);
+}
+.pnode {
+  flex: 1;
+  padding: 0.6rem 0.3rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pnode:hover { filter: brightness(1.3); }
+.pnode-sym {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  display: block;
+}
+.pnode-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.52rem;
+  opacity: 0.7;
+  display: block;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pn1 { background: rgba(74,158,255,0.12);  color: var(--c1); }
+.pn2 { background: rgba(82,196,160,0.12);  color: var(--c2); }
+.pn3 { background: rgba(240,160,48,0.12);  color: var(--c3); }
+.pn4 { background: rgba(176,136,240,0.12); color: var(--c4); }
+.pn5 { background: rgba(240,96,80,0.12);   color: var(--c5); }
+
+/* ── FOOTER ── */
+footer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 0.5px solid var(--brd);
+}
+footer p {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--ink3);
+  letter-spacing: 0.06em;
+}
+
+/* scrollbar global */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--brd2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="spectrum"></div>
+
+<header>
+  <div>
+    <div class="brand"><span>Ukubona</span> · Clinical Digital Twin · v1.0</div>
+    <h1>The <em>Breast Basin</em><br>Clinical Twin</h1>
+    <p class="tagline">θ → L_ijk → ∇L → −η∇L → θ′  ↺  ∇L</p>
+  </div>
+  <div class="pentad-strip" style="align-self:flex-end; min-width:220px; max-width:280px;">
+    <div class="pnode pn1" title="Tensor / Operational"><span class="pnode-sym">T</span><span class="pnode-label">Tensor</span></div>
+    <div class="pnode pn2" title="Matrix / Strategic"><span class="pnode-sym">M</span><span class="pnode-label">Matrix</span></div>
+    <div class="pnode pn3" title="Vector / Ritual"><span class="pnode-sym">V</span><span class="pnode-label">Vector</span></div>
+    <div class="pnode pn4" title="Eigenmode / Existential"><span class="pnode-sym">E</span><span class="pnode-label">Eigen</span></div>
+    <div class="pnode pn5" title="Scalar / Tactical"><span class="pnode-sym">S</span><span class="pnode-label">Scalar</span></div>
+  </div>
+</header>
+
+<!-- API KEY BAR -->
+<div class="api-bar" style="max-width:900px; margin: 0 auto 1.2rem; padding: 0 1.5rem;">
+  <div class="api-bar" style="width:100%">
+    <label>API KEY</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off">
+    <span class="key-status empty" id="keyStatus">● no key</span>
+  </div>
+</div>
+
+<main>
+  <!-- LEFT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- THETA_0 STATE ENGINE -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge n1">T — θ₀</span>
+        <h2>State Engine · Parameter Space</h2>
+        <span class="card-sub">Operational</span>
+      </div>
+      <div class="card-body">
+        <div class="completeness">
+          <span class="completeness-label">N-completeness</span>
+          <div class="completeness-track"><div class="completeness-fill" id="complFill" style="width:52%"></div></div>
+          <span class="completeness-pct" id="complPct">52%</span>
+        </div>
+        <div class="param-grid" style="margin-top:0.9rem;" id="paramGrid">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- LOSS TENSOR -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge n2">M — L_ijk</span>
+        <h2>Loss Tensor · Diagnostic Distribution</h2>
+        <span class="card-sub">Strategic</span>
+      </div>
+      <div class="card-body">
+        <div class="loss-dist" id="lossDist">
+          <!-- populated by JS -->
+        </div>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--ink3);margin-top:0.8rem;">
+          Gate: max(L) > 0.85 ∧ N > 0.90 ∧ conf > 0.85 to collapse · <span id="gateCondition" style="color:var(--c5)">NOT MET</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- TWIN CHAT — the LLM interface -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge n4">E — Twin</span>
+        <h2>Clinical Reasoning Engine</h2>
+        <span class="card-sub">Existential / ER</span>
+      </div>
+      <div class="chat-area" id="chatArea">
+        <!-- messages rendered here -->
+      </div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" rows="1"
+          placeholder="Share a symptom, history detail, lab result, or question…"
+          onkeydown="handleKey(event)"></textarea>
+        <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()">Send ∇</button>
+      </div>
+    </div>
+
+    <!-- STATE DIFF LOG -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge n3">V — θ′</span>
+        <h2>State Diff · Update Log</h2>
+        <span class="card-sub">Ritual</span>
+      </div>
+      <div class="card-body">
+        <div class="diff-log" id="diffLog">
+          <div class="diff-entry">
+            <span class="diff-time">init</span>
+            <span class="diff-text">Twin initialized · breast-lump case · Kampala 2026 · v1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- ETA GATE -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge n5">S — η gate</span>
+        <h2>Irreversibility Gate</h2>
+        <span class="card-sub">Tactical</span>
+      </div>
+      <div class="card-body">
+        <div class="gate-display gate-closed" id="gateDisplay">
+          <div class="gate-label" id="gateLabel">GATE CLOSED</div>
+          <div class="gate-message" id="gateMsg">Irreversible surgical intervention not yet permissible.</div>
+          <div class="gate-blockers" id="gateBlockers"></div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--ink3);margin-bottom:0.6rem;">
+          η Descent Ladder — ordered by reversibility
+        </div>
+        <div class="eta-ladder" id="etaLadder"></div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge ng">Actions</span>
+        <h2>Quick Probes</h2>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:0.5rem;">
+        <button class="btn btn-secondary" style="text-align:left;font-size:0.68rem;"
+          onclick="probe('What is the dominant eigenmode right now? Give me the single structural fact driving this case.')">
+          ⚡ Extract eigenmode
+        </button>
+        <button class="btn btn-secondary" style="text-align:left;font-size:0.68rem;"
+          onclick="probe('What is the single highest-η next step I should take — highest information gain at lowest cost and irreversibility?')">
+          ∇ Next best descent step
+        </button>
+        <button class="btn btn-secondary" style="text-align:left;font-size:0.68rem;"
+          onclick="probe('The ultrasound report has arrived. Scenario A: nodes appear normal — oval, echogenic hilum, cortex thin. Update the loss tensor.')">
+          US: nodes normal (Scenario A)
+        </button>
+        <button class="btn btn-secondary" style="text-align:left;font-size:0.68rem;"
+          onclick="probe('The ultrasound report has arrived. Scenario B: nodes appear pathological — rounded, lost hilum, cortical thickening >3mm. Update the loss tensor.')">
+          US: nodes abnormal (Scenario B)
+        </button>
+        <button class="btn btn-secondary" style="text-align:left;font-size:0.68rem;"
+          onclick="probe('Core needle biopsy result: benign fibrocystic change, no atypia, no malignancy. Update θ and close the loop if appropriate.')">
+          CNB: benign result
+        </button>
+        <button class="btn btn-secondary" style="text-align:left;font-size:0.68rem;"
+          onclick="probe('Core needle biopsy result: invasive ductal carcinoma, grade 2, ER+/PR+/HER2-. Update the loss tensor and re-evaluate the gate.')">
+          CNB: malignancy confirmed
+        </button>
+        <button class="btn btn-secondary" style="text-align:left;font-size:0.68rem;"
+          onclick="probe('Summarize the current state vector as a clinical handover note for the next clinician.')">
+          📋 Generate handover note
+        </button>
+        <button class="btn btn-teal" style="text-align:left;font-size:0.68rem;"
+          onclick="resetCase()">
+          ↺ Reset to θ₀
+        </button>
+      </div>
+    </div>
+
+    <!-- TENSOR FORMULA -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge ng">Architecture</span>
+        <h2>Loss Function</h2>
+      </div>
+      <div class="card-body">
+        <pre style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--ink3);line-height:1.7;white-space:pre-wrap;">L_tot = L₀
+  + Σ w_ijk · L_ijk
+  + ε_ijk
+  + p·σ^q
+  + r·λ^s
+
+Where:
+L₀    = bedrock prior
+ε_ijk = NULL as gravity well
+σ     = uncertainty penalty
+λ     = irreversibility penalty
+𝕀_consent · L_tot
+  ← hard gate</pre>
+        <div style="height:0.5px;background:var(--brd);margin:0.7rem 0;"></div>
+        <pre style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--ink3);line-height:1.7;white-space:pre-wrap;">η_safe = f(
+  reversibility,
+  gradient_conf,
+  N_completeness
+)
+
+Gate open iff:
+max(L) > 0.85 AND
+N_compl > 0.90 AND
+conf > 0.85</pre>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <p>Ukubona LLC · Clinical Digital Twin · ukb-cdt-v1 · Kampala, Uganda</p>
+  <p>θ → L_ijk → ∇L → −η∇L → θ′ ↺ · Not a substitute for clinical judgement</p>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+
+const CASE_ID = 'breast-lump-kampala-2026';
+
+let state = {
+  params: [
+    { tier:'P₁', id:'age',      label:'Age',                 note:'29-year-old',                status:'known' },
+    { tier:'P₁', id:'ethnicity',label:'Ethnicity / SES',     note:'Ugandan-Rwandese, upper-middle, Kampala', status:'known' },
+    { tier:'P₁', id:'cycle',    label:'Cycle–mass relationship', note:'Pain 2d pre-period, resolves after — CONFIRMED', status:'known' },
+    { tier:'P₁', id:'menarche', label:'Menarche / OCP / parity', note:'NULL — not yet elicited', status:'null' },
+    { tier:'P₂', id:'mass_size',label:'Mass size / location', note:'4cm, left breast, periareolar, close to surface', status:'known' },
+    { tier:'P₂', id:'mobility', label:'Mobility',            note:'Moves a lot — highly mobile', status:'known' },
+    { tier:'P₂', id:'size_var', label:'Size variation with cycle', note:'CONFIRMED — changes across cycle', status:'known' },
+    { tier:'P₂', id:'persistence',label:'Presence across cycle', note:'Not present all month', status:'known' },
+    { tier:'P₂', id:'nipple',   label:'Nipple discharge / retraction', note:'None confirmed', status:'known' },
+    { tier:'P₂', id:'skin',     label:'Skin changes',        note:'Fine, no ulceration', status:'known' },
+    { tier:'P₂', id:'duration', label:'Duration',            note:'~1 year', status:'known' },
+    { tier:'P₃', id:'axnodes',  label:'Axillary nodes — US', note:'Palpable mobile · US characterization UNKNOWN', status:'partial' },
+    { tier:'P₃', id:'us_mass',  label:'Ultrasound — mass',   note:'Done — report not available ← CRITICAL NULL', status:'null' },
+    { tier:'P₄', id:'family',   label:'Family history',      note:'Paternal cousin only — low BRCA weight', status:'known' },
+    { tier:'P₄', id:'prior',    label:'Prior breast events',  note:'NULL', status:'null' },
+    { tier:'P₅', id:'cnb',      label:'Core needle biopsy',  note:'NOT DONE ← critical gap', status:'null' },
+    { tier:'P₅', id:'fnac',     label:'FNAC',                note:'Surgeon advised against — different from CNB', status:'null' },
+  ],
+
+  lossDistribution: [
+    { name:'Fibrocystic / dominant cyst', prob:0.52, color:'#4a9eff', note:'cycle variation + size change + not all month' },
+    { name:'Fibroadenoma (giant/complex)', prob:0.18, color:'#52c4a0', note:'less likely — does not vary this dramatically' },
+    { name:'Phyllodes tumor (benign)',     prob:0.12, color:'#f0a030', note:'size change fits; cyclical pattern weaker fit' },
+    { name:'Granulomatous mastitis',       prob:0.08, color:'#a0c040', note:'' },
+    { name:'Carcinoma (any type)',         prob:0.07, color:'#f06050', note:'node US may raise this; history suppresses' },
+    { name:'Lymphoma',                     prob:0.02, color:'#b088f0', note:'' },
+    { name:'TB mastitis',                  prob:0.01, color:'#888880', note:'demoted — SES prior suppressive' },
+  ],
+
+  etaSteps: [
+    { eta:'≈0',   desc:'Cycle history',         sub:'Does mass change with period? FREE.',      rev:'fully',   done:true,  blocked:false, current:false },
+    { eta:'0.05', desc:'Family history',         sub:'BRCA prior — near-free by phone.',         rev:'fully',   done:false, blocked:false, current:true  },
+    { eta:'0.10', desc:'Ultrasound report',      sub:'Cystic vs solid, margins, node arch.',     rev:'fully',   done:false, blocked:false, current:false },
+    { eta:'0.20', desc:'Core needle biopsy',     sub:'Histology + ER/PR/HER2 — gold standard.',  rev:'mostly',  done:false, blocked:false, current:false },
+    { eta:'0.60', desc:'Excisional biopsy',      sub:'Only if CNB inconclusive.',                rev:'partial', done:false, blocked:true,  current:false },
+    { eta:'1.0',  desc:'Wide excision / surgery', sub:'BLOCKED — gate closed. April 3rd plan.',  rev:'NO',      done:false, blocked:true,  current:false },
+  ],
+
+  nCompleteness: 0.52,
+  gradientConf: 0.55,
+  gateStatus: 'closed', // 'open' | 'warn' | 'closed'
+  conversationHistory: [],
+  updateCount: 0,
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SYSTEM PROMPT
+// ═══════════════════════════════════════════════════════════════
+
+function buildSystemPrompt() {
+  const probs = state.lossDistribution.map(d => `  ${d.name}: ${(d.prob*100).toFixed(0)}%`).join('\n');
+  const nullParams = state.params.filter(p => p.status === 'null').map(p => `  ${p.tier} ${p.label}`).join('\n');
+  const knownParams = state.params.filter(p => p.status === 'known').map(p => `  ${p.tier} ${p.label}: ${p.note}`).join('\n');
+
+  return `You are the Ukubona Clinical Digital Twin reasoning engine. You are NOT a general assistant — you are a live clinical model operating on a specific patient.
+
+PATIENT: 29-year-old Ugandan-Rwandese woman, upper-middle class, Kampala, Uganda, 2026.
+PRESENTATION: 4cm left breast mass, periareolar, close to surface, highly mobile, cyclical (varies with menstrual cycle, not present all month), mild tenderness peak 2 days pre-period, ~1 year duration. No nipple retraction, no skin changes. Palpable mobile axillary nodes. Ultrasound done — report unavailable. No FNAC, no CNB. Surgeon recommends excision on April 3rd.
+
+CURRENT LOSS TENSOR L_ijk (posterior distribution):
+${probs}
+
+KNOWN PARAMETERS:
+${knownParams}
+
+NULL PARAMETERS (unresolved — treat as gravity wells, NOT zero):
+${nullParams}
+
+N-COMPLETENESS: ${(state.nCompleteness*100).toFixed(0)}%
+GRADIENT CONFIDENCE: ${(state.gradientConf*100).toFixed(0)}%
+GATE STATUS: ${state.gateStatus.toUpperCase()}
+GATE OPEN CONDITION: max(L) > 0.85 AND N_completeness > 0.90 AND gradient_conf > 0.85
+
+ARCHITECTURE RULES you must enforce:
+1. NEVER collapse L to a scalar prematurely. Always maintain the full distribution.
+2. The η gate for surgical/irreversible intervention is currently ${state.gateStatus === 'open' ? 'OPEN' : 'CLOSED'}. If closed, state specifically which conditions are not met.
+3. Unknown ≠ zero. Every null pointer is a gravity well in the loss landscape.
+4. Every response should advance gradient computation — ask the single highest-value question or compute the specific update if evidence was provided.
+5. When new evidence arrives, compute: which L_ijk entries shift, by how much, and why (via which tensor interaction terms).
+6. The irreversibility regularization λ penalizes premature surgical steps. Enforce it.
+7. Gradient sovereignty: the patient owns the wᵢ. Frame outputs in terms of what the patient needs to know to make an informed decision.
+
+RESPONSE FORMAT: Speak as a clinical reasoning partner — precise, warm, never dismissive of complexity. When updating the tensor, show a brief "TENSOR UPDATE" block at the end with the new probabilities. Keep responses focused — this is a clinical decision support tool, not a lecture.`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+function renderParams() {
+  const grid = document.getElementById('paramGrid');
+  const known = state.params.filter(p=>p.status==='known').length;
+  const total = state.params.length;
+  const pct = Math.round(known/total*100);
+  state.nCompleteness = known/total;
+  document.getElementById('complFill').style.width = pct+'%';
+  document.getElementById('complPct').textContent = pct+'%';
+
+  grid.innerHTML = state.params.map(p => `
+    <div class="param-row">
+      <span class="param-tier">${p.tier}</span>
+      <div class="param-label">${p.label}<small>${p.note}</small></div>
+      <button class="param-status s-${p.status}" onclick="toggleParam('${p.id}')" title="Click to cycle status">
+        ${p.status === 'known' ? '✓ known' : p.status === 'null' ? '∅ null' : '~ partial'}
+      </button>
+    </div>
+  `).join('');
+}
+
+function renderLoss() {
+  const dist = document.getElementById('lossDist');
+  const sorted = [...state.lossDistribution].sort((a,b)=>b.prob-a.prob);
+  const maxP = sorted[0].prob;
+
+  dist.innerHTML = sorted.map(d => `
+    <div class="loss-item">
+      <div class="loss-meta">
+        <span class="loss-name">${d.name}</span>
+        <span class="loss-prob" style="color:${d.color}">${(d.prob*100).toFixed(0)}%</span>
+      </div>
+      <div class="loss-bar-track">
+        <div class="loss-bar-fill" style="width:${(d.prob/maxP*100).toFixed(1)}%;background:${d.color}"></div>
+      </div>
+      ${d.note ? `<div class="loss-note">${d.note}</div>` : ''}
+    </div>
+  `).join('');
+
+  // update gate condition text
+  const gateOpen = maxP > 0.85 && state.nCompleteness > 0.90 && state.gradientConf > 0.85;
+  document.getElementById('gateCondition').textContent = gateOpen ? 'MET' : 'NOT MET';
+  document.getElementById('gateCondition').style.color = gateOpen ? 'var(--c2)' : 'var(--c5)';
+}
+
+function renderGate() {
+  const gd = document.getElementById('gateDisplay');
+  const gl = document.getElementById('gateLabel');
+  const gm = document.getElementById('gateMsg');
+  const gb = document.getElementById('gateBlockers');
+
+  const maxP = Math.max(...state.lossDistribution.map(d=>d.prob));
+  const blockers = [];
+  if (maxP <= 0.85)            blockers.push(`max(L) = ${(maxP*100).toFixed(0)}% — need >85%`);
+  if (state.nCompleteness <= 0.90) blockers.push(`N-completeness = ${(state.nCompleteness*100).toFixed(0)}% — need >90%`);
+  if (state.gradientConf <= 0.85)  blockers.push(`gradient confidence = ${(state.gradientConf*100).toFixed(0)}% — need >85%`);
+
+  gd.className = 'gate-display';
+  if (blockers.length === 0) {
+    state.gateStatus = 'open';
+    gd.classList.add('gate-open');
+    gl.textContent = 'GATE OPEN';
+    gm.textContent = 'All gate conditions met. Irreversible intervention may proceed with informed consent.';
+    gb.innerHTML = '';
+  } else if (blockers.length === 1) {
+    state.gateStatus = 'warn';
+    gd.classList.add('gate-warn');
+    gl.textContent = 'GATE WARN';
+    gm.textContent = 'One condition unmet. Do not proceed to irreversible step.';
+    gb.innerHTML = blockers.map(b=>`<span class="blocker">${b}</span>`).join('');
+  } else {
+    state.gateStatus = 'closed';
+    gd.classList.add('gate-closed');
+    gl.textContent = 'GATE CLOSED';
+    gm.textContent = 'Multiple conditions unmet. Surgical extraction not permissible.';
+    gb.innerHTML = blockers.map(b=>`<span class="blocker">${b}</span>`).join('');
+  }
+}
+
+function renderEtaLadder() {
+  const ladder = document.getElementById('etaLadder');
+  ladder.innerHTML = state.etaSteps.map(s => {
+    let cls = 'eta-step';
+    if (s.done)    cls += ' done';
+    else if (s.current) cls += ' current';
+    else if (s.blocked) cls += ' blocked';
+    const revCls = s.rev === 'fully' ? 'rev-y' : s.rev === 'mostly' ? 'rev-p' : s.rev === 'partial' ? 'rev-p' : 'rev-n';
+    return `
+      <div class="${cls}">
+        <span class="eta-val">η=${s.eta}</span>
+        <div class="eta-desc">${s.desc}<small>${s.sub}</small></div>
+        <span class="eta-rev ${revCls}">${s.rev}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAll() {
+  renderParams();
+  renderLoss();
+  renderGate();
+  renderEtaLadder();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════════
+
+function addMsg(role, content, tensorUpdate) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const avatarText = role === 'twin' ? 'UKB' : role === 'user' ? 'you' : '···';
+  const bubbleContent = content.replace(/\n/g, '<br>');
+
+  let tuHtml = '';
+  if (tensorUpdate) {
+    tuHtml = `<div class="tensor-update">${tensorUpdate}</div>`;
+  }
+
+  div.innerHTML = `
+    <div class="msg-avatar">${avatarText}</div>
+    <div class="msg-bubble"><p>${bubbleContent}</p>${tuHtml}</div>
+  `;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addDiff(text) {
+  const log = document.getElementById('diffLog');
+  const now = new Date();
+  const t = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const div = document.createElement('div');
+  div.className = 'diff-entry';
+  div.innerHTML = `<span class="diff-time">${t}</span><span class="diff-text">${text}</span>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showThinking() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg twin';
+  div.id = 'thinkingMsg';
+  div.innerHTML = `
+    <div class="msg-avatar">UKB</div>
+    <div class="msg-bubble"><span class="spinner"></span> computing gradient…</div>
+  `;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinkingMsg');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) {
+    addMsg('sys', '⚠ No API key. Enter your Anthropic API key above to activate the reasoning engine.');
+    return;
+  }
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  addMsg('user', text);
+  state.conversationHistory.push({ role: 'user', content: text });
+
+  showThinking();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: state.conversationHistory,
+      })
+    });
+
+    const data = await response.json();
+    removeThinking();
+
+    if (data.error) {
+      addMsg('sys', `⚠ API error: ${data.error.message}`);
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    }
+
+    const fullText = data.content.map(c => c.text || '').join('');
+    state.conversationHistory.push({ role: 'assistant', content: fullText });
+    state.updateCount++;
+
+    // Extract tensor update block if present
+    const tuMatch = fullText.match(/TENSOR UPDATE[:\s]*([\s\S]*?)(?:\n\n|$)/i);
+    let tuBlock = null;
+    let displayText = fullText;
+    if (tuMatch) {
+      tuBlock = tuMatch[1].trim();
+      displayText = fullText.replace(tuMatch[0], '').trim();
+      // Try to parse probability updates from the block
+      parseTensorUpdate(tuBlock);
+    }
+
+    // Check for gradient confidence cues in the response
+    updateGradientConfidence(fullText);
+
+    addMsg('twin', displayText, tuBlock);
+    addDiff(`Update #${state.updateCount} · ${text.slice(0,40)}${text.length>40?'…':''}`);
+
+    renderAll();
+
+  } catch (err) {
+    removeThinking();
+    addMsg('sys', `⚠ Network error: ${err.message}`);
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+}
+
+async function probe(promptText) {
+  const input = document.getElementById('chatInput');
+  input.value = promptText;
+  await sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+  // auto-resize
+  const t = e.target;
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 100) + 'px';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TENSOR UPDATE PARSER
+// ═══════════════════════════════════════════════════════════════
+
+function parseTensorUpdate(text) {
+  // Look for patterns like "Fibrocystic: 0.65" or "Carcinoma: 35%"
+  const names = state.lossDistribution.map(d => d.name);
+  let updated = false;
+
+  for (const d of state.lossDistribution) {
+    // match name or key word + number
+    const keywords = d.name.split(/[\s\/]/)[0].toLowerCase();
+    const re = new RegExp(keywords + '[^\\d]*(\\d+(?:\\.\\d+)?)[%]?', 'i');
+    const m = text.match(re);
+    if (m) {
+      let val = parseFloat(m[1]);
+      if (val > 1) val = val / 100; // percent → fraction
+      if (val >= 0 && val <= 1) {
+        const old = d.prob;
+        d.prob = val;
+        if (Math.abs(old - val) > 0.005) {
+          const dir = val > old ? `<span class="up">↑${((val-old)*100).toFixed(0)}pp</span>` : `<span class="down">↓${((old-val)*100).toFixed(0)}pp</span>`;
+          addDiff(`L_ijk ${d.name}: ${(old*100).toFixed(0)}% → ${(val*100).toFixed(0)}% ${dir}`);
+          updated = true;
+        }
+      }
+    }
+  }
+
+  // Normalize to sum to 1
+  if (updated) {
+    const sum = state.lossDistribution.reduce((acc,d)=>acc+d.prob,0);
+    if (sum > 0) state.lossDistribution.forEach(d => d.prob = d.prob / sum);
+  }
+}
+
+function updateGradientConfidence(text) {
+  const lower = text.toLowerCase();
+  // Heuristic: increase confidence if specific evidence terms appear
+  const positiveTerms = ['confirms', 'strongly suggests', 'high confidence', 'definitively', 'histology', 'biopsy result', 'core needle'];
+  const negativeTerms = ['uncertainty', 'unknown', 'unclear', 'null', 'missing', 'need to know'];
+  let delta = 0;
+  positiveTerms.forEach(t => { if (lower.includes(t)) delta += 0.03; });
+  negativeTerms.forEach(t => { if (lower.includes(t)) delta -= 0.02; });
+  state.gradientConf = Math.max(0.1, Math.min(0.99, state.gradientConf + delta));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PARAM TOGGLE
+// ═══════════════════════════════════════════════════════════════
+
+function toggleParam(id) {
+  const p = state.params.find(x => x.id === id);
+  if (!p) return;
+  const cycle = ['null','partial','known'];
+  const idx = cycle.indexOf(p.status);
+  const newStatus = cycle[(idx+1) % cycle.length];
+  const old = p.status;
+  p.status = newStatus;
+  addDiff(`Param ${p.tier} ${p.label}: ${old} → ${newStatus}`);
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+
+function resetCase() {
+  state.lossDistribution = [
+    { name:'Fibrocystic / dominant cyst', prob:0.52, color:'#4a9eff', note:'cycle variation + size change + not all month' },
+    { name:'Fibroadenoma (giant/complex)', prob:0.18, color:'#52c4a0', note:'less likely — does not vary this dramatically' },
+    { name:'Phyllodes tumor (benign)',     prob:0.12, color:'#f0a030', note:'size change fits; cyclical pattern weaker fit' },
+    { name:'Granulomatous mastitis',       prob:0.08, color:'#a0c040', note:'' },
+    { name:'Carcinoma (any type)',         prob:0.07, color:'#f06050', note:'node US may raise this; history suppresses' },
+    { name:'Lymphoma',                     prob:0.02, color:'#b088f0', note:'' },
+    { name:'TB mastitis',                  prob:0.01, color:'#888880', note:'demoted — SES prior suppressive' },
+  ];
+  state.params.forEach(p => {
+    if (['menarche','prior','cnb','fnac'].includes(p.id)) p.status = 'null';
+    else if (['axnodes','us_mass'].includes(p.id)) p.status = p.id === 'axnodes' ? 'partial' : 'null';
+    else p.status = 'known';
+  });
+  state.gradientConf = 0.55;
+  state.conversationHistory = [];
+  state.updateCount = 0;
+
+  document.getElementById('chatArea').innerHTML = '';
+  document.getElementById('diffLog').innerHTML = `
+    <div class="diff-entry">
+      <span class="diff-time">reset</span>
+      <span class="diff-text">Twin reset to θ₀ · breast-lump case · Kampala 2026</span>
+    </div>`;
+
+  addMsg('twin', `Twin reset to θ₀. The breast basin case is re-initialized.\n\nCurrent posterior: fibrocystic disease leads at 52%. The ultrasound report and core needle biopsy remain the two critical null pointers. The η gate is closed — surgical intervention is not yet permissible.\n\nWhat new evidence do you have?`);
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API KEY STATUS
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById('apiKey').addEventListener('input', function() {
+  const ks = document.getElementById('keyStatus');
+  if (this.value.trim().startsWith('sk-ant')) {
+    ks.textContent = '● active';
+    ks.className = 'key-status ok';
+  } else {
+    ks.textContent = '● no key';
+    ks.className = 'key-status empty';
+  }
+  // Persist to sessionStorage
+  sessionStorage.setItem('ukb_api_key', this.value.trim());
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+(function init() {
+  // Restore key from session
+  const savedKey = sessionStorage.getItem('ukb_api_key');
+  if (savedKey) {
+    document.getElementById('apiKey').value = savedKey;
+    const ks = document.getElementById('keyStatus');
+    if (savedKey.startsWith('sk-ant')) {
+      ks.textContent = '● active';
+      ks.className = 'key-status ok';
+    }
+  }
+
+  renderAll();
+
+  // Initial twin message
+  addMsg('twin', `Sawubona. The Ukubona Clinical Digital Twin is initialized for the breast basin case — Kampala, 2026.\n\nCurrent posterior distribution has fibrocystic disease leading at 52%, with carcinoma at 7%. The η gate is closed: N-completeness is 52%, gradient confidence is 55%. Surgical extraction on April 3rd is not yet permissible under the architecture.\n\nThe two non-negotiable steps before any irreversible intervention:\n1. The ultrasound report — especially node characterization (cortical thickening? fatty hilum?)\n2. Core needle biopsy — histology + receptor status\n\nEnter your API key above and share a new clinical finding, or use the Quick Probes on the right to run specific descent steps.`);
+
+  addMsg('sys', '── session start · ' + new Date().toLocaleString() + ' ──');
+})();
+</script>
+</body>
+</html>
