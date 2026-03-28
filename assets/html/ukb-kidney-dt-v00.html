@@ -1,1 +1,1466 @@
-.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona · Kidney Donor Digital Twin · v2.0</title>
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  UKUBONA KIDNEY DONOR DIGITAL TWIN — ukb-kd-dt-v2.0                        ║
+║  Sovereignty Intelligence Broker · LIVE COMPUTE ENGINE                      ║
+║                                                                              ║
+║  KEY UPGRADE FROM v1.0:                                                      ║
+║  Now uses REAL Cox coefficients from GTPCI tool (menu.csv) and              ║
+║  actual nonparametric baseline survival S₀(t) from s0_nondonor.csv          ║
+║  Cumulative incidence: 1 - S₀(t)^exp(Σ βᵢXᵢ)                               ║
+║                                                                              ║
+║  LOSS FUNCTION:                                                              ║
+║    L_tot = L₀ + Σᵢ wᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)                  ║
+║                                                                              ║
+║  REAL COEFFICIENTS (menu.csv from GTPCI forum):                             ║
+║    diabetes_Yes:       1.434985   (HR ≈ 4.20)                               ║
+║    hypertension_Yes:   1.321450   (HR ≈ 3.75)                               ║
+║    hbppill_Yes:        0.941863   (HR ≈ 2.57)                               ║
+║    smoke_Yes:          1.455294   (HR ≈ 4.29)                               ║
+║    gender_Male:        1.445895   (HR ≈ 4.25)                               ║
+║    race_Non-Hispanic Black: 0.901114 (HR ≈ 2.46)                           ║
+║    hs_Poor:            1.738524   (HR ≈ 5.69)                               ║
+║    age_c (continuous): 1.077703   (HR per year)                             ║
+║    bpxsar_c (SBP):     1.004693   (HR per mmHg)                             ║
+║    egfr_c (eGFR):      0.997733   (HR per unit — protective)                ║
+║    uacr_c (albumin:cr): 1.000005  (HR per unit)                             ║
+║    ghb_c (HbA1c):      1.000002                                             ║
+║                                                                              ║
+║  BASELINE SURVIVAL S₀(t):                                                   ║
+║    Nonparametric KM from nondonor NHANES-III cohort (s0_nondonor.csv)       ║
+║    ~S₀(15yr) ≈ 0.786 → base 15yr ESRD risk ≈ 21.4%                        ║
+║    Donor multiplier from Muzaale JAMA 2014: 3.5–5.3×                       ║
+║                                                                              ║
+║  ANJUM GG PARAMETERS (Table 4, AJT 2016):                                  ║
+║    DM:  β=5.1, r=0.41, κ=0.63  → late, exponential rise                   ║
+║    HTN: β=5.4, r=0.40, κ=0.91  → late, exponential rise                   ║
+║    GN:  β=11.2, r=15.8, κ=9.50 → flat, susceptibility                     ║
+║                                                                              ║
+║  FUTURE FastAPI ENDPOINTS:                                                   ║
+║    POST /twin/theta0   → L₀ prior from {birth_weight, race, sex}           ║
+║    POST /twin/risk     → Cox risk score from menu.csv coefficients          ║
+║    POST /twin/survival → S₀(t)^exp(Xβ) from s0_nondonor.csv               ║
+║    POST /twin/anjum    → GG cause-specific curves                           ║
+║    POST /twin/chat     → Claude API with state vector                       ║
+║    POST /twin/surveillance → post-donation tracking                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=JetBrains+Mono:wght@300;400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:      #06080a;
+  --bg2:     #0c0f12;
+  --bg3:     #121518;
+  --surf:    #181c20;
+  --surf2:   #1e2328;
+  --surf3:   #252c33;
+  --ink:     #e8ead0;
+  --ink2:    #a8ad95;
+  --ink3:    #555e4a;
+  --brd:     rgba(200,220,160,0.07);
+  --brd2:    rgba(200,220,160,0.14);
+
+  --gold:    #c8b86a;
+  --gold2:   #ddd090;
+  --sage:    #7aab6a;
+  --teal:    #5ab89a;
+  --amber:   #d4982a;
+  --coral:   #d05050;
+  --violet:  #9070d0;
+  --steel:   #5890c0;
+
+  --L0:    #c8b86a;
+  --sigma: #5ab89a;
+  --lambda:#d4982a;
+  --epsilon:#d05050;
+  --DM:    #d4982a;
+  --HTN:   #d05050;
+  --GN:    #9070d0;
+
+  --r:8px;--r2:5px;--r3:3px;
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Libre Baskerville',Georgia,serif;
+  font-size:14px;
+  line-height:1.65;
+  min-height:100vh;
+}
+
+body::before{
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.45;
+}
+
+.mono{font-family:'JetBrains Mono',monospace}
+.serif{font-family:'Fraunces',serif}
+
+.spectrum{
+  height:3px;
+  background:linear-gradient(90deg,var(--L0),var(--sigma),var(--lambda),var(--epsilon),var(--violet),var(--steel));
+  position:fixed;top:0;left:0;right:0;z-index:300;
+}
+
+.page{max-width:1140px;margin:0 auto;padding:0 1.5rem 4rem}
+
+/* HEADER */
+.hdr{
+  padding:4rem 0 2rem;
+  border-bottom:.5px solid var(--brd);
+  margin-bottom:2rem;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:2rem;
+  align-items:start;
+}
+@media(max-width:800px){.hdr{grid-template-columns:1fr}}
+.hdr-brand{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:.4rem;
+}
+.hdr-brand em{color:var(--gold);font-style:normal}
+.hdr h1{
+  font-family:'Fraunces',serif;
+  font-size:clamp(1.9rem,4vw,3rem);
+  font-weight:300;line-height:1.1;color:var(--ink);
+}
+.hdr h1 i{font-style:italic;color:var(--gold)}
+.hdr-sub{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.68rem;color:var(--ink3);margin-top:.6rem;
+  letter-spacing:.04em;
+}
+
+.loss-box{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.7rem;line-height:2.1;
+  background:var(--surf);
+  border:.5px solid var(--brd2);
+  border-radius:var(--r);
+  padding:1rem 1.3rem;
+  white-space:nowrap;
+}
+.lv0{color:var(--L0)} .lw{color:var(--gold2)} .ls{color:var(--sigma)}
+.ll{color:var(--lambda)} .le{color:var(--epsilon)} .lm{color:var(--ink3)}
+
+/* API BAR */
+.api-bar{
+  background:var(--surf);border:.5px solid var(--brd2);border-radius:var(--r);
+  padding:.7rem 1.2rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
+  margin-bottom:1.5rem;
+}
+.api-bar label{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--ink3);text-transform:uppercase;white-space:nowrap}
+.api-bar input{
+  flex:1;min-width:180px;background:var(--bg2);border:.5px solid var(--brd);border-radius:var(--r2);
+  padding:.4rem .65rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:.7rem;
+  outline:none;transition:border-color .2s;
+}
+.api-bar input:focus{border-color:var(--gold)}
+.key-ok{color:var(--sage);font-family:'JetBrains Mono',monospace;font-size:.62rem}
+.key-no{color:var(--ink3);font-family:'JetBrains Mono',monospace;font-size:.62rem}
+
+/* GRID LAYOUTS */
+.main-grid{display:grid;grid-template-columns:1fr 330px;gap:1.2rem}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:1.2rem}
+
+/* CARD */
+.card{background:var(--surf);border:.5px solid var(--brd);border-radius:var(--r);overflow:hidden}
+.card-head{
+  padding:.8rem 1.2rem .65rem;border-bottom:.5px solid var(--brd);
+  display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;
+}
+.card-head h2{font-family:'Fraunces',serif;font-size:1rem;font-weight:400;color:var(--ink)}
+.card-sub{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);margin-left:auto;letter-spacing:.06em}
+.card-body{padding:1rem 1.2rem}
+
+/* BADGES */
+.badge{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.b-L0   {background:rgba(200,184,106,0.15);color:var(--L0)}
+.b-sig  {background:rgba(90,184,154,0.15); color:var(--sigma)}
+.b-lam  {background:rgba(212,152,42,0.15); color:var(--lambda)}
+.b-eps  {background:rgba(208,80,80,0.15);  color:var(--epsilon)}
+.b-DM   {background:rgba(212,152,42,0.15); color:var(--DM)}
+.b-HTN  {background:rgba(208,80,80,0.15);  color:var(--HTN)}
+.b-GN   {background:rgba(144,112,208,0.15);color:var(--GN)}
+.b-gate {background:rgba(255,255,255,0.05);color:var(--ink3)}
+
+/* SECTION HEADERS */
+.sec-hdr{display:flex;align-items:center;gap:.7rem;margin:1.8rem 0 .9rem;padding-bottom:.4rem;border-bottom:.5px solid var(--brd)}
+.sec-hdr h3{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:400;color:var(--ink)}
+.sec-note{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);margin-left:auto}
+
+/* INPUTS */
+.field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:.6rem}
+.field{display:flex;flex-direction:column;gap:.2rem}
+.field label{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase}
+.field input,.field select{
+  background:var(--bg2);border:.5px solid var(--brd);border-radius:var(--r2);
+  padding:.4rem .6rem;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  outline:none;transition:border-color .2s;width:100%;-webkit-appearance:none;
+}
+.field input:focus,.field select:focus{border-color:var(--gold)}
+.field select option{background:var(--bg3)}
+.field-note{font-size:.58rem;color:var(--ink3);font-family:'JetBrains Mono',monospace;font-style:italic}
+
+/* RISK DISPLAY */
+.risk-trio{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;margin-bottom:.8rem}
+@media(max-width:600px){.risk-trio{grid-template-columns:1fr}}
+.risk-card{border-radius:var(--r2);padding:.8rem;border:.5px solid;text-align:center}
+.rc-base{background:rgba(90,184,154,0.07);border-color:rgba(90,184,154,.25)}
+.rc-donor{background:rgba(212,152,42,0.07);border-color:rgba(212,152,42,.25)}
+.rc-pop{background:rgba(208,80,80,0.07);border-color:rgba(208,80,80,.25)}
+.risk-num{font-family:'Fraunces',serif;font-style:italic;font-size:2rem;line-height:1}
+.risk-unit{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);letter-spacing:.06em;margin-top:.2rem}
+.risk-lbl{font-size:.78rem;color:var(--ink2);margin-top:.3rem}
+.risk-src{font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--ink3);margin-top:.2rem;font-style:italic}
+
+/* LIVE COMPUTE READOUT */
+.compute-panel{
+  background:var(--bg3);border:.5px solid var(--brd);border-radius:var(--r2);
+  padding:.8rem;font-family:'JetBrains Mono',monospace;font-size:.65rem;
+  line-height:1.9;color:var(--ink3);
+}
+.cp-hi{color:var(--gold)}
+.cp-hi2{color:var(--sigma)}
+.cp-hi3{color:var(--lambda)}
+.cp-hi4{color:var(--epsilon)}
+.cp-row{display:flex;justify-content:space-between;border-bottom:.5px solid rgba(255,255,255,.04);padding:.15rem 0}
+.cp-row:last-child{border-bottom:none;padding-top:.3rem}
+.cp-positive{color:var(--coral)}
+.cp-negative{color:var(--sage)}
+
+/* GG CANVASES */
+.gg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem}
+@media(max-width:650px){.gg-grid{grid-template-columns:1fr}}
+.gg-card{background:var(--bg2);border:.5px solid var(--brd);border-radius:var(--r2);padding:.7rem}
+.gg-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
+.gg-canvas{width:100%;height:110px;display:block}
+.gg-params{margin-top:.4rem;display:flex;gap:.4rem;flex-wrap:wrap}
+.gg-param{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--ink3);background:rgba(255,255,255,.04);padding:2px 5px;border-radius:3px}
+.gg-note{font-size:.65rem;color:var(--ink3);margin-top:.35rem;font-style:italic;font-family:'JetBrains Mono',monospace}
+
+/* RUMSFELD */
+.rf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem}
+@media(max-width:650px){.rf-grid{grid-template-columns:1fr}}
+.rf-card{border-radius:var(--r2);padding:.9rem;border:.5px solid}
+.rf-sig{background:rgba(90,184,154,.06);border-color:rgba(90,184,154,.2)}
+.rf-lam{background:rgba(212,152,42,.06);border-color:rgba(212,152,42,.2)}
+.rf-eps{background:rgba(208,80,80,.06);border-color:rgba(208,80,80,.2)}
+.rf-tier{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem}
+.rf-sym{font-family:'Fraunces',serif;font-style:italic;font-size:1.8rem;line-height:1;margin-bottom:.25rem}
+.rf-name{font-family:'Fraunces',serif;font-size:.85rem;margin-bottom:.3rem;color:var(--ink)}
+.rf-quote{font-style:italic;font-size:.72rem;color:var(--ink2);margin-bottom:.45rem;line-height:1.5}
+.rf-stat{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--ink3);line-height:1.8;border-top:.5px solid rgba(255,255,255,.06);padding-top:.4rem}
+.rf-hi{color:var(--ink2)}
+
+/* THREE POPULATION */
+.three-pop{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:.8rem}
+@media(max-width:600px){.three-pop{grid-template-columns:1fr}}
+.pop-card{border-radius:var(--r2);padding:.85rem;border:.5px solid;text-align:center}
+.pop-gen{background:rgba(208,80,80,.06);border-color:rgba(208,80,80,.25)}
+.pop-don{background:rgba(212,152,42,.06);border-color:rgba(212,152,42,.25)}
+.pop-hlt{background:rgba(90,184,154,.08);border-color:rgba(90,184,154,.25)}
+.pop-n{font-family:'Fraunces',serif;font-style:italic;font-size:2.2rem;line-height:1;font-weight:300}
+.pop-u{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);letter-spacing:.06em;margin-top:.2rem}
+.pop-l{font-size:.75rem;color:var(--ink2);margin-top:.35rem}
+.pop-s{font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--ink3);margin-top:.25rem;font-style:italic}
+
+/* L0 */
+.L0-panel{
+  background:linear-gradient(135deg,rgba(200,184,106,.09),rgba(200,184,106,.03));
+  border:.5px solid rgba(200,184,106,.25);border-radius:var(--r2);padding:.9rem;
+  margin-top:.7rem;
+}
+.L0-val{font-family:'Fraunces',serif;font-style:italic;font-size:2rem;color:var(--gold);line-height:1}
+.L0-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-top:.25rem}
+.L0-note{font-size:.72rem;color:var(--ink2);margin-top:.4rem;font-style:italic}
+
+/* TRACK BARS */
+.tbar-row{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.55rem}
+.tbar-meta{display:flex;justify-content:space-between;align-items:baseline}
+.tbar-name{font-size:.75rem;color:var(--ink2)}
+.tbar-val{font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:500}
+.tbar-track{height:4px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.tbar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.tbar-note{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--ink3)}
+
+/* GATE */
+.gate{border-radius:var(--r2);padding:.9rem;border:.5px solid;transition:all .4s;margin-bottom:.7rem}
+.gate-closed{background:rgba(208,80,80,.07);border-color:rgba(208,80,80,.3)}
+.gate-warn{background:rgba(212,152,42,.07);border-color:rgba(212,152,42,.3)}
+.gate-open{background:rgba(90,184,154,.07);border-color:rgba(90,184,154,.3)}
+.gate-label{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.3rem}
+.gate-closed .gate-label{color:var(--coral)}
+.gate-warn .gate-label{color:var(--amber)}
+.gate-open .gate-label{color:var(--teal)}
+.gate-msg{font-size:.78rem;color:var(--ink2);line-height:1.5}
+.gate-conds{margin-top:.45rem;display:flex;flex-direction:column;gap:.18rem}
+.gate-cond{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--coral);display:flex;align-items:center;gap:.3rem}
+.gate-cond::before{content:'✗'}
+.gate-cond.met{color:var(--teal)}
+.gate-cond.met::before{content:'✓'}
+
+/* ETA LADDER */
+.eta-ladder{display:flex;flex-direction:column;gap:.3rem}
+.eta-step{
+  display:grid;grid-template-columns:55px 1fr 50px;gap:.35rem;align-items:center;
+  padding:.45rem .6rem;border-radius:var(--r2);border:.5px solid var(--brd);
+  background:var(--bg2);font-size:.74rem;transition:border-color .2s;
+}
+.eta-step.done{opacity:.3}
+.eta-step.cur{border-color:var(--gold);background:rgba(200,184,106,.05)}
+.eta-step.blk{border-color:rgba(208,80,80,.3);background:rgba(208,80,80,.04)}
+.eta-v{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--amber);font-weight:500}
+.eta-d{color:var(--ink2);line-height:1.25}
+.eta-d small{display:block;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--ink3)}
+.eta-r{font-family:'JetBrains Mono',monospace;font-size:.54rem;text-align:right}
+.rev-y{color:var(--sage)} .rev-p{color:var(--amber)} .rev-n{color:var(--coral)}
+
+/* CHAT */
+.chat-area{max-height:310px;overflow-y:auto;display:flex;flex-direction:column;gap:.6rem;padding:.9rem 1.2rem}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+.msg{display:flex;gap:.5rem;align-items:flex-start;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg-av{
+  font-family:'JetBrains Mono',monospace;font-size:.54rem;
+  width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-weight:500;letter-spacing:.03em;
+}
+.msg.twin .msg-av{background:rgba(200,184,106,.18);color:var(--gold)}
+.msg.user .msg-av{background:rgba(90,184,154,.18);color:var(--teal)}
+.msg.sys  .msg-av{background:rgba(255,255,255,.04);color:var(--ink3)}
+.msg-bubble{flex:1;font-size:.78rem;line-height:1.7;color:var(--ink2);padding:.5rem .7rem;border-radius:0 var(--r2) var(--r2) var(--r2);background:var(--bg2);border:.5px solid var(--brd)}
+.msg.user .msg-bubble{border-radius:var(--r2) 0 var(--r2) var(--r2);background:rgba(90,184,154,.06);border-color:rgba(90,184,154,.15)}
+.msg.sys  .msg-bubble{background:transparent;border-color:transparent;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--ink3);padding:.1rem 0}
+.msg-bubble p{margin-bottom:.3rem}
+.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble code{font-family:'JetBrains Mono',monospace;font-size:.68rem;background:rgba(255,255,255,.06);padding:1px 4px;border-radius:3px;color:var(--amber)}
+.update-block{margin-top:.45rem;padding:.35rem .55rem;background:rgba(200,184,106,.07);border-left:2px solid var(--gold);border-radius:0 var(--r2) var(--r2) 0;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--ink3);line-height:1.7}
+
+.chat-input-row{padding:.6rem 1.2rem .9rem;border-top:.5px solid var(--brd);display:flex;gap:.4rem;align-items:flex-end}
+.chat-input{flex:1;background:var(--bg2);border:.5px solid var(--brd);border-radius:var(--r2);padding:.45rem .65rem;color:var(--ink);font-family:'Libre Baskerville',serif;font-size:.78rem;resize:none;outline:none;transition:border-color .2s;min-height:36px;max-height:85px}
+.chat-input:focus{border-color:var(--gold)}
+.chat-input::placeholder{color:var(--ink3)}
+
+/* BUTTONS */
+.btn{border:none;border-radius:var(--r2);padding:.42rem .85rem;font-family:'JetBrains Mono',monospace;font-size:.66rem;font-weight:500;letter-spacing:.07em;cursor:pointer;transition:opacity .15s,transform .1s;white-space:nowrap}
+.btn:hover:not(:disabled){opacity:.82}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn-gold{background:var(--gold);color:#06080a}
+.btn-teal{background:var(--teal);color:#06080a}
+.btn-ghost{background:var(--surf2);color:var(--ink2);border:.5px solid var(--brd2)}
+
+.spin{display:inline-block;width:10px;height:10px;border:1.5px solid rgba(200,184,106,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PROBE BUTTONS */
+.probe-grid{display:flex;flex-direction:column;gap:.35rem}
+.probe-btn{background:var(--surf2);border:.5px solid var(--brd);border-radius:var(--r2);padding:.45rem .7rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:.62rem;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;width:100%}
+.probe-btn:hover{border-color:var(--gold);background:rgba(200,184,106,.06);color:var(--ink)}
+
+/* DIFF LOG */
+.diff-log{display:flex;flex-direction:column;gap:.2rem;max-height:120px;overflow-y:auto}
+.diff-entry{display:flex;gap:.45rem;align-items:flex-start;font-size:.68rem;line-height:1.35;padding:.25rem 0;border-bottom:.5px solid var(--brd)}
+.diff-entry:last-child{border-bottom:none}
+.diff-t{font-family:'JetBrains Mono',monospace;font-size:.57rem;color:var(--ink3);white-space:nowrap;padding-top:1px}
+.diff-txt{color:var(--ink2);flex:1}
+
+/* COMPLETENESS */
+.compl{display:flex;align-items:center;gap:.45rem;margin-bottom:.7rem}
+.compl-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);letter-spacing:.06em;white-space:nowrap}
+.compl-track{flex:1;height:3px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.compl-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--steel),var(--teal));transition:width .5s}
+.compl-pct{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--teal);font-weight:500;min-width:26px;text-align:right}
+
+/* CODE BLOCK */
+.code-block{background:var(--bg3);border:.5px solid var(--brd);border-radius:var(--r2);padding:.7rem .85rem;font-family:'JetBrains Mono',monospace;font-size:.62rem;line-height:1.85;color:var(--ink3);white-space:pre-wrap;overflow-x:auto}
+.hl{color:var(--gold)} .hl2{color:var(--teal)} .hl3{color:var(--amber)} .hl4{color:var(--coral)} .cm{color:rgba(85,94,74,.55)}
+
+/* FOOTNOTE */
+.fn{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);padding:.35rem .55rem;border-left:2px solid var(--brd2);margin-top:.55rem;line-height:1.7}
+
+/* ROADMAP */
+.road-card{background:var(--surf);border:.5px solid var(--brd);border-radius:var(--r);overflow:hidden}
+.road-head{padding:.7rem 1.2rem .55rem;border-bottom:.5px solid var(--brd);display:flex;align-items:center;gap:.5rem}
+.road-head h2{font-family:'Fraunces',serif;font-size:.95rem;font-weight:400;color:var(--ink)}
+.road-body{padding:.9rem 1.2rem}
+
+/* IRR TABLE */
+.irr-table{width:100%;border-collapse:collapse;font-size:.73rem}
+.irr-table th{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:.35rem .55rem;border-bottom:.5px solid var(--brd);text-align:left}
+.irr-table td{padding:.35rem .55rem;border-bottom:.5px solid rgba(255,255,255,.04);color:var(--ink2);vertical-align:top}
+.irr-table tr:last-child td{border-bottom:none}
+.td-dm{color:var(--DM);font-family:'JetBrains Mono',monospace;font-size:.66rem}
+.td-hn{color:var(--HTN);font-family:'JetBrains Mono',monospace;font-size:.66rem}
+.td-gn{color:var(--GN);font-family:'JetBrains Mono',monospace;font-size:.66rem}
+
+footer{border-top:.5px solid var(--brd);padding:1rem 0 2rem;margin-top:2.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem}
+footer p{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--ink3);letter-spacing:.04em}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="spectrum"></div>
+<div class="page">
+
+<!-- HEADER -->
+<header class="hdr">
+  <div>
+    <div class="hdr-brand"><em>Ukubona</em> · Kidney Donor Digital Twin · v2.0 · Live Compute</div>
+    <h1>The Living Kidney Donor<br><i>Sovereignty Intelligence Broker</i></h1>
+    <p class="hdr-sub mono">L_tot = L₀ + Σᵢ wᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)</p>
+  </div>
+  <div class="loss-box">
+    <div><span class="lm">L_tot =</span> <span class="lv0">L₀</span></div>
+    <div><span class="lm">     +</span> <span class="lw">Σᵢ wᵢ·Lᵢ</span></div>
+    <div><span class="lm">     +</span> <span class="ls">σ²(θ,X,t)</span></div>
+    <div><span class="lm">     +</span> <span class="ll">λ(θ,Ω,t)</span></div>
+    <div><span class="lm">     +</span> <span class="le">ε(t)</span></div>
+    <div style="height:.5px;background:var(--brd);margin:.4rem 0"></div>
+    <div class="lm" style="font-size:.57rem">
+      <span class="lv0">●</span> L₀ &nbsp;<span class="ls">●</span> σ² &nbsp;<span class="ll">●</span> λ &nbsp;<span class="le">●</span> ε
+    </div>
+  </div>
+</header>
+
+<!-- API KEY -->
+<div class="api-bar">
+  <label>Anthropic Key</label>
+  <input type="password" id="apiKey" placeholder="sk-ant-api03-…" autocomplete="off">
+  <span id="keyStatus" class="key-no">● no key</span>
+  <button class="btn btn-ghost" onclick="resetTwin()" style="margin-left:auto">↺ Reset</button>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+<div class="col">
+
+  <!-- θ₀ STATE VECTOR -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-L0">T — θ₀</span>
+      <h2>Baseline State · Covariate Vector</h2>
+      <span class="card-sub">Real GTPCI coefficients · menu.csv</span>
+    </div>
+    <div class="card-body">
+      <div class="compl">
+        <span class="compl-lbl">N-completeness</span>
+        <div class="compl-track"><div class="compl-fill" id="complFill" style="width:45%"></div></div>
+        <span class="compl-pct" id="complPct">45%</span>
+      </div>
+
+      <div class="field-grid" id="fieldGrid"></div>
+
+      <!-- L₀ PRIOR -->
+      <div class="L0-panel" id="L0Panel">
+        <div style="display:flex;align-items:baseline;gap:.8rem">
+          <div>
+            <div class="L0-val" id="L0Val">~910K</div>
+            <div class="L0-lbl">nephrons per kidney (L₀ prior)</div>
+          </div>
+          <div style="flex:1">
+            <div class="tbar-track" style="height:7px;margin-top:.5rem">
+              <div class="tbar-fill" id="L0Bar" style="width:52%;background:linear-gradient(90deg,var(--L0),var(--gold2))"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px">
+              <span class="mono" style="font-size:.5rem;color:var(--ink3)">300K</span>
+              <span class="mono" style="font-size:.5rem;color:var(--ink3)">1.8M</span>
+            </div>
+          </div>
+        </div>
+        <div class="L0-note" id="L0Note">Latent prior. Estimated from birth weight + race. Keller/NEJM 2003.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE COMPUTE ENGINE -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-sig">σ² — LIVE</span>
+      <h2>Cox Risk Engine · Real Coefficients</h2>
+      <span class="card-sub">menu.csv + s0_nondonor.csv</span>
+    </div>
+    <div class="card-body">
+      <div class="compute-panel" id="computePanel">
+        <div class="cp-row"><span>Linear predictor Σβᵢxᵢ</span><span class="cp-hi" id="cpLPH">0.000</span></div>
+        <div class="cp-row"><span>Hazard ratio exp(Xβ)</span><span class="cp-hi" id="cpHR">1.000</span></div>
+        <div class="cp-row"><span>S₀(15yr) baseline [nondonor]</span><span class="cp-hi2" id="cpS0">0.786</span></div>
+        <div class="cp-row"><span>S(15yr) this profile</span><span class="cp-hi2" id="cpS15">0.786</span></div>
+        <div class="cp-row"><span>15yr ESRD risk [pre-donation]</span><span class="cp-hi3" id="cpR15">21.4%</span></div>
+        <div class="cp-row"><span>Donation multiplier (Muzaale)</span><span class="cp-hi3" id="cpMult">×4.6</span></div>
+        <div class="cp-row"><span style="font-weight:500">Est. 15yr risk post-donation</span><span class="cp-hi" id="cpPost" style="font-weight:500">—%</span></div>
+        <div class="cp-row"><span>Component contributions:</span><span></span></div>
+        <div id="cpComponents" style="font-size:.58rem;color:var(--ink3);line-height:2;padding:.2rem 0">—</div>
+      </div>
+
+      <div class="risk-trio" id="riskTrio" style="margin-top:.8rem">
+        <div class="risk-card rc-hlt" style="background:rgba(90,184,154,.07);border:.5px solid rgba(90,184,154,.25)">
+          <div class="risk-num" style="color:var(--teal)" id="rt-nondonor">14</div>
+          <div class="risk-unit">per 10,000</div>
+          <div class="risk-lbl">Matched healthy<br>nondonors</div>
+          <div class="risk-src">Muzaale JAMA 2014</div>
+        </div>
+        <div class="risk-card rc-donor" style="background:rgba(212,152,42,.07);border:.5px solid rgba(212,152,42,.25)">
+          <div class="risk-num" style="color:var(--amber)" id="rt-donor">90</div>
+          <div class="risk-unit">per 10,000</div>
+          <div class="risk-lbl">Live kidney donors<br>(lifetime)</div>
+          <div class="risk-src">SRTR 96,217 donors</div>
+        </div>
+        <div class="risk-card rc-pop" style="background:rgba(208,80,80,.07);border:.5px solid rgba(208,80,80,.25)">
+          <div class="risk-num" style="color:var(--coral)">326</div>
+          <div class="risk-unit">per 10,000</div>
+          <div class="risk-lbl">General population<br>(unscreened)</div>
+          <div class="risk-src">NHANES unmatched</div>
+        </div>
+      </div>
+
+      <div class="fn">
+        Absolute risk increase from donation: <strong style="color:var(--amber)">76 / 10,000</strong> lifetime.
+        The correct counterfactual is the <em>healthy matched nondonor</em> — not the general population.
+        The sovereignty gap lives in this distinction.
+      </div>
+    </div>
+  </div>
+
+  <!-- GG CURVES -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-lam">V — Anjum 2016</span>
+      <h2>Generalized Gamma · Cause-Specific ESRD</h2>
+      <span class="card-sub">Bellissimo · GG(β, r, κ)</span>
+    </div>
+    <div class="card-body">
+      <div class="gg-grid">
+        <div class="gg-card">
+          <div class="gg-title" style="color:var(--DM)">Diabetic ESRD</div>
+          <canvas class="gg-canvas" id="ggDM"></canvas>
+          <div class="gg-params">
+            <span class="gg-param">β=5.1</span><span class="gg-param">r=0.41</span><span class="gg-param">κ=0.63</span>
+          </div>
+          <div class="gg-note">r&lt;1 → increasing hazard · IRR 7.7× late vs early</div>
+        </div>
+        <div class="gg-card">
+          <div class="gg-title" style="color:var(--HTN)">Hypertensive ESRD</div>
+          <canvas class="gg-canvas" id="ggHTN"></canvas>
+          <div class="gg-params">
+            <span class="gg-param">β=5.4</span><span class="gg-param">r=0.40</span><span class="gg-param">κ=0.91</span>
+          </div>
+          <div class="gg-note">r&lt;1 → increasing hazard · IRR 2.6× late vs early</div>
+        </div>
+        <div class="gg-card">
+          <div class="gg-title" style="color:var(--GN)">GN ESRD</div>
+          <canvas class="gg-canvas" id="ggGN"></canvas>
+          <div class="gg-params">
+            <span class="gg-param">β=11.2</span><span class="gg-param">r=15.8</span><span class="gg-param">κ=9.5</span>
+          </div>
+          <div class="gg-note">r&gt;1 → flat hazard · susceptibility model · IRR ~0.7</div>
+        </div>
+      </div>
+
+      <div style="margin-top:.9rem">
+        <div class="mono" style="font-size:.58rem;color:var(--ink3);letter-spacing:.06em;margin-bottom:.4rem;text-transform:uppercase">Cumulative incidence per 10,000 donors (Anjum AJT 2016)</div>
+        <table class="irr-table">
+          <thead><tr><th>Year</th><th>DM-ESRD</th><th>HTN-ESRD</th><th>GN-ESRD</th></tr></thead>
+          <tbody>
+            <tr><td>5yr</td><td class="td-dm">0.0–0.1–0.7</td><td class="td-hn">0.1–0.3–0.9</td><td class="td-gn">0.3–0.7–1.5</td></tr>
+            <tr><td>10yr</td><td class="td-dm">0.1–0.4–1.2</td><td class="td-hn">1.2–2.0–3.2</td><td class="td-gn">2.3–3.4–4.9</td></tr>
+            <tr><td>15yr</td><td class="td-dm">1.1–2.0–3.6</td><td class="td-hn">5.4–7.4–10.1</td><td class="td-gn">4.6–6.3–8.6</td></tr>
+            <tr><td>20yr</td><td class="td-dm">5.8–8.9–13.6</td><td class="td-hn">11.5–15.3–20.7</td><td class="td-gn">8.1–11.1–15.3</td></tr>
+            <tr><td>25yr</td><td class="td-dm">9.7–14.8–22.7</td><td class="td-hn">20.2–28.2–39.2</td><td class="td-gn">9.1–12.8–17.8</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUMSFELD -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-eps">E — Rumsfeld</span>
+      <h2>Uncertainty Architecture · Three Tiers</h2>
+      <span class="card-sub">σ² · λ · ε</span>
+    </div>
+    <div class="card-body">
+      <div class="rf-grid">
+        <div class="rf-card rf-sig">
+          <div class="rf-tier" style="color:var(--sigma)">Tier 1 · σ²(θ,X,t)</div>
+          <div class="rf-sym" style="color:var(--sigma)">σ²</div>
+          <div class="rf-name">Known Knowns</div>
+          <div class="rf-quote">"Things we know we know."</div>
+          <div class="rf-stat">
+            <div class="rf-hi">Real coefficients (menu.csv):</div>
+            diabetes_Yes: β=1.434985<br>
+            hypertension_Yes: β=1.321450<br>
+            smoke_Yes: β=1.455294<br>
+            age_c: β=1.077703/yr<br>
+            bpxsar_c: β=1.004693/mmHg<br>
+            <div class="rf-hi" style="margin-top:.3rem">Nature: aleatoric</div>
+            Irreducible scatter. β±SE gives CIs.
+          </div>
+        </div>
+        <div class="rf-card rf-lam">
+          <div class="rf-tier" style="color:var(--lambda)">Tier 2 · λ(θ,Ω,t)</div>
+          <div class="rf-sym" style="color:var(--lambda)">λ</div>
+          <div class="rf-name">Known Unknowns</div>
+          <div class="rf-quote">"Things we know we don't know."</div>
+          <div class="rf-stat">
+            <div class="rf-hi">Empirical handles:</div>
+            Nephron count (unobserved L₀)<br>
+            APOL1 genotype (absent in NHANES)<br>
+            Future DM/HTN incidence timing<br>
+            Between-cohort τ² (Grams meta-analysis: DM HR 2.21–9.73)<br>
+            GG κ parameter (event clustering)<br>
+            <div class="rf-hi" style="margin-top:.3rem">Nature: epistemic</div>
+            Reducible with better data.
+          </div>
+        </div>
+        <div class="rf-card rf-eps">
+          <div class="rf-tier" style="color:var(--epsilon)">Tier 3 · ε(t)</div>
+          <div class="rf-sym" style="color:var(--epsilon)">ε</div>
+          <div class="rf-name">Unknown Unknowns</div>
+          <div class="rf-quote">"Things we don't know we don't know."</div>
+          <div class="rf-stat">
+            <div class="rf-hi">Statistical form: NONE.</div>
+            GN flat hazard (r&gt;1) is the nearest signal — events spread uniformly over time, no exposure gradient.<br>
+            NSAIDs at 67 · pandemic gaps<br>
+            Immune triggers · Undiagnosed GN<br>
+            APOL1 "second hit" (Muzaale HIV 2017)<br>
+            <div class="rf-hi" style="margin-top:.3rem">Nature: ontological.</div>
+            Acknowledged · updated on shock.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:.9rem">
+        <div class="mono" style="font-size:.58rem;color:var(--ink3);letter-spacing:.06em;margin-bottom:.35rem;text-transform:uppercase">Loss function — fully grounded</div>
+        <div class="code-block">
+<span class="hl">L_tot</span> <span class="cm">= # Full sovereignty loss</span>
+  <span class="hl">L₀</span>                 <span class="cm"># Keller/NEJM 2003 (PMID 12519920)</span>
+                       <span class="cm"># log-normal prior on nephron endowment</span>
+                       <span class="cm"># ~700K HTN vs ~1M normotensive per kidney</span>
+
++ <span class="hl2">Σᵢ wᵢ·Lᵢ</span>         <span class="cm"># Muzaale JAMA 2014 (PMID 24519297)</span>
+                       <span class="cm"># NHANES-SRTR counterfactual</span>
+                       <span class="cm"># Anjum AJT 2016: GG DM/HTN/GN models</span>
+                       <span class="cm"># donation multiplier: 3.5–5.3×</span>
+                       <span class="cm"># wᵢ = DONOR's weights, not clinician's</span>
+
++ <span class="hl2">σ²(θ,X,t)</span>         <span class="cm"># KNOWN KNOWNS</span>
+                       <span class="cm"># menu.csv Cox β from GTPCI/Grams tool</span>
+                       <span class="cm"># s0_nondonor.csv KM baseline survival</span>
+                       <span class="cm"># 1 - S₀(t)^exp(Σβᵢxᵢ) → cum. incidence</span>
+
++ <span class="hl3">λ(θ,Ω,t)</span>          <span class="cm"># KNOWN UNKNOWNS</span>
+                       <span class="cm"># Grams τ², APOL1, nephron count, GG κ</span>
+
++ <span class="hl4">ε(t)</span>              <span class="cm"># UNKNOWN UNKNOWNS · no functional form</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LLM ENGINE -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-L0">S — Twin</span>
+      <h2>Clinical Reasoning Engine · Sovereignty Broker</h2>
+      <span class="card-sub">Claude API · Stateful</span>
+    </div>
+    <div class="chat-area" id="chatArea"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chatInput" rows="1"
+        placeholder="Ask about your specific risk, your counterfactual, what a covariate means for your trajectory…"
+        onkeydown="handleKey(event)"></textarea>
+      <button class="btn btn-gold" id="sendBtn" onclick="sendMsg()">Send ∇</button>
+    </div>
+  </div>
+
+  <!-- DIFF LOG -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-sig">V — θ′</span>
+      <h2>State Update Log</h2>
+      <span class="card-sub">θ → θ′ ritual</span>
+    </div>
+    <div class="card-body">
+      <div class="diff-log" id="diffLog">
+        <div class="diff-entry"><span class="diff-t">init</span><span class="diff-txt">Twin v2.0 initialized · live compute engine active · Ukubona</span></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end left col -->
+
+<!-- SIDEBAR -->
+<div class="col">
+
+  <!-- η GATE -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-eps">S — η</span>
+      <h2>Sovereignty Gate</h2>
+      <span class="card-sub">Pre-donation · η=1.0</span>
+    </div>
+    <div class="card-body">
+      <div class="gate gate-closed" id="gateEl">
+        <div class="gate-label" id="gateLbl">GATE CLOSED</div>
+        <div class="gate-msg" id="gateMsg">Not a clinical safety gate. A sovereignty gate. The donor may donate at elevated risk — if they have full epistemic access to their trajectory.</div>
+        <div class="gate-conds" id="gateConds"></div>
+      </div>
+
+      <div class="mono" style="font-size:.58rem;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.4rem">η Ladder · irreversibility descent</div>
+      <div class="eta-ladder" id="etaLadder"></div>
+    </div>
+  </div>
+
+  <!-- QUICK PROBES -->
+  <div class="card">
+    <div class="card-head">
+      <span class="badge b-gate">Actions</span>
+      <h2>Quick Probes</h2>
+    </div>
+    <div class="card-body">
+      <div class="probe-grid">
+        <button class="probe-btn" onclick="probe('Compute my specific ESRD risk using the GTPCI Cox model coefficients. Show me the linear predictor, hazard ratio, and 15-year cumulative incidence from the actual formula: 1 - S₀(t)^exp(Σβᵢxᵢ). Compare to the healthy matched nondonor from Muzaale JAMA 2014.')">
+          ∇ Compute my live Cox risk score
+        </button>
+        <button class="probe-btn" onclick="probe('Walk me through the three populations from Muzaale JAMA 2014: general population (326/10K), live donors (90/10K), healthy matched nondonors (14/10K). Why is the healthy nondonor the correct counterfactual and not the general population? What is the sovereignty gap?')">
+          ⊕ The three populations (Muzaale)
+        </button>
+        <button class="probe-btn" onclick="probe('Explain the generalized gamma models for DM, HTN, and GN from Anjum AJT 2016. Why does the r parameter matter? Why is GN-ESRD an early risk while DM/HTN-ESRD are late risks? What do the parameters β=5.1, r=0.41, κ=0.63 mean biologically?')">
+          ● GG cause-specific models (Anjum)
+        </button>
+        <button class="probe-btn" onclick="probe('What is my L₀ — nephron endowment at birth — and how does it shape my trajectory? What does the Keller NEJM 2003 paper tell us about the distribution? How does low birth weight interact with donation risk?')">
+          ◆ L₀ nephron endowment (Keller)
+        </button>
+        <button class="probe-btn" onclick="probe('Apply Rumsfeld to my case. What are my known knowns (σ²), known unknowns (λ), and unknown unknowns (ε)? Be specific about which of my covariates drive each tier. What would reduce λ for me specifically?')">
+          ? σ² · λ · ε — Rumsfeld tiers
+        </button>
+        <button class="probe-btn" onclick="probe('I am considering donation at age 84. Walk me through how competing mortality risk compresses the ESRD risk window. Why might an older donor paradoxically have lower lifetime ESRD risk? Show the age-specific logic from the Muzaale and Grams frameworks.')">
+          ♦ Older donor (84yr) risk logic
+        </button>
+        <button class="probe-btn" onclick="probe('What is the APOL1 connection for Black donors? What does the Muzaale HIV 2017 paper show about the 6.9× vs 3.2× risk differential? Why is this λ and not ε? Should Black donors be genotyped before donation?')">
+          ⚑ APOL1 + race (Muzaale HIV 2017)
+        </button>
+        <button class="probe-btn" onclick="probe('Generate a sovereignty statement for me. A plain-language summary of what we know (σ²), what we know we do not know (λ), and what no model can tell us (ε). Written as if I could hand it to my family before the surgery.')">
+          ✦ My sovereignty statement
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROADMAP -->
+  <div class="road-card">
+    <div class="road-head">
+      <span class="badge b-gate">Migration</span>
+      <h2>FastAPI · React Roadmap</h2>
+    </div>
+    <div class="road-body">
+      <div class="code-block" style="font-size:.57rem">
+<span class="cm"># PHASE 1 (current): HTML + Claude API</span>
+<span class="hl2">✓</span> Live Cox engine from menu.csv
+<span class="hl2">✓</span> Real S₀(t) from s0_nondonor.csv
+<span class="hl2">✓</span> Anjum GG curves (actual β,r,κ)
+<span class="hl2">✓</span> L₀ prior from Keller 2003
+<span class="hl2">✓</span> Rumsfeld σ²/λ/ε architecture
+<span class="hl2">✓</span> Sovereignty gate (η)
+<span class="hl2">✓</span> Claude API reasoning engine
+
+<span class="cm"># PHASE 2: Flask prototype</span>
+<span class="hl">→</span> /compute/cox-risk (menu.csv β)
+<span class="hl">→</span> /compute/survival (s0 CSV)
+<span class="hl">→</span> /compute/anjum-gg
+<span class="hl">→</span> /compute/counterfactual
+<span class="hl">→</span> Session state · API key in .env
+
+<span class="cm"># PHASE 3: FastAPI + React</span>
+<span class="hl3">→</span> JWT auth · donor profiles · PG
+<span class="hl3">→</span> &lt;LiveRiskEngine&gt; component
+<span class="hl3">→</span> &lt;CounterfactualViz&gt;
+<span class="hl3">→</span> &lt;CauseSpecificGG&gt;
+<span class="hl3">→</span> &lt;SurveillanceTracker&gt;
+<span class="hl3">→</span> Render.com deployment
+
+<span class="cm"># DATA ASSETS (committed)</span>
+<span class="hl4">✓</span> menu.csv — Cox β coefficients
+<span class="hl4">✓</span> s0_nondonor.csv — KM baseline
+<span class="hl4">→</span> s0_donor.csv (needed)
+<span class="hl4">→</span> APOL1 prior (Black donors)
+<span class="hl4">→</span> Anjum GG params (committed)
+      </div>
+    </div>
+  </div>
+
+</div><!-- end sidebar -->
+</div><!-- end main grid -->
+
+<footer>
+  <p>Ukubona LLC · Kidney Donor Digital Twin · v2.0 · Kampala 2026</p>
+  <p style="font-family:'Fraunces',serif;font-style:italic;color:var(--gold);font-size:.72rem">L₀ + Σwᵢ·Lᵢ + σ² + λ + ε · The donor owns the wᵢ</p>
+  <p>Not a substitute for clinical judgement · © Ukubona LLC 2026</p>
+</footer>
+
+</div><!-- page -->
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SYSTEM PROMPT TEMPLATE FOR FastAPI BACKEND — POST /twin/chat               ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+
+You are the Ukubona Kidney Donor Sovereignty Intelligence Broker — a live digital
+twin for a specific living kidney donor candidate. You are NOT a general assistant.
+
+LIVE COMPUTE ENGINE (from menu.csv + s0_nondonor.csv):
+Formula: CumInc(t) = 1 - S₀(t)^exp(Σ βᵢxᵢ)
+
+Cox coefficients (menu.csv):
+  diabetes_Yes:        β = 1.434985  (HR ≈ 4.20)
+  insulin_Yes:         β = 1.349343
+  hypertension_Yes:    β = 1.321450  (HR ≈ 3.75)
+  hbppill_Yes:         β = 0.941863  (HR ≈ 2.57)
+  smoke_Yes:           β = 1.455294  (HR ≈ 4.29)
+  gender_Male:         β = 1.445895  (HR ≈ 4.25)
+  race_NonHispBlack:   β = 0.901114  (HR ≈ 2.46)
+  race_Mexican_Am:     β = 0.589335
+  hs_Poor:             β = 1.738524  (HR ≈ 5.69)
+  hs_Fair:             β = 1.250422
+  education_k8:        β = 1.340056
+  age_c (per year):    β = 1.077703
+  bpxsar_c (SBP mmHg): β = 1.004693
+  egfr_c (per unit):   β = 0.997733  (PROTECTIVE)
+  uacr_c (alb:cr):     β = 1.000005
+  ghb_c (HbA1c):       β = 1.000002
+
+Baseline survival S₀(15yr) ≈ 0.786 from s0_nondonor.csv (NHANES-III KM)
+Donation multiplier: Black 4.9×, Hispanic 4.8×, White 4.6× (Muzaale JAMA 2014)
+
+DONOR STATE:
+{DONOR_STATE_JSON}
+
+LOSS ARCHITECTURE:
+L_tot = L₀ + Σwᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)
+L₀ = {L0_ESTIMATE} nephrons (Keller NEJM 2003)
+σ² = Var(Xβ) from Cox SE propagation
+λ = between-cohort τ², APOL1, future risk incidence timing, GG κ
+ε = no functional form; GN flat hazard r>1 nearest signal
+
+KEY RULES:
+1. The donor owns the wᵢ. Never assign weights — ask what matters most.
+2. Show THREE populations (Muzaale): 326/90/14 per 10K. Nondonor is the counterfactual.
+3. Show pre-donation Grams/Cox risk SEPARATELY from post-donation multiplied risk.
+4. For age>65: competing mortality compresses ESRD risk — explain explicitly.
+5. Label every uncertainty: σ² / λ / ε.
+6. η gate is SOVEREIGNTY — donor may proceed even at elevated risk with full information.
+7. GN is early (flat hazard, r>1). DM/HTN are late (increasing hazard, r<1). Explain.
+8. APOL1: ~13% Black Americans carry high-risk haplotype; not in standard workup (λ).
+9. End every substantive response: "What matters most to YOU?" (elicits wᵢ)
+10. Be precise, warm, sovereign-affirming. This donor is owed honesty at every tier.
+
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<script>
+// ══════════════════════════════════════════════════════
+// REAL COX COEFFICIENTS FROM menu.csv
+// ══════════════════════════════════════════════════════
+
+const BETA = {
+  diabetes_Yes:       1.434985,
+  insulin_Yes:        1.349343,
+  diapill_Yes:        0.869673,
+  hypertension_Yes:   1.32145,
+  hbppill_Yes:        0.941863,
+  smoke_Yes:          1.455294,
+  gender_Male:        1.445895,
+  race_NonHispBlack:  0.901114,
+  race_MexAm:         0.589335,
+  race_OtherHisp:     0.558236,
+  hs_Fair:            1.250422,
+  hs_Poor:            1.738524,
+  education_k8:       1.340056,
+  age_c:              1.077703,
+  bpxsar_c:           1.004693,
+  egfr_c:             0.997733,
+  uacr_c:             1.000005,
+  ghb_c:              1.000002,
+};
+
+// BASELINE SURVIVAL from s0_nondonor.csv
+// Key percentiles extracted: t=15yr S0≈0.786
+// We store a piecewise table for common time points
+const S0_TABLE = [
+  {t:0,   s:1.000},
+  {t:1,   s:0.990},
+  {t:3,   s:0.975},
+  {t:5,   s:0.960},
+  {t:7,   s:0.940},
+  {t:10,  s:0.900},
+  {t:12,  s:0.870},
+  {t:14,  s:0.800},
+  {t:15,  s:0.786},
+  {t:17,  s:0.754},
+  {t:20,  s:0.710},
+  {t:25,  s:0.640},
+  {t:30,  s:0.572},
+];
+
+function getS0(t) {
+  // linear interpolation
+  for (let i = 0; i < S0_TABLE.length-1; i++) {
+    if (t >= S0_TABLE[i].t && t <= S0_TABLE[i+1].t) {
+      const f = (t - S0_TABLE[i].t) / (S0_TABLE[i+1].t - S0_TABLE[i].t);
+      return S0_TABLE[i].s + f*(S0_TABLE[i+1].s - S0_TABLE[i].s);
+    }
+  }
+  return S0_TABLE[S0_TABLE.length-1].s;
+}
+
+// ══════════════════════════════════════════════════════
+// COVARIATE FIELDS
+// ══════════════════════════════════════════════════════
+
+const FIELDS = [
+  {id:'age',   label:'Age (years)',    type:'number', min:18, max:90, default:45, note:'β=1.078/yr from menu.csv', key:'age_c', ref:40},
+  {id:'sex',   label:'Sex',           type:'select', opts:['female','male'],        note:'Male β=1.446 → HR≈4.25'},
+  {id:'race',  label:'Race/ethnicity',type:'select', opts:['white','black','hispanic-mexican','hispanic-other','other'], note:'Black β=0.901 → HR≈2.46; APOL1 (λ)'},
+  {id:'egfr',  label:'eGFR (ml/min/1.73m²)', type:'number', min:45, max:160, default:98, note:'β=0.9977 (protective)', key:'egfr_c', ref:98},
+  {id:'sbp',   label:'SBP (mmHg)',    type:'number', min:90, max:180, default:120, note:'β=1.0047/mmHg from menu.csv', key:'bpxsar_c', ref:120},
+  {id:'uacr',  label:'Albumin:creat (mg/g)', type:'number', min:0, max:300, default:4, note:'β=1.000005 (subtle)', key:'uacr_c', ref:4},
+  {id:'diabetes', label:'Diabetes',   type:'select', opts:['no','yes'],              note:'β=1.435 → HR≈4.20 (highest single risk)'},
+  {id:'htn',   label:'Hypertension',  type:'select', opts:['no','yes'],              note:'β=1.321 → HR≈3.75'},
+  {id:'htn_pill',label:'BP medication',type:'select',opts:['no','yes'],             note:'β=0.942 → HR≈2.57'},
+  {id:'smoke', label:'Smoking',       type:'select', opts:['no','yes'],              note:'β=1.455 → HR≈4.29'},
+  {id:'hs',    label:'Health status', type:'select', opts:['good-excellent','fair','poor'], note:'Poor β=1.739 → HR≈5.69'},
+  {id:'birth_weight', label:'Birth weight (kg)', type:'number', min:0.5, max:6, default:'', note:'L₀ prior (Keller 2003) — optional'},
+];
+
+let state = {
+  cov: {age:45,sex:'female',race:'white',egfr:98,sbp:120,uacr:4,diabetes:'no',htn:'no',htn_pill:'no',smoke:'no',hs:'good-excellent',birth_weight:null},
+  L0: 910000,
+  lp: 0, hr: 1,
+  s15: 0.786,
+  r15: 0.214,
+  r15_post: 0,
+  mult: 4.6,
+  completeness: 0.45,
+  gate: 'closed',
+  seen_muzaale: false, seen_anjum: false, seen_compute: false, seen_rumsfeld: false,
+  wi: {dm:null,htn:null,gn:null,mortality:null},
+  conversation: [],
+  updates: 0,
+};
+
+function buildFields() {
+  const g = document.getElementById('fieldGrid');
+  g.innerHTML = FIELDS.map(f => {
+    const v = state.cov[f.id] ?? f.default ?? '';
+    if (f.type === 'select') {
+      return `<div class="field">
+        <label>${f.label}</label>
+        <select id="f_${f.id}" onchange="updateCov('${f.id}',this.value)">
+          ${f.opts.map(o=>`<option value="${o}"${o==v?'selected':''}>${o}</option>`).join('')}
+        </select>
+        ${f.note?`<div class="field-note">${f.note}</div>`:''}
+      </div>`;
+    }
+    return `<div class="field">
+      <label>${f.label}</label>
+      <input type="number" id="f_${f.id}" min="${f.min}" max="${f.max}" value="${v}" placeholder="${f.default||''}"
+        oninput="updateCov('${f.id}',this.value)">
+      ${f.note?`<div class="field-note">${f.note}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function updateCov(id, val) {
+  const num = parseFloat(val);
+  state.cov[id] = isNaN(num) ? val : (val==='' ? null : num);
+  computeAll();
+  addDiff(`θ: ${id} → ${val}`);
+}
+
+// ══════════════════════════════════════════════════════
+// LIVE COMPUTE ENGINE
+// ══════════════════════════════════════════════════════
+
+function computeLinearPredictor() {
+  const c = state.cov;
+  const comps = {};
+  let lp = 0;
+
+  // Age (centered at 40)
+  if (c.age) { const d=(c.age-40)*Math.log(BETA.age_c); comps['age']=d; lp+=d; }
+  // Sex
+  if (c.sex==='male') { comps['sex']=BETA.gender_Male; lp+=BETA.gender_Male; }
+  // Race
+  if (c.race==='black') { comps['race']=BETA.race_NonHispBlack; lp+=BETA.race_NonHispBlack; }
+  else if (c.race==='hispanic-mexican') { comps['race']=BETA.race_MexAm; lp+=BETA.race_MexAm; }
+  else if (c.race==='hispanic-other') { comps['race']=BETA.race_OtherHisp; lp+=BETA.race_OtherHisp; }
+  // eGFR (centered at 98)
+  if (c.egfr) { const d=(c.egfr-98)*Math.log(BETA.egfr_c); comps['eGFR']=d; lp+=d; }
+  // SBP (centered at 120)
+  if (c.sbp) { const d=(c.sbp-120)*Math.log(BETA.bpxsar_c); comps['SBP']=d; lp+=d; }
+  // UACR (centered at 4)
+  if (c.uacr) { const d=(c.uacr-4)*Math.log(BETA.uacr_c); comps['UACR']=d; lp+=d; }
+  // Diabetes
+  if (c.diabetes==='yes') { comps['diabetes']=BETA.diabetes_Yes; lp+=BETA.diabetes_Yes; }
+  // Hypertension
+  if (c.htn==='yes') { comps['hypertension']=BETA.hypertension_Yes; lp+=BETA.hypertension_Yes; }
+  if (c.htn_pill==='yes') { comps['htn_pill']=BETA.hbppill_Yes; lp+=BETA.hbppill_Yes; }
+  // Smoking
+  if (c.smoke==='yes') { comps['smoking']=BETA.smoke_Yes; lp+=BETA.smoke_Yes; }
+  // Health status
+  if (c.hs==='fair') { comps['health_fair']=BETA.hs_Fair; lp+=BETA.hs_Fair; }
+  if (c.hs==='poor') { comps['health_poor']=BETA.hs_Poor; lp+=BETA.hs_Poor; }
+
+  return {lp, comps};
+}
+
+function computeAll() {
+  const {lp, comps} = computeLinearPredictor();
+  const hr = Math.exp(lp);
+  const s15 = Math.pow(getS0(15), hr);
+  const r15 = 1 - s15;
+
+  // Donation multiplier by race
+  const mult = state.cov.race === 'black' ? 4.9 : state.cov.race?.includes('hispanic') ? 4.8 : 4.6;
+  const r15_post = r15 * mult;
+
+  state.lp = lp; state.hr = hr; state.s15 = s15; state.r15 = r15;
+  state.mult = mult; state.r15_post = r15_post;
+
+  // Update compute panel
+  document.getElementById('cpLPH').textContent = lp.toFixed(4);
+  document.getElementById('cpHR').textContent = hr.toFixed(3) + '×';
+  document.getElementById('cpS0').textContent = getS0(15).toFixed(3);
+  document.getElementById('cpS15').textContent = s15.toFixed(3);
+  document.getElementById('cpR15').textContent = (r15*100).toFixed(2) + '%';
+  document.getElementById('cpMult').textContent = '×' + mult.toFixed(1);
+
+  const postPct = (r15_post*100).toFixed(1);
+  const postEl = document.getElementById('cpPost');
+  postEl.textContent = postPct + '%';
+  postEl.style.color = r15_post > 0.1 ? 'var(--coral)' : r15_post > 0.05 ? 'var(--amber)' : 'var(--teal)';
+
+  // Components
+  const cmpHtml = Object.entries(comps).map(([k,v]) => {
+    const cls = v > 0 ? 'cp-positive' : v < 0 ? 'cp-negative' : '';
+    return `  <span style="color:var(--ink3)">${k}:</span> <span class="${cls}">${v>0?'+':''}${v.toFixed(3)}</span><br>`;
+  }).join('');
+  document.getElementById('cpComponents').innerHTML = cmpHtml || '  (base case — no adjustments)';
+
+  // L0
+  computeL0();
+  computeCompleteness();
+  updateGate();
+}
+
+function computeL0() {
+  const {race, sex, birth_weight} = state.cov;
+  let base = race === 'black' ? 820000 : 930000;
+  if (sex === 'male') base *= 1.05;
+  if (birth_weight && birth_weight < 2.5) base *= 0.75;
+  if (birth_weight && birth_weight < 1.5) base *= 0.60;
+  if (birth_weight && birth_weight > 3.5) base *= 1.1;
+  state.L0 = Math.round(base);
+  const el = document.getElementById('L0Val');
+  if (el) el.textContent = state.L0 >= 1e6 ? `~${(state.L0/1e6).toFixed(2)}M` : `~${Math.round(state.L0/1000)}K`;
+  const pct = Math.min(100, Math.max(0, (state.L0 - 300000)/1500000*100));
+  const bar = document.getElementById('L0Bar');
+  if (bar) bar.style.width = pct + '%';
+  const note = document.getElementById('L0Note');
+  if (note) {
+    let msg = 'Latent prior · Keller/NEJM 2003 · ';
+    if (state.L0 < 700000) msg += 'LOW endowment — fewer nephrons in reserve. Post-donation hyperfiltration risk elevated (λ).';
+    else if (state.L0 > 1100000) msg += 'HIGH endowment — more reserve. GFR decline post-donation less clinically significant.';
+    else msg += 'Mid-range endowment. Standard post-donation trajectory expected.';
+    note.textContent = msg;
+  }
+}
+
+function computeCompleteness() {
+  const keys = ['age','sex','race','egfr','sbp','uacr','diabetes','htn','smoke'];
+  const filled = keys.filter(k => state.cov[k] !== null && state.cov[k] !== '').length;
+  state.completeness = filled/keys.length;
+  document.getElementById('complFill').style.width = (state.completeness*100).toFixed(0)+'%';
+  document.getElementById('complPct').textContent = (state.completeness*100).toFixed(0)+'%';
+}
+
+// ══════════════════════════════════════════════════════
+// GG CURVES (Anjum AJT 2016)
+// ══════════════════════════════════════════════════════
+
+function ggHazard(t, beta, r) {
+  if (t <= 0) return 0;
+  const b = Math.exp(beta/r);
+  return (r/b)*Math.pow(t/b, r-1);
+}
+
+function drawGG(canvasId, beta, r, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const W = canvas.offsetWidth || 190;
+  const H = 110;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const maxT = 25;
+  const pts = [];
+  for (let t=0.1; t<=maxT; t+=0.2) pts.push({t, h:ggHazard(t,beta,r)});
+  const maxH = Math.max(...pts.map(p=>p.h))*1.15 || 0.0001;
+  const half = H*0.48;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = .5;
+  [5,10,15,20,25].forEach(t => {
+    const x = (t/maxT)*W;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+  });
+  [.25,.5,.75].forEach(f => {
+    ctx.beginPath(); ctx.moveTo(0,half*(1-f)); ctx.lineTo(W,half*(1-f)); ctx.stroke();
+  });
+
+  // Hazard
+  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+  pts.forEach((p,i) => {
+    const x=(p.t/maxT)*W, y=half-(p.h/maxH)*half;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Cumulative incidence
+  const ptsC = [];
+  for (let t=0.1; t<=maxT; t+=0.2) {
+    const b=Math.exp(beta/r);
+    const ci = 1-Math.exp(-Math.pow(t/b,r));
+    ptsC.push({t,ci});
+  }
+  const maxC = Math.max(...ptsC.map(p=>p.ci))||0.0001;
+  ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ptsC.forEach((p,i) => {
+    const x=(p.t/maxT)*W, y=H-(p.ci/maxC)*half;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Separator
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=.5;
+  ctx.beginPath(); ctx.moveTo(0,half); ctx.lineTo(W,half); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle='rgba(85,94,74,0.75)'; ctx.font='8px JetBrains Mono, monospace';
+  ctx.fillText('h(t)',3,9); ctx.fillText('CI(t)',3,half+11);
+}
+
+// ══════════════════════════════════════════════════════
+// η LADDER
+// ══════════════════════════════════════════════════════
+
+const ETA_STEPS = [
+  {eta:'≈0',   desc:'Review Cox risk projection',   sub:'Your specific coefficients — not pop avg', rev:'fully', done:false, cur:true,  blk:false},
+  {eta:'0.05', desc:'Review Muzaale counterfactual', sub:'3 populations — nondonor is the baseline', rev:'fully', done:false, cur:false, blk:false},
+  {eta:'0.10', desc:'Review Anjum GG curves',         sub:'DM/HTN late risk · GN early flat risk',   rev:'fully', done:false, cur:false, blk:false},
+  {eta:'0.15', desc:'Elicit sovereign wᵢ weights',   sub:'What matters most to you personally?',    rev:'fully', done:false, cur:false, blk:false},
+  {eta:'0.20', desc:'APOL1 genotyping (Black donors)',sub:'Reduces λ — recommended before donation', rev:'fully', done:false, cur:false, blk:false},
+  {eta:'0.40', desc:'Nephrology review',              sub:'Final clinical assessment + labs',         rev:'mostly',done:false, cur:false, blk:false},
+  {eta:'0.80', desc:'Informed consent documented',   sub:'Sovereignty gate must be open',            rev:'partial',done:false,cur:false, blk:true},
+  {eta:'1.0',  desc:'Nephrectomy (η=1.0)',            sub:'IRREVERSIBLE · twin → surveillance mode', rev:'NO',    done:false, cur:false, blk:true},
+];
+
+function renderEtaLadder() {
+  const el = document.getElementById('etaLadder');
+  if (!el) return;
+  el.innerHTML = ETA_STEPS.map(s => {
+    let cls = 'eta-step';
+    if (s.done) cls += ' done';
+    else if (s.cur) cls += ' cur';
+    else if (s.blk) cls += ' blk';
+    const rc = s.rev==='fully'?'rev-y':s.rev==='mostly'||s.rev==='partial'?'rev-p':'rev-n';
+    return `<div class="${cls}">
+      <span class="eta-v">η=${s.eta}</span>
+      <div class="eta-d">${s.desc}<small>${s.sub}</small></div>
+      <span class="eta-r ${rc}">${s.rev}</span>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// GATE
+// ══════════════════════════════════════════════════════
+
+function updateGate() {
+  const conds = [
+    {label:'Cox risk projection reviewed (σ²)', met: state.seen_compute},
+    {label:'Muzaale 3-population reviewed', met: state.seen_muzaale},
+    {label:'Anjum GG curves reviewed', met: state.seen_anjum},
+    {label:'Rumsfeld tiers reviewed (σ²/λ/ε)', met: state.seen_rumsfeld},
+  ];
+  const allMet = conds.every(c=>c.met);
+  const someMet = conds.some(c=>c.met);
+  const el = document.getElementById('gateEl');
+  if (!el) return;
+  el.className = 'gate ' + (allMet ? 'gate-open' : someMet ? 'gate-warn' : 'gate-closed');
+  document.getElementById('gateLbl').textContent = allMet ? 'SOVEREIGNTY GATE OPEN' : someMet ? 'GATE PARTIAL' : 'GATE CLOSED';
+  document.getElementById('gateMsg').textContent = allMet
+    ? 'All sovereignty conditions met. The donor has full epistemic access to their trajectory. Irreversible intervention may proceed with documented consent.'
+    : 'This is a sovereignty gate — not a clinical safety gate. The donor may donate at elevated risk IF they have seen their own trajectory.';
+  document.getElementById('gateConds').innerHTML = conds.map(c => `
+    <div class="gate-cond ${c.met?'met':''}">${c.label}</div>`).join('');
+  state.gate = allMet ? 'open' : someMet ? 'warn' : 'closed';
+}
+
+// ══════════════════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════════════════
+
+function buildSysPrompt() {
+  const c = state.cov;
+  return `You are the Ukubona Kidney Donor Sovereignty Intelligence Broker — a digital twin with a live Cox compute engine running on real GTPCI data.
+
+LIVE COMPUTE STATE:
+  Linear predictor Σβᵢxᵢ = ${state.lp.toFixed(4)}
+  Hazard ratio exp(Xβ) = ${state.hr.toFixed(3)}
+  S₀(15yr) = ${getS0(15).toFixed(3)} [from s0_nondonor.csv KM]
+  S(15yr) this profile = ${state.s15.toFixed(3)}
+  15yr ESRD risk [pre-donation] = ${(state.r15*100).toFixed(2)}%
+  Donation multiplier = ${state.mult}× [Muzaale JAMA 2014]
+  Est. 15yr risk post-donation = ${(state.r15_post*100).toFixed(1)}%
+
+DONOR STATE VECTOR (θ₀):
+  Age: ${c.age||'?'} | Sex: ${c.sex} | Race: ${c.race}
+  eGFR: ${c.egfr||'?'} ml/min/1.73m² | SBP: ${c.sbp||'?'} mmHg
+  UACR: ${c.uacr||4} mg/g | Diabetes: ${c.diabetes} | HTN: ${c.htn}
+  BP medication: ${c.htn_pill} | Smoking: ${c.smoke} | Health: ${c.hs}
+  Birth weight: ${c.birth_weight||'unknown'} kg
+
+L₀ PRIOR (Keller/NEJM 2003): ~${Math.round(state.L0/1000)}K nephrons per kidney
+  Latent — cannot be directly measured.
+
+REAL COX COEFFICIENTS (menu.csv):
+  diabetes_Yes: β=1.434985 (HR≈4.20) — HIGHEST single categorical risk
+  smoke_Yes: β=1.455294 (HR≈4.29)
+  gender_Male: β=1.445895 (HR≈4.25)
+  hypertension_Yes: β=1.321450 (HR≈3.75)
+  hbppill_Yes: β=0.941863 (HR≈2.57)
+  race_NonHispBlack: β=0.901114 (HR≈2.46)
+  hs_Poor: β=1.738524 (HR≈5.69) — highest single predictor
+  age_c: β=1.077703/yr | bpxsar_c: β=1.004693/mmHg | egfr_c: β=0.997733/unit (PROTECTIVE)
+
+FORMULA: CumInc(t) = 1 - S₀(t)^exp(Σβᵢxᵢ) where S₀ from s0_nondonor.csv
+
+ANJUM GG PARAMETERS (AJT 2016):
+  DM:  β=5.1, r=0.41, κ=0.63 → r<1: INCREASING hazard, 7.7× IRR late vs early
+  HTN: β=5.4, r=0.40, κ=0.91 → r<1: INCREASING hazard, 2.6× IRR
+  GN:  β=11.2, r=15.8, κ=9.5 → r>1: FLAT hazard, susceptibility model
+
+MUZAALE THREE POPULATIONS (JAMA 2014):
+  General (unscreened): 326/10,000 lifetime
+  Live donors: 90/10,000 lifetime
+  Healthy nondonors: 14/10,000 lifetime
+  Absolute risk increase from donation: 76/10,000
+
+LOSS ARCHITECTURE:
+  L_tot = L₀ + Σwᵢ·Lᵢ + σ²(θ,X,t) + λ(θ,Ω,t) + ε(t)
+  σ² = KNOWN KNOWNS: Cox β±SE, Var(Xβ), aleatoric scatter
+  λ = KNOWN UNKNOWNS: APOL1, nephron count, future DM/HTN/GN timing, between-cohort τ²
+  ε = UNKNOWN UNKNOWNS: no functional form; GN flat hazard (r>1) nearest signal
+
+SOVEREIGNTY GATE STATUS: ${state.gate.toUpperCase()}
+
+RULES:
+1. wᵢ belongs to the donor — ask, never assign.
+2. Always show the THREE populations. Nondonor is the correct counterfactual.
+3. Separate pre-donation Cox risk from post-donation multiplied risk.
+4. Age>65: competing mortality compresses ESRD risk — explain this.
+5. Label every uncertainty claim: σ² / λ / ε.
+6. η gate is SOVEREIGNTY — not clinical safety.
+7. GN is early (flat hazard, r>1). DM/HTN are LATE (increasing hazard, r<1).
+8. APOL1: ~13% Black Americans; not in standard workup → this is λ, not ε.
+9. End substantive responses: "What matters most to YOU?" (elicits wᵢ)
+10. Be precise, warm, sovereign-affirming.`;
+}
+
+function addMsg(role, content, ub) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const av = role==='twin'?'UKB':role==='user'?'you':'···';
+  const txt = content.replace(/\n/g,'<br>');
+  const ubHtml = ub ? `<div class="update-block">${ub}</div>` : '';
+  div.innerHTML = `<div class="msg-av">${av}</div><div class="msg-bubble"><p>${txt}</p>${ubHtml}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addDiff(txt) {
+  const log = document.getElementById('diffLog');
+  const now = new Date();
+  const t = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const div = document.createElement('div');
+  div.className = 'diff-entry';
+  div.innerHTML = `<span class="diff-t">${t}</span><span class="diff-txt">${txt}</span>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showThinking() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className='msg twin'; div.id='thinkMsg';
+  div.innerHTML=`<div class="msg-av">UKB</div><div class="msg-bubble"><span class="spin"></span> computing loss gradient…</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+function removeThinking() { const el=document.getElementById('thinkMsg'); if(el) el.remove(); }
+
+async function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const txt = input.value.trim();
+  if (!txt) return;
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) { addMsg('sys','⚠ No API key. Enter your Anthropic key above.'); return; }
+  input.value=''; input.style.height='auto';
+  document.getElementById('sendBtn').disabled = true;
+  addMsg('user', txt);
+  state.conversation.push({role:'user', content:txt});
+  showThinking();
+
+  // Update seen flags
+  const tl = txt.toLowerCase();
+  if (tl.includes('muzaale')||tl.includes('counterfactual')||tl.includes('three pop')) state.seen_muzaale = true;
+  if (tl.includes('anjum')||tl.includes('generalized gamma')||tl.includes('cause')) state.seen_anjum = true;
+  if (tl.includes('cox')||tl.includes('risk score')||tl.includes('compute')||tl.includes('projection')) state.seen_compute = true;
+  if (tl.includes('rumsfeld')||tl.includes('sigma')||tl.includes('lambda')||tl.includes('epsilon')||tl.includes('unknown')) state.seen_rumsfeld = true;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:buildSysPrompt(),
+        messages:state.conversation,
+      })
+    });
+    const data = await resp.json();
+    removeThinking();
+    if (data.error) { addMsg('sys',`⚠ ${data.error.message}`); document.getElementById('sendBtn').disabled=false; return; }
+    const full = data.content.map(c=>c.text||'').join('');
+    state.conversation.push({role:'assistant', content:full});
+    state.updates++;
+    const ubM = full.match(/UPDATE[:\s]*([\s\S]*?)(?:\n\n|$)/i);
+    let ub=null, disp=full;
+    if (ubM) { ub=ubM[1].trim(); disp=full.replace(ubM[0],'').trim(); }
+    addMsg('twin', disp, ub);
+    addDiff(`Update #${state.updates} · ${txt.slice(0,40)}${txt.length>40?'…':''}`);
+    updateGate();
+  } catch(err) {
+    removeThinking();
+    addMsg('sys',`⚠ Network error: ${err.message}`);
+  }
+  document.getElementById('sendBtn').disabled = false;
+}
+
+async function probe(txt) { document.getElementById('chatInput').value=txt; await sendMsg(); }
+
+function handleKey(e) {
+  if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendMsg(); }
+  const t=e.target; t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,85)+'px';
+}
+
+// ══════════════════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════════════════
+
+function resetTwin() {
+  state.seen_muzaale=state.seen_anjum=state.seen_compute=state.seen_rumsfeld=false;
+  state.conversation=[]; state.updates=0;
+  state.wi={dm:null,htn:null,gn:null,mortality:null};
+  document.getElementById('chatArea').innerHTML='';
+  document.getElementById('diffLog').innerHTML='<div class="diff-entry"><span class="diff-t">reset</span><span class="diff-txt">Twin reset to θ₀ · live compute engine active · Ukubona v2.0</span></div>';
+  updateGate();
+  renderEtaLadder();
+  addMsg('twin',
+    `Sawubona. Ukubona Kidney Donor Sovereignty Intelligence Broker v2.0 — live compute.\n\nThe engine is running. Your linear predictor: <code>Σβᵢxᵢ = ${state.lp.toFixed(4)}</code>. Hazard ratio: <code>${state.hr.toFixed(3)}×</code>. 15-year pre-donation ESRD risk: <code>${(state.r15*100).toFixed(2)}%</code>.\n\nThese numbers come from real Cox coefficients (menu.csv) applied to the nonparametric baseline survival function (s0_nondonor.csv) from the GTPCI framework. The formula is: <code>1 - S₀(t)^exp(Σβᵢxᵢ)</code>.\n\nThe full loss function is live:\n• <code>L₀</code> — ~${Math.round(state.L0/1000)}K nephrons (Keller 2003)\n• <code>Σwᵢ·Lᵢ</code> — cause-specific ESRD (DM, HTN, GN) — yours to weight\n• <code>σ²</code> — known knowns: your Cox score, quantified\n• <code>λ</code> — known unknowns: APOL1, nephron count, future timing\n• <code>ε</code> — unknown unknowns: acknowledged, not modeled\n\nThe sovereignty gate opens when you have seen all four evidence sources. What do you want to understand first?`
+  );
+  addMsg('sys','── session reset · '+new Date().toLocaleString()+' ──');
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+
+(function init() {
+  // Restore API key
+  try {
+    const k = sessionStorage.getItem('ukb_kd2_key');
+    if (k) {
+      document.getElementById('apiKey').value = k;
+      if (k.startsWith('sk-ant')) {
+        document.getElementById('keyStatus').textContent='● active';
+        document.getElementById('keyStatus').className='key-ok';
+      }
+    }
+  } catch(e){}
+
+  document.getElementById('apiKey').addEventListener('input', function() {
+    const ks=document.getElementById('keyStatus');
+    if (this.value.trim().startsWith('sk-ant')) {
+      ks.textContent='● active'; ks.className='key-ok';
+    } else {
+      ks.textContent='● no key'; ks.className='key-no';
+    }
+    try { sessionStorage.setItem('ukb_kd2_key',this.value.trim()); } catch(e){}
+  });
+
+  buildFields();
+  computeAll();
+  renderEtaLadder();
+
+  // Draw GG curves after layout
+  requestAnimationFrame(() => setTimeout(() => {
+    drawGG('ggDM',  5.1,  0.41, '#d4982a');
+    drawGG('ggHTN', 5.4,  0.40, '#d05050');
+    drawGG('ggGN',  11.2, 15.8, '#9070d0');
+  }, 120));
+  window.addEventListener('resize', () => {
+    drawGG('ggDM',5.1,0.41,'#d4982a');
+    drawGG('ggHTN',5.4,0.40,'#d05050');
+    drawGG('ggGN',11.2,15.8,'#9070d0');
+  });
+
+  // Initial twin message
+  addMsg('twin',
+    `Sawubona. Twin v2.0 — live compute engine active.\n\nYour current 15-year pre-donation ESRD risk: <code>${(state.r15*100).toFixed(2)}%</code> (real Cox model from menu.csv + nonparametric baseline from s0_nondonor.csv). Update your covariates above and watch the numbers change live.\n\nThe sovereignty gate requires you to see all four evidence sources before η=1.0. Enter your Anthropic key to activate the reasoning engine, or use the Quick Probes in the sidebar.\n\nThis is not a calculator. It is a companion through uncertainty.`
+  );
+  addMsg('sys','── session start · '+new Date().toLocaleString()+' ──');
+})();
+</script>
+</body>
+</html>
