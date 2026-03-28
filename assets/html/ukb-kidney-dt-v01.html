@@ -1,92 +1,74 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body,div,span,p,h2,h3,label,input,button{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-.wrap{padding:1rem 0;background:transparent}
-.hdr{margin-bottom:1rem}
-.hdr h2{font-size:18px;font-weight:500;color:#1a1a1a;margin-bottom:4px}
-.hdr p{font-size:13px;color:#555;line-height:1.6}
-@media(prefers-color-scheme:dark){
-  .hdr h2{color:#e8e8e8}
-  .hdr p{color:#999}
-  .card{background:#1e1e1e;border-color:#333}
-  .sl-name,.tgl-lbl,.reh-label,.foot-note{color:#999}
-  .sl-val,.reh-n,.stat-num{color:#e8e8e8}
-  .stat-card{background:#252525}
-  .stat-lbl{color:#888}
-  .insight-strip{border-color:#333}
-  .insight-row{border-color:#333}
-  .insight-text{color:#999}
-  .tag-eigen{background:#04342C;color:#5DCAA5}
-  .tag-constraint{background:#042C53;color:#85B7EB}
-  .tag-rehearsal{background:#412402;color:#EF9F27}
-  .tag-violation{background:#501313;color:#F09595}
-  .profile-note{color:#777;border-color:#333}
-  .reset-btn{color:#888;border-color:#444}
-  .ask-btn{color:#888;border-color:#444}
-  .ask-btn:hover{background:#252525}
-  .violation-strip{background:#2a1010;border-color:#7a2020;color:#f09595}
-}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:1.5rem}
+html,body{background:#0f1117;color:#e2e2e2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
+.wrap{max-width:1100px;margin:0 auto;padding:1.5rem}
+.hdr{margin-bottom:1.2rem}
+.hdr h2{font-size:18px;font-weight:500;color:#f0f0f0;margin-bottom:4px}
+.hdr p{font-size:12px;color:#888;line-height:1.6}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:1.2rem}
 @media(max-width:720px){.layout{grid-template-columns:1fr}}
-.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:12px;color:#555;align-items:center}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:11px;color:#888;align-items:center}
 .leg-item{display:flex;align-items:center;gap:5px}
-.swatch{width:24px;height:3px;border-radius:2px;flex-shrink:0}
-.swatch-dash{width:24px;height:0;border-top:2.5px dashed #D85A30;flex-shrink:0}
-.canvas-wrap{position:relative;width:100%;height:320px}
+.swatch{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+.swatch-dash{width:22px;height:0;border-top:2px dashed #D85A30;flex-shrink:0}
+.canvas-wrap{position:relative;width:100%;height:300px;background:#161b22;border:1px solid #2a2f3a;border-radius:8px;padding:8px}
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.stat-card{background:#f5f5f5;border-radius:8px;padding:10px 12px;text-align:center}
-.stat-num{font-size:20px;font-weight:500;color:#1a1a1a}
+.stat-card{background:#161b22;border:1px solid #2a2f3a;border-radius:8px;padding:10px 12px;text-align:center}
+.stat-num{font-size:20px;font-weight:500;color:#f0f0f0}
 .stat-lbl{font-size:11px;color:#666;margin-top:2px;line-height:1.3}
-.insight-strip{margin-top:12px;border:0.5px solid #ddd;border-radius:8px;overflow:hidden}
-.insight-row{display:flex;border-bottom:0.5px solid #ddd}
+.insight-strip{margin-top:10px;border:1px solid #2a2f3a;border-radius:8px;overflow:hidden}
+.insight-row{display:flex;border-bottom:1px solid #2a2f3a}
 .insight-row:last-child{border-bottom:none}
-.insight-tag{font-size:11px;font-weight:500;padding:8px 10px;min-width:90px;flex-shrink:0;border-right:0.5px solid #ddd}
-.insight-text{font-size:12px;color:#555;padding:8px 10px;line-height:1.5}
-.tag-eigen{background:#E1F5EE;color:#0F6E56}
-.tag-constraint{background:#E6F1FB;color:#185FA5}
-.tag-rehearsal{background:#FAEEDA;color:#854F0B}
-.tag-violation{background:#FCEBEB;color:#A32D2D}
-.violation-strip{display:none;background:#fff0f0;border:0.5px solid #f0a0a0;border-radius:8px;padding:8px 12px;font-size:12px;color:#a32d2d;margin-top:8px;line-height:1.5}
+.insight-tag{font-size:11px;font-weight:500;padding:8px 10px;min-width:88px;flex-shrink:0;border-right:1px solid #2a2f3a;display:flex;align-items:flex-start}
+.insight-text{font-size:12px;color:#888;padding:8px 10px;line-height:1.55}
+.tag-eigen{background:#04342C;color:#5DCAA5}
+.tag-constraint{background:#042C53;color:#85B7EB}
+.tag-rehearsal{background:#412402;color:#EF9F27}
+.tag-violation{background:#3a1010;color:#F09595}
+.violation-strip{display:none;background:#2a1010;border:1px solid #6a2020;border-radius:8px;padding:8px 12px;font-size:12px;color:#f09595;margin-top:8px;line-height:1.5}
 .panel{display:flex;flex-direction:column;gap:1rem}
-.card{background:#fff;border:0.5px solid #ddd;border-radius:12px;padding:1rem}
-.card h3{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:10px}
-.slider-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.card{background:#161b22;border:1px solid #2a2f3a;border-radius:10px;padding:.9rem}
+.card h3{font-size:12px;font-weight:500;color:#ccc;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+.slider-row{display:flex;flex-direction:column;gap:3px;margin-bottom:9px}
 .slider-row:last-child{margin-bottom:0}
 .slider-meta{display:flex;justify-content:space-between;align-items:baseline}
-.sl-name{font-size:12px;color:#666}
-.sl-val{font-size:12px;font-weight:500;color:#1a1a1a;min-width:38px;text-align:right}
-input[type=range]{width:100%;height:4px;accent-color:#378ADD;cursor:pointer}
-input[type=checkbox]{cursor:pointer}
-.toggle-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sl-name{font-size:11px;color:#777}
+.sl-val{font-size:11px;font-weight:500;color:#ddd;min-width:36px;text-align:right}
+input[type=range]{width:100%;height:4px;cursor:pointer;accent-color:#378ADD;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:#2a2f3a;border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#378ADD;margin-top:-5px}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
 .toggle-row:last-child{margin-bottom:0}
-.tgl-lbl{font-size:12px;color:#666}
-.foot-note{font-size:11px;color:#888;margin-top:8px;line-height:1.5}
-.profile-note{font-size:11px;color:#888;line-height:1.5;margin-top:10px;font-style:italic;border-top:0.5px solid #eee;padding-top:8px}
+.tgl-lbl{font-size:11px;color:#777}
+input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#378ADD}
+.foot-note{font-size:11px;color:#555;margin-top:8px;line-height:1.5;font-style:italic}
+.profile-note{font-size:11px;color:#555;line-height:1.5;margin-top:10px;border-top:1px solid #2a2f3a;padding-top:8px;font-style:italic}
 .reh-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.reh-label{font-size:12px;color:#666}
-.reh-n{font-size:13px;font-weight:500;color:#1a1a1a}
-.reset-btn{font-size:12px;color:#666;cursor:pointer;background:none;border:0.5px solid #ccc;border-radius:6px;padding:3px 9px}
-.gate-badge{display:inline-flex;align-items:center;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
-.gate-ok{background:#E1F5EE;color:#0F6E56}
-.gate-warn{background:#FAEEDA;color:#854F0B}
-.gate-fail{background:#FCEBEB;color:#A32D2D}
-.ask-btn{width:100%;margin-top:10px;font-size:12px;color:#555;cursor:pointer;background:none;border:0.5px solid #ccc;border-radius:8px;padding:7px 10px;text-align:left}
-.ask-btn:hover{background:#f5f5f5}
+.reh-label{font-size:11px;color:#666}
+.reh-n{font-size:13px;font-weight:500;color:#ddd}
+.reset-btn{font-size:11px;color:#666;cursor:pointer;background:#1e232e;border:1px solid #2a2f3a;border-radius:5px;padding:3px 8px}
+.reset-btn:hover{border-color:#444;color:#aaa}
+.gate-badge{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.gate-ok{background:#04342C;color:#5DCAA5}
+.gate-warn{background:#412402;color:#EF9F27}
+.gate-fail{background:#3a1010;color:#F09595}
+.ask-btn{width:100%;margin-top:10px;font-size:11px;color:#666;cursor:pointer;background:#1a1f2a;border:1px solid #2a2f3a;border-radius:7px;padding:7px 10px;text-align:left;transition:border-color .15s}
+.ask-btn:hover{border-color:#444;color:#aaa}
 </style>
 
 <div class="wrap">
 <div class="hdr">
   <h2>KM rails — constrained coefficient explorer</h2>
-  <p>Empirical anchors from Muzaale JAMA 2014. Teal and blue curves are fixed rails — the synthetic dashed curve must stay coherent with the envelope. Each slider move is one rehearsal: iteratively updating your prior toward the literature constraint.</p>
+  <p>Empirical anchors from Muzaale JAMA 2014. Teal and blue are fixed rails. Dashed synthetic must stay within the envelope.<br>Each slider move is one rehearsal — iterative prior revision toward the literature constraint.</p>
 </div>
 
 <div class="layout">
 <div>
   <div class="legend">
-    <div class="leg-item"><div class="swatch" style="background:#1D9E75"></div><span style="color:#555">Healthy nondonors — 14/10K (eigenmode E)</span></div>
-    <div class="leg-item"><div class="swatch" style="background:#378ADD"></div><span style="color:#555">SRTR live donors — 90/10K</span></div>
-    <div class="leg-item"><div class="swatch-dash"></div><span style="color:#555">Synthetic profile</span></div>
+    <div class="leg-item"><div class="swatch" style="background:#1D9E75"></div><span>Healthy nondonors — 14/10K (eigenmode E)</span></div>
+    <div class="leg-item"><div class="swatch" style="background:#378ADD"></div><span>SRTR live donors — 90/10K</span></div>
+    <div class="leg-item"><div class="swatch-dash"></div><span>Synthetic profile</span></div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <span class="reh-label">Rehearsal <span id="rehearsalN" class="reh-n">1</span></span>
       <button class="reset-btn" onclick="resetRehearsal()">reset</button>
@@ -115,15 +97,15 @@ input[type=checkbox]{cursor:pointer}
   <div class="insight-strip">
     <div class="insight-row">
       <div class="insight-tag tag-eigen">eigenmode E</div>
-      <div class="insight-text">The teal curve is the donor's counterfactual self — who they would have been without donation. The gap to the blue curve is the cost of donation: 76 per 10,000 lifetime. The healthy nondonor is the correct comparator, not the general population (326/10K).</div>
+      <div class="insight-text">The teal curve is the donor's counterfactual self — who they would have been without donating. The gap to the blue is the cost of donation: 76 per 10,000 lifetime. Healthy nondonor, not general population (326/10K), is the correct comparator.</div>
     </div>
     <div class="insight-row">
-      <div class="insight-tag tag-constraint">constraint logic</div>
-      <div class="insight-text">Try: toggle diabetes on, then slide its beta down toward 0.8. At some point the synthetic curve drops below the eigenmode. That crossing means you cannot believe diabetes matters that little and still be consistent with Muzaale. The rails are the literature speaking back.</div>
+      <div class="insight-tag tag-constraint">constraint</div>
+      <div class="insight-text">Try: toggle diabetes on, then slide its beta toward 0.8. At some crossing the synthetic drops below the eigenmode. That crossing means you cannot believe diabetes matters that little and remain consistent with Muzaale. The rails are the literature speaking back.</div>
     </div>
     <div class="insight-row">
       <div class="insight-tag tag-rehearsal">rehearsal</div>
-      <div class="insight-text">Each slider move is one rehearsal cycle. By rehearsal N, you have internalized the loss function — when a new donor arrives, you already know where they sit relative to the rails. This is Bayesian updating through visual rehearsal: prior revision without a single formula.</div>
+      <div class="insight-text">Each slider move is one rehearsal cycle. By rehearsal N you have internalized the loss function — when a new donor arrives, you already know intuitively where they sit relative to the rails. Bayesian updating through visual rehearsal: prior revision without a formula.</div>
     </div>
     <div class="insight-row" id="violation-note" style="display:none">
       <div class="insight-tag tag-violation">violation</div>
@@ -132,18 +114,18 @@ input[type=checkbox]{cursor:pointer}
   </div>
 
   <p class="profile-note" id="profileNote"></p>
-  <button class="ask-btn" onclick="sendPrompt('Add Anjum GG cause-specific rails for DM, HTN, and GN so the synthetic curve must sum to the all-cause Muzaale envelope within tolerance')">Add Anjum GG cause-specific rails (DM / HTN / GN) ↗</button>
+  <button class="ask-btn" onclick="alert('Connect to Claude API to extend with Anjum GG cause-specific rails (DM / HTN / GN)')">Add Anjum GG cause-specific rails (DM / HTN / GN) ↗</button>
 </div>
 
 <div class="panel">
   <div class="card">
-    <h3>coefficient sliders — menu.csv priors</h3>
+    <h3>coefficients — menu.csv priors</h3>
     <div id="sliders"></div>
   </div>
   <div class="card">
     <h3>profile toggles</h3>
     <div id="toggles"></div>
-    <p class="foot-note">Base case (no toggles) should hug the eigenmode. A healthy profile with no comorbidities is the healthy nondonor — that is the prior working correctly.</p>
+    <p class="foot-note">Base case (no toggles) should hug the eigenmode. A healthy profile with no comorbidities is the healthy nondonor — the prior working correctly.</p>
   </div>
   <div class="card">
     <h3>donation multiplier</h3>
@@ -154,7 +136,7 @@ input[type=checkbox]{cursor:pointer}
       </div>
       <input type="range" min="2.0" max="8.0" step="0.1" value="4.6" id="sl-mult" oninput="update()">
     </div>
-    <p class="foot-note">Black 4.9×, White 4.6×, Hispanic 4.8×. Drag to explore post-donation projection sensitivity.</p>
+    <p class="foot-note">Black 4.9×, White 4.6×, Hispanic 4.8×. Drag to explore post-donation sensitivity.</p>
   </div>
 </div>
 </div>
@@ -205,7 +187,7 @@ function buildSliders(){
     const d=PROFILE_DEF[k];
     const row=document.createElement('div');
     row.className='toggle-row';
-    row.innerHTML=`<span class="tgl-lbl">${d.label}</span><input type="checkbox" id="pt-${k}" ${d.def?'checked':''} onchange="setProfile('${k}',this.checked)" style="width:16px;height:16px;cursor:pointer">`;
+    row.innerHTML=`<span class="tgl-lbl">${d.label}</span><input type="checkbox" id="pt-${k}" ${d.def?'checked':''} onchange="setProfile('${k}',this.checked)">`;
     tg.appendChild(row);
   });
 }
@@ -251,7 +233,6 @@ function update(){
   const upper15=(1-S0_DN[15])*10000;
   const lower15=(1-S0_ND[15])*10000;
   const synth15=synthData[15];
-
   const aboveRail=synth15>upper15*2.2;
   const belowRail=synth15<lower15*0.4;
   const violated=aboveRail||belowRail;
@@ -263,11 +244,11 @@ function update(){
   if(violated){
     vn.style.display='flex';
     if(aboveRail){
-      vs.textContent=`Constraint violation — synthetic curve (${synth15.toFixed(0)}/10K at 15yr) exceeds twice the donor rail (${upper15.toFixed(0)}/10K). No real cohort exhibits this. Pull back active betas.`;
-      vd.textContent=`Synthetic (${synth15.toFixed(0)}/10K) exceeds 2× donor rail (${upper15.toFixed(0)}/10K). Your coefficients imply a risk profile no real cohort has shown. Revise downward.`;
+      vs.textContent=`Constraint violation — synthetic (${synth15.toFixed(0)}/10K at 15yr) exceeds 2× donor rail (${upper15.toFixed(0)}/10K). No real cohort exhibits this. Pull back active betas.`;
+      vd.textContent=`Synthetic (${synth15.toFixed(0)}/10K) exceeds 2× donor rail (${upper15.toFixed(0)}/10K). Coefficients imply a risk profile no real cohort has shown.`;
     } else {
-      vs.textContent=`Constraint violation — synthetic curve (${synth15.toFixed(0)}/10K at 15yr) falls below the eigenmode floor (${lower15.toFixed(0)}/10K). You cannot believe this profile is safer than the healthiest nondonors.`;
-      vd.textContent=`Synthetic (${synth15.toFixed(0)}/10K) below eigenmode floor (${lower15.toFixed(0)}/10K). Prior is too optimistic — inconsistent with Muzaale's healthiest matched controls.`;
+      vs.textContent=`Constraint violation — synthetic (${synth15.toFixed(0)}/10K at 15yr) below eigenmode floor (${lower15.toFixed(0)}/10K). Cannot be safer than the healthiest nondonors.`;
+      vd.textContent=`Synthetic (${synth15.toFixed(0)}/10K) below eigenmode floor (${lower15.toFixed(0)}/10K). Prior too optimistic — inconsistent with Muzaale's matched controls.`;
     }
   } else {
     vn.style.display='none';
@@ -316,9 +297,8 @@ function resetRehearsal(){
 
 buildSliders();
 
-const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-const gridC=isDark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)';
-const textC=isDark?'#999':'#666';
+const gridC='rgba(255,255,255,0.06)';
+const textC='#666';
 
 const ctx=document.getElementById('kmChart').getContext('2d');
 const chart=new Chart(ctx,{
@@ -327,7 +307,7 @@ const chart=new Chart(ctx,{
     labels:TIMES,
     datasets:[
       {label:'Healthy nondonors (eigenmode E)',data:S0_ND.map(s=>(1-s)*10000),borderColor:'#1D9E75',borderWidth:2.5,pointRadius:0,tension:0.3,fill:false},
-      {label:'SRTR live donors',data:S0_DN.map(s=>(1-s)*10000),borderColor:'#378ADD',borderWidth:2.5,pointRadius:0,tension:0.3,fill:{target:0,above:isDark?'rgba(55,138,221,0.08)':'rgba(55,138,221,0.06)'}},
+      {label:'SRTR live donors',data:S0_DN.map(s=>(1-s)*10000),borderColor:'#378ADD',borderWidth:2.5,pointRadius:0,tension:0.3,fill:{target:0,above:'rgba(55,138,221,0.07)'}},
       {label:'Synthetic profile',data:S0_ND.map(s=>(1-s)*10000),borderColor:'#D85A30',borderWidth:2,borderDash:[5,4],pointRadius:0,tension:0.3,fill:false}
     ]
   },
@@ -338,8 +318,8 @@ const chart=new Chart(ctx,{
       tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(1)} per 10K`}}
     },
     scales:{
-      x:{title:{display:true,text:'years post-baseline',color:textC,font:{size:12}},ticks:{color:textC,font:{size:11},maxTicksLimit:10},grid:{color:gridC}},
-      y:{title:{display:true,text:'cumulative ESRD incidence per 10,000',color:textC,font:{size:12}},ticks:{color:textC,font:{size:11},callback:v=>v.toFixed(0)},grid:{color:gridC},min:0,suggestedMax:700}
+      x:{title:{display:true,text:'years post-baseline',color:textC,font:{size:11}},ticks:{color:textC,font:{size:11},maxTicksLimit:10},grid:{color:gridC},border:{color:'#2a2f3a'}},
+      y:{title:{display:true,text:'cumulative ESRD incidence per 10,000',color:textC,font:{size:11}},ticks:{color:textC,font:{size:11},callback:v=>v.toFixed(0)},grid:{color:gridC},border:{color:'#2a2f3a'},min:0,suggestedMax:700}
     }
   }
 });
