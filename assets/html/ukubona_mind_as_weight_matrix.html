@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona · The Mind as a Weight Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── TOKENS — light default ── */
+:root {
+  --bg:        #f7f6f2;
+  --bg2:       #ffffff;
+  --bg3:       #f0efe9;
+  --surf:      #ffffff;
+  --ink:       #1c1b18;
+  --ink2:      #3d3c38;
+  --ink3:      #6b6a64;
+  --ink4:      #9a9891;
+  --brd:       #e0ddd5;
+  --brd2:      #c8c5bc;
+
+  --c-blue:    #185FA5;
+  --c-blue-bg: #E6F1FB;
+  --c-teal:    #0F6E56;
+  --c-teal-bg: #E1F5EE;
+  --c-amber:   #854F0B;
+  --c-amber-bg:#FAEEDA;
+  --c-purple:  #534AB7;
+  --c-purple-bg:#EEEDFE;
+  --c-coral:   #993C1D;
+  --c-coral-bg:#FAECE7;
+  --c-red:     #A32D2D;
+  --c-red-bg:  #FCEBEB;
+  --c-green:   #3B6D11;
+  --c-green-bg:#EAF3DE;
+  --c-gray:    #5F5E5A;
+  --c-gray-bg: #F1EFE8;
+
+  --ok:        #27500A;
+  --ok-bg:     #EAF3DE;
+  --warn:      #633806;
+  --warn-bg:   #FAEEDA;
+  --err:       #791F1F;
+  --err-bg:    #FCEBEB;
+  --info:      #0C447C;
+  --info-bg:   #E6F1FB;
+
+  --r:  10px;
+  --r2: 6px;
+  --r3: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #0e0d0b;
+    --bg2:       #141310;
+    --bg3:       #1a1917;
+    --surf:      #1f1e1b;
+    --ink:       #e8e4d9;
+    --ink2:      #c0bcb0;
+    --ink3:      #8a877f;
+    --ink4:      #5a5852;
+    --brd:       #2a2925;
+    --brd2:      #3a3835;
+
+    --c-blue:    #85B7EB;
+    --c-blue-bg: #0c2540;
+    --c-teal:    #5DCAA5;
+    --c-teal-bg: #04231c;
+    --c-amber:   #EF9F27;
+    --c-amber-bg:#2a1a04;
+    --c-purple:  #AFA9EC;
+    --c-purple-bg:#1a1840;
+    --c-coral:   #F0997B;
+    --c-coral-bg:#2a100a;
+    --c-red:     #F09595;
+    --c-red-bg:  #280c0c;
+    --c-green:   #97C459;
+    --c-green-bg:#173404;
+    --c-gray:    #B4B2A9;
+    --c-gray-bg: #252520;
+
+    --ok:        #C0DD97;
+    --ok-bg:     #173404;
+    --warn:      #FAC775;
+    --warn-bg:   #2a1a04;
+    --err:       #F7C1C1;
+    --err-bg:    #280c0c;
+    --info:      #B5D4F4;
+    --info-bg:   #0c2540;
+  }
+}
+
+/* ── BASE ── */
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Source Serif 4', Georgia, serif;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── SPECTRUM ── */
+.spectrum {
+  height: 3px;
+  background: linear-gradient(90deg,#4a9eff,#52c4a0,#f0a030,#b088f0,#f06050);
+  position: fixed;
+  top:0;left:0;right:0;
+  z-index: 100;
+}
+
+/* ── LAYOUT ── */
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 4rem;
+}
+
+/* ── HEADER ── */
+.brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-bottom: 0.5rem;
+}
+.brand span { color: var(--c-teal); }
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+h1 em { font-style: italic; color: var(--c-purple); }
+
+.tagline {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--ink4);
+  letter-spacing: 0.05em;
+  margin-bottom: 2rem;
+}
+
+/* ── FORMULA BOX ── */
+.formula {
+  background: var(--bg3);
+  border: 0.5px solid var(--brd);
+  border-left: 3px solid var(--c-purple);
+  border-radius: 0 var(--r2) var(--r2) 0;
+  padding: 0.85rem 1.1rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--ink3);
+  line-height: 1.9;
+  margin-bottom: 1.5rem;
+}
+.formula b { color: var(--c-amber); font-weight: 500; }
+.formula em { color: var(--c-purple); font-style: normal; }
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.tab {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 0.5px solid var(--brd2);
+  background: transparent;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--ink3);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.03em;
+  transition: all 0.18s;
+}
+.tab:hover { background: var(--bg3); }
+.tab.active {
+  background: var(--c-purple-bg);
+  color: var(--c-purple);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── NOTE BOX ── */
+.note {
+  background: var(--bg3);
+  border-left: 2px solid var(--brd2);
+  border-radius: 0 var(--r2) var(--r2) 0;
+  padding: 0.8rem 1rem;
+  font-size: 0.84rem;
+  color: var(--ink2);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+.note b { color: var(--ink); font-weight: 500; }
+.note.info  { border-left-color: var(--c-blue);   background: var(--c-blue-bg);   color: var(--info); }
+.note.ok    { border-left-color: var(--c-teal);   background: var(--c-teal-bg);   color: var(--c-teal); }
+.note.warn  { border-left-color: var(--c-amber);  background: var(--c-amber-bg);  color: var(--c-amber); }
+.note.purple{ border-left-color: var(--c-purple); background: var(--c-purple-bg); color: var(--c-purple); }
+
+.note.info  b, .note.ok b, .note.warn b, .note.purple b { color: inherit; }
+
+/* ── SLIDER ── */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1rem 0 0.3rem;
+}
+.slider-row label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--ink3);
+  white-space: nowrap;
+  min-width: 110px;
+}
+.slider-row input[type=range] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--brd2);
+  outline: none;
+  cursor: pointer;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--c-purple);
+  cursor: pointer;
+}
+.slider-row input[type=range]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--c-purple);
+  border: none;
+  cursor: pointer;
+}
+.slider-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--c-purple);
+  font-weight: 500;
+  min-width: 38px;
+  text-align: right;
+}
+.slider-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--ink4);
+  margin-bottom: 1rem;
+}
+
+/* ── TABLE ── */
+.tbl-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--ink4);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  border: 0.5px solid var(--brd);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 1rem;
+  font-size: 0.81rem;
+}
+.tbl thead tr {
+  background: var(--bg3);
+}
+.tbl th {
+  padding: 7px 11px;
+  text-align: left;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: var(--ink4);
+  letter-spacing: 0.05em;
+  border-bottom: 0.5px solid var(--brd);
+}
+.tbl td {
+  padding: 7px 11px;
+  border-bottom: 0.5px solid var(--brd);
+  color: var(--ink2);
+  vertical-align: middle;
+}
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(--bg3); }
+.tbl td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; }
+.tbl td.ok   { color: var(--c-teal);  font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; font-weight: 500; }
+.tbl td.warn { color: var(--c-amber); font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; font-weight: 500; }
+.tbl td.gone { color: var(--c-red);   font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; text-decoration: line-through; opacity: 0.55; }
+.tbl td.info { color: var(--c-blue);  font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; }
+.tbl td.dim  { color: var(--ink4);    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; }
+.tbl tr.highlight-row td { background: var(--c-purple-bg); }
+
+/* ── BAR ── */
+.bar-track {
+  height: 5px;
+  background: var(--brd);
+  border-radius: 3px;
+  overflow: hidden;
+  width: 100%;
+  min-width: 80px;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.45s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── BADGE ── */
+.badge {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge.ok     { background: var(--ok-bg);   color: var(--ok);   }
+.badge.warn   { background: var(--warn-bg); color: var(--warn); }
+.badge.err    { background: var(--err-bg);  color: var(--err);  }
+.badge.info   { background: var(--info-bg); color: var(--info); }
+.badge.purple { background: var(--c-purple-bg); color: var(--c-purple); }
+
+/* ── COMEDY CARDS ── */
+.comedy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 1rem 0;
+}
+.comedy-card {
+  border: 0.5px solid var(--brd);
+  border-radius: var(--r2);
+  padding: 0.9rem 1rem;
+  background: var(--surf);
+}
+.comedy-card h4 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.comedy-card p {
+  font-size: 0.79rem;
+  color: var(--ink3);
+  line-height: 1.55;
+}
+
+/* ── DIVIDER ── */
+.divider {
+  height: 0.5px;
+  background: var(--brd);
+  margin: 1.2rem 0;
+}
+
+/* ── SEND BUTTON ── */
+.send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: var(--r2);
+  border: 0.5px solid var(--brd2);
+  background: transparent;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink3);
+  cursor: pointer;
+  margin-top: 0.8rem;
+  transition: background 0.15s, color 0.15s;
+}
+.send-btn:hover {
+  background: var(--c-purple-bg);
+  color: var(--c-purple);
+  border-color: var(--c-purple);
+}
+
+/* ── FOOTER ── */
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 0.5px solid var(--brd);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--ink4);
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+</style>
+</head>
+<body>
+
+<div class="spectrum"></div>
+
+<div class="container">
+
+  <div class="brand"><span>Ukubona</span> · The Mind as a Weight Matrix · v1.0</div>
+  <h1>The Mind is a<br><em>.csv file</em> with weights</h1>
+  <p class="tagline">Memory(L_tot) = L₀ + Σᵢ wᵢLᵢ + σ²ᵢ + λᵢ + εᵢ · Ukubona LLC · Kampala 2026</p>
+
+  <div class="formula">
+    Memory(L_tot) = L₀  +  <b>Σᵢ wᵢ · Lᵢ</b>  +  σ²ᵢ  +  λᵢ  +  εᵢ<br>
+    <br>
+    L₀   = bedrock prior (age, culture, biology — the anchors)<br>
+    wᵢ   = weights — the biases learned over a lifetime<br>
+    Lᵢ   = loss components — what the system is optimising toward<br>
+    σ²ᵢ  = uncertainty — unresolved null pointers<br>
+    λᵢ   = irreversibility — the cost of steps that cannot be undone<br>
+    εᵢ   = structured missingness — what was never encoded<br>
+    <br>
+    <em>Publishing weights = publishing the mind · dementia = selective weight decay · Busoga naming = weight sharing across instantiations</em>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('dementia')">Dementia as weight decay</button>
+    <button class="tab" onclick="switchTab('comedy')">Comedy as misidentified activation</button>
+    <button class="tab" onclick="switchTab('busoga')">Busoga naming as weight inheritance</button>
+    <button class="tab" onclick="switchTab('llm')">LLM = 65 GB human</button>
+  </div>
+
+  <!-- ═══════════════════ TAB 1: DEMENTIA ═══════════════════ -->
+  <div id="tab-dementia" class="panel active">
+
+    <div class="note info">
+      <b>Paul Luswata's father — 75yo, dementia.</b> Asked "who am I to you?" he answers <b>"very good friend."</b> The name-token fires correctly. The face is recognised. But the relational-category row — w_son · L_relationship — has decayed to near zero. The warmth row is intact at 0.9. Dementia is not subtraction. It is <b>selective weight decay revealing the load-bearing architecture.</b>
+    </div>
+
+    <div class="slider-row">
+      <label>Dementia stage</label>
+      <input type="range" min="0" max="100" value="60" id="dSlider" oninput="updateDementia(this.value)">
+      <span class="slider-val" id="dVal">60%</span>
+    </div>
+    <p class="slider-hint">Drag right → weights decay in order of depth. Relational category lost first. Emotional warmth last.</p>
+
+    <div class="tbl-label">θ · Paul Luswata's father · weight matrix state</div>
+    <table class="tbl" id="dementiaTable">
+      <thead>
+        <tr>
+          <th style="width:140px">Weight row</th>
+          <th style="width:55px">wᵢ</th>
+          <th>Lᵢ</th>
+          <th style="width:120px">Strength</th>
+          <th style="width:70px">Status</th>
+        </tr>
+      </thead>
+      <tbody id="dTbody"></tbody>
+    </table>
+
+    <div class="note" id="dementiaNote" style="border-left-color: var(--c-amber);">Loading…</div>
+
+  </div>
+
+  <!-- ═══════════════════ TAB 2: COMEDY ═══════════════════ -->
+  <div id="tab-comedy" class="panel">
+
+    <div class="note warn">
+      <b>Comedy = Σᵢ Lᵢ activation when wᵢ match the wrong row.</b> The audience sees the correct row. The sufferer activates an adjacent row with high confidence. The benign misery is the source of mirth — the system is working perfectly on the wrong input.
+    </div>
+
+    <div class="comedy-grid">
+      <div class="comedy-card">
+        <h4>The trigger token</h4>
+        <p>A name, a face, a voice — activates a row in the weight matrix. The token is real. The row it fires is wrong.</p>
+      </div>
+      <div class="comedy-card">
+        <h4>The misidentification</h4>
+        <p>High-confidence behaviour loads from the wrong row. Output is appropriate — to the wrong context. The system has no error signal.</p>
+      </div>
+      <div class="comedy-card">
+        <h4>The asymmetry</h4>
+        <p>Audience holds both rows simultaneously. Sufferer accesses only one. The gap between them is comedic potential. Gap closing = punchline.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="tbl-label">W · comedy as matrix activation · canonical examples</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:140px">Example</th>
+          <th>Token fired</th>
+          <th>Wrong row activated</th>
+          <th style="width:80px">η gap</th>
+          <th style="width:80px">Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mistaken identity</td>
+          <td class="mono">face / name match</td>
+          <td class="warn">w_twin instead of w_self</td>
+          <td class="ok">high</td>
+          <td><span class="badge err">accidental</span></td>
+        </tr>
+        <tr>
+          <td>Dementia comedy</td>
+          <td class="mono">familiar name token</td>
+          <td class="warn">w_friend instead of w_son</td>
+          <td class="warn">medium</td>
+          <td><span class="badge warn">pathological</span></td>
+        </tr>
+        <tr>
+          <td>Fawlty Towers</td>
+          <td class="mono">guest request token</td>
+          <td class="warn">w_contempt instead of w_service</td>
+          <td class="ok">high</td>
+          <td><span class="badge err">character</span></td>
+        </tr>
+        <tr class="highlight-row">
+          <td>Busoga naming</td>
+          <td class="mono">"Abimereki" token</td>
+          <td class="info">w_grandfather (shared row)</td>
+          <td class="info">intentional</td>
+          <td><span class="badge purple">designed</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note ok">
+      <b>The Busoga case is the only one where the "wrong" activation is architecturally correct.</b> The naming protocol deliberately shares the row across biological generations. Comedy becomes ritual. The misidentification is the point. This is the difference between a bug and a feature at the level of the weight matrix.
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════ TAB 3: BUSOGA ═══════════════════ -->
+  <div id="tab-busoga" class="panel">
+
+    <div class="note purple">
+      <b>Abimereki Muzaale — named after his father's father.</b> His grandmother calls him "husband." His father calls him "my father." This is not confusion. This is a <b>cross-generational weight-sharing protocol.</b> The name-token opens the grandfather-slot. The grandson's body loads the grandfather's weight row. The same operation as parameter-sharing across attention heads — encoded in naming ritual instead of matrix algebra.
+    </div>
+
+    <div class="formula" style="border-left-color: var(--c-teal);">
+      W_busoga[<em>"Abimereki"</em>]  →  shared across grandfather AND grandson<br>
+      <br>
+      When token fires:  w_grandfather row activates<br>
+      Relational behaviour from that row loads into current biological instance<br>
+      <br>
+      <b>Key insight:</b> identity encoded as a distributable weight row, not a unique biological instance<br>
+      Same as LLaMA attention head weight-sharing — but running on wetware, not silicon
+    </div>
+
+    <div class="tbl-label">W · Busoga naming · cross-generational weight matrix</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Row in W</th>
+          <th>Biological instance</th>
+          <th>Behaviour loaded</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ok">Abimereki</td>
+          <td class="warn">w_grandfather</td>
+          <td class="dim">body: grandfather (1940s Busoga)</td>
+          <td class="dim">husband · patriarch · elder</td>
+        </tr>
+        <tr class="highlight-row">
+          <td class="ok">Abimereki</td>
+          <td class="warn">w_grandfather</td>
+          <td class="info">body: grandson (2020s Kampala)</td>
+          <td class="warn">husband · patriarch · elder ← same row</td>
+        </tr>
+        <tr>
+          <td class="ok">Ikesa</td>
+          <td class="warn">w_husband (grandma's)</td>
+          <td class="info">body: grandson</td>
+          <td class="dim">affection · authority · home</td>
+        </tr>
+        <tr>
+          <td class="ok">Ikesa</td>
+          <td class="warn">w_mother (dad's)</td>
+          <td class="info">body: grandson</td>
+          <td class="dim">care · origin · Berkeley nostalgia</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note ok">
+      <b>The structural proof:</b> Busoga names are not labels — they are keys into a shared weight matrix. The "confusing childhood" was only confusing if you assumed unique-instance identity. In the shared-weight model, hearing "my father" addressed to a grandson is the <em>correct</em> forward pass. The token fired the correct row. The output was appropriate. The confusion was the observer's model, not the system's.
+    </div>
+
+    <div class="note" style="border-left-color: var(--c-gray);">
+      <b>Move over Freud.</b> Freud called this primary process thinking — archaic, confused, irrational. The weight-matrix model shows it is <em>structurally precise</em>. The row is shared. The key is inherited. The activation is correct. What Freud saw as regression to primitive cognition is actually a different — and in some ways superior — identity architecture. One that makes the dead present, the absent load-bearing, and the individual continuous with their lineage.
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════ TAB 4: LLM ═══════════════════ -->
+  <div id="tab-llm" class="panel">
+
+    <div class="note info">
+      <b>An 87-year-old's head is small.</b> If every moment of their life were recorded at VHS fidelity it would fill 20 Old Traffords stacked with tapes. The brain compresses all of that into ~1.3kg of tissue running on 20 watts. LLaMA 3 compresses an internet-scale corpus into 65GB. <b>The weights ARE the data, compressed. Publishing weights = publishing the model of the data it was trained on. This applies to humans too.</b>
+    </div>
+
+    <div class="tbl-label">comparison · LLM vs human brain · weight matrix properties</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:170px">Property</th>
+          <th>LLaMA 65B</th>
+          <th>Human brain</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="dim">Storage size</td>
+          <td class="mono">65 GB weights</td>
+          <td class="mono">~2.5 petabytes equivalent</td>
+        </tr>
+        <tr>
+          <td class="dim">Compression</td>
+          <td class="mono">internet corpus → 65 GB</td>
+          <td class="mono">87-year lifetime → 1.3 kg</td>
+        </tr>
+        <tr>
+          <td class="dim">Parameters</td>
+          <td class="mono">65 billion</td>
+          <td class="mono">~100 trillion synapses</td>
+        </tr>
+        <tr>
+          <td class="dim">Key → row lookup</td>
+          <td class="mono">token → attention head</td>
+          <td class="mono">name/face → memory trace</td>
+        </tr>
+        <tr>
+          <td class="dim">Weight decay</td>
+          <td class="mono">pruning / quantization</td>
+          <td class="mono">dementia / ageing</td>
+        </tr>
+        <tr>
+          <td class="dim">Weight sharing</td>
+          <td class="mono">tied attention heads</td>
+          <td class="mono">Busoga naming system</td>
+        </tr>
+        <tr>
+          <td class="dim">Fine-tuning</td>
+          <td class="mono">RLHF / SFT</td>
+          <td class="mono">trauma · love · education</td>
+        </tr>
+        <tr>
+          <td class="dim">Power</td>
+          <td class="mono">~300 W (GPU inference)</td>
+          <td class="mono">~20 W (biological)</td>
+        </tr>
+        <tr class="highlight-row">
+          <td class="dim">Digital twin</td>
+          <td class="ok">publish weights → twin</td>
+          <td class="ok">SIB elicitation → twin ← tractable</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note ok">
+      <b>The tidy solution for the digital twin of the mind:</b> The Sovereign Intelligence Broker. Elicit the weights — the wᵢ — through structured conversation, clinical history, and narrative. The body twin remains complex (every disease rewrites the schema). But the mind twin is tractable: the architecture is invariant. Dementia changes the weights; it does not change the structure. The structure is always: bedrock prior + weighted loss components + uncertainty + irreversibility + missingness.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="tbl-label">enduring institutions · the solved identity problem · what Uganda hasn't done yet</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:160px">Institution</th>
+          <th>Identity mechanism</th>
+          <th>Embodied scalar</th>
+          <th style="width:80px">Solved?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Vatican</td>
+          <td class="dim">unambiguous succession · College of Cardinals</td>
+          <td class="dim">Pope — singular embodied figureheard</td>
+          <td><span class="badge ok">yes</span></td>
+        </tr>
+        <tr>
+          <td>British Crown</td>
+          <td class="dim">Prince of Wales designation · 100-year refinement</td>
+          <td class="dim">King/Queen — unambiguous at all times</td>
+          <td><span class="badge ok">yes</span></td>
+        </tr>
+        <tr>
+          <td>John 3:16</td>
+          <td class="dim">"God so loved the world…" — humanity doesn't do Zoom</td>
+          <td class="dim">Jesus — flesh and blood, not a policy document</td>
+          <td><span class="badge ok">yes</span></td>
+        </tr>
+        <tr class="highlight-row">
+          <td>Uganda (current)</td>
+          <td class="warn">contested · son positioning as heir apparent</td>
+          <td class="warn">no unambiguous scalar · resources squandered</td>
+          <td><span class="badge err">no</span></td>
+        </tr>
+        <tr>
+          <td>Plantagenet–York</td>
+          <td class="dim">Wars of the Roses · 100+ years of contested scalar</td>
+          <td class="dim">unresolved until Tudor synthesis</td>
+          <td><span class="badge warn">eventually</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note warn">
+      <b>The scalar must be unambiguous.</b> Every enduring institution has solved the same problem the Busoga naming system solves: make the identity-token unambiguous, make the weight row inheritable, make the embodied figureheard legible without footnotes. Uganda's contested succession is not a political problem — it is a weight-matrix problem. The wᵢ for "legitimate successor" is undefined. Every cycle of ambiguity burns resources and creates vulnerability. The British solved it with "Prince of Wales." The Vatican solved it with "College of Cardinals." Uganda has not solved it yet.
+    </div>
+
+  </div>
+
+  <footer>
+    <span>Ukubona LLC · ukb-mind-matrix-v1 · Kampala, Uganda</span>
+    <span>Memory = L₀ + Σ wᵢLᵢ + σ²ᵢ + λᵢ + εᵢ · Move over Freud</span>
+  </footer>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DEMENTIA SLIDER
+═══════════════════════════════════════════ */
+const ROWS = [
+  { key:'w_name',   label:'Name recognition',      desc:'L_identity',     color:'#185FA5', maxDecay:12 },
+  { key:'w_face',   label:'Face recognition',      desc:'L_identity',     color:'#185FA5', maxDecay:22 },
+  { key:'w_voice',  label:'Voice recognition',     desc:'L_identity',     color:'#534AB7', maxDecay:32 },
+  { key:'w_episode',label:'Episodic memory',        desc:'L_episodes',     color:'#854F0B', maxDecay:48 },
+  { key:'w_son',    label:'Relational category',   desc:'L_relationship', color:'#A32D2D', maxDecay:55 },
+  { key:'w_role',   label:'Social role (father)',  desc:'L_relationship', color:'#A32D2D', maxDecay:68 },
+  { key:'w_affect', label:'Emotional warmth',      desc:'L_warmth',       color:'#0F6E56', maxDecay:94 },
+];
+
+function computeW(row, stage) {
+  if (stage < row.maxDecay) return 1.0;
+  const decay = Math.min((stage - row.maxDecay) / (100 - row.maxDecay), 1);
+  return parseFloat(Math.max(0, 1 - decay).toFixed(2));
+}
+
+function wClass(w) {
+  if (w >= 0.7) return 'ok';
+  if (w >= 0.25) return 'warn';
+  return 'gone';
+}
+
+function badgeHtml(w) {
+  if (w >= 0.7) return '<span class="badge ok">intact</span>';
+  if (w >= 0.25) return '<span class="badge warn">fading</span>';
+  return '<span class="badge err">lost</span>';
+}
+
+function updateDementia(val) {
+  val = parseInt(val);
+  document.getElementById('dVal').textContent = val + '%';
+
+  const tbody = document.getElementById('dTbody');
+  tbody.innerHTML = '';
+  ROWS.forEach(r => {
+    const w = computeW(r, val);
+    const pct = Math.round(w * 100);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.label}</td>
+      <td class="${wClass(w)} mono">${w.toFixed(2)}</td>
+      <td class="dim">${r.desc}</td>
+      <td>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%;background:${r.color}"></div>
+        </div>
+      </td>
+      <td>${badgeHtml(w)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const note = document.getElementById('dementiaNote');
+  if (val < 30) {
+    note.innerHTML = '<b>Early stage:</b> Weight matrix largely intact. Occasional word-finding difficulty. No row has collapsed yet. Paul\'s father would still answer "my son" correctly.';
+  } else if (val < 54) {
+    note.innerHTML = '<b>Mid stage:</b> Episodic memory beginning to thin. Relational category (w_son) starting to decay. The father might hesitate — or say "my boy" rather than "my son." The warmth row is still strong.';
+  } else if (val < 74) {
+    note.innerHTML = '<b>Late mid — the Paul Luswata moment:</b> w_son ≈ 0. Asked "who am I to you?" → <b>"Very good friend."</b> The name-token fires correctly. The face is recognised. But the relational-category row has collapsed. The affect row (w_affect) remains near 0.9 — warmth fully preserved. The architecture is revealed.';
+  } else {
+    note.innerHTML = '<b>Late stage:</b> Only w_affect and core w_name survive. The deepest eigenmode — emotional warmth — is the last to go. The person is still <em>felt</em> even when they can no longer be <em>categorised</em>. This is the load-bearing structure of the mind: affect outlasts everything.';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   TAB SWITCHING
+═══════════════════════════════════════════ */
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+updateDementia(60);
+</script>
+</body>
+</html>
