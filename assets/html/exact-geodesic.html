@@ -1,1 +1,933 @@
-.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ukb-3-N18-e-dt-v01 · CKD Digital Twin · Ukubona LLC</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #070a0f;
+  --bg2:      #0c1018;
+  --bg3:      #111620;
+  --bg4:      #161c28;
+  --border:   #1a2030;
+  --border2:  #232d40;
+  --text:     #dde4f0;
+  --muted:    #5a6880;
+  --dim:      #3a4558;
+  --t:        #ff6b6b;
+  --m:        #ffd93d;
+  --v:        #6bcfff;
+  --e:        #a78bfa;
+  --s:        #34d399;
+  --g1:       #34d399;
+  --g2:       #6bcfff;
+  --g3a:      #ffd93d;
+  --g3b:      #f97316;
+  --g4:       #ef4444;
+  --g5:       #dc2626;
+  --geodesic: #a78bfa;
+  --curvature:#f472b6;
+  --eigen:    #6bcfff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;line-height:1.65;overflow-x:hidden;cursor:crosshair;}
+
+/* grain overlay */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.35;}
+
+/* COORD BAR */
+.coord-bar{position:sticky;top:0;z-index:200;background:rgba(7,10,15,0.96);border-bottom:1px solid var(--border);padding:10px 40px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(12px);}
+.coord-schema{font-family:'DM Mono',monospace;font-size:13px;display:flex;gap:0;align-items:center;}
+.cs{padding:3px 7px;border-radius:2px;}
+.cs-sep{color:var(--muted);padding:0 2px;}
+.cs-ukb{color:var(--muted);}
+.cs-scale{color:#f97316;background:#f9731610;border:1px solid #f9731625;}
+.cs-domain{color:var(--eigen);background:#6bcfff10;border:1px solid #6bcfff25;}
+.cs-node{color:var(--e);background:#a78bfa15;border:1px solid #a78bfa30;}
+.cs-dt{color:var(--muted);}
+.cs-ver{color:var(--dim);background:#3a455810;border:1px solid #3a455830;}
+.coord-right{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px;}
+
+/* HEADER */
+header{padding:64px 40px 52px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+header::after{content:'θ∈𝓜';position:absolute;right:30px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:180px;color:#a78bfa04;pointer-events:none;letter-spacing:-5px;}
+.eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--e);text-transform:uppercase;margin-bottom:16px;opacity:0;animation:fadeUp 0.5s ease 0.1s forwards;}
+h1{font-size:clamp(30px,5vw,62px);font-weight:300;line-height:1.1;letter-spacing:-1px;opacity:0;animation:fadeUp 0.5s ease 0.2s forwards;}
+h1 em{font-style:italic;color:var(--e);}
+.header-sub{margin-top:14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:1px;opacity:0;animation:fadeUp 0.5s ease 0.3s forwards;}
+.formula{margin-top:18px;font-family:'DM Mono',monospace;font-size:13px;color:var(--dim);opacity:0;animation:fadeUp 0.5s ease 0.4s forwards;}
+.formula span{color:var(--e);}
+
+/* humility banner */
+.humility-banner{margin:0;padding:14px 40px;background:linear-gradient(90deg,#a78bfa08,transparent);border-bottom:1px solid #a78bfa20;font-style:italic;font-size:14px;color:#a78bfa90;letter-spacing:0.5px;}
+.humility-banner strong{color:var(--e);font-style:normal;}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:1fr 400px;min-height:100vh;}
+@media(max-width:960px){.main-grid{grid-template-columns:1fr;}}
+
+/* LEFT COL */
+.left-col{border-right:1px solid var(--border);}
+
+/* PANELS */
+.panel{padding:32px 40px;border-bottom:1px solid var(--border);}
+.panel-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.node-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+h2{font-size:22px;font-weight:300;color:var(--text);margin-bottom:16px;letter-spacing:-0.3px;}
+
+/* RIEMANN BOX */
+.riemann-box{background:#a78bfa08;border:1px solid #a78bfa25;border-left:3px solid var(--e);padding:16px 20px;border-radius:0 3px 3px 0;margin-bottom:20px;}
+.riemann-box p{font-size:14px;color:#c4b8e8;font-style:italic;line-height:1.65;}
+.riemann-box strong{color:var(--text);font-style:normal;}
+
+/* MANIFOLD CANVAS */
+.manifold-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:20px;}
+canvas#manifoldCanvas{display:block;width:100%;}
+.manifold-legend{display:flex;gap:18px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg3);}
+.ml-item{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
+.ml-swatch{width:24px;height:2px;border-radius:1px;}
+
+/* TRAJECTORY INPUTS */
+.traj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.traj-input-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:10px 12px;transition:border-color 0.2s;}
+.traj-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:6px;text-transform:uppercase;}
+.traj-input{width:100%;background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:20px;color:var(--e);}
+.traj-unit{font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px;}
+
+/* SLOPE DISPLAY */
+.slope-display{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background-color:var(--border);overflow:hidden;margin-bottom:16px;}
+.slope-cell{background:var(--bg2);padding:16px;text-align:center;}
+.slope-val{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;margin-bottom:4px;}
+.slope-sublabel{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+
+/* CURVATURE BAR */
+.curvature-bar-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:16px 20px;margin-bottom:12px;}
+.curvature-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.curvature-track{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.curvature-fill{height:100%;border-radius:3px;transition:width 0.5s ease,background 0.5s ease;}
+.curvature-note{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);font-style:italic;}
+
+/* ODYSSEY: path humility */
+.odyssey-box{background:var(--bg3);border:1px solid var(--border2);border-left:3px solid var(--curvature);padding:16px 20px;border-radius:0 3px 3px 0;margin-bottom:16px;}
+.odyssey-box .od-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--curvature);text-transform:uppercase;margin-bottom:8px;}
+.odyssey-box p{font-size:13px;color:var(--muted);line-height:1.6;}
+.odyssey-box .od-scalar{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);margin-top:8px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:2px;}
+
+/* COMPETING RISKS */
+.competing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.risk-card{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:14px;transition:border-color 0.2s;}
+.risk-card:hover{border-color:var(--border2);}
+.risk-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.risk-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;margin-bottom:3px;}
+.risk-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+
+/* COEFFICIENT SLIDERS */
+.coeff-grid{display:flex;flex-direction:column;gap:10px;}
+.coeff-row{display:grid;grid-template-columns:160px 1fr 60px;align-items:center;gap:12px;}
+.coeff-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+input[type=range].coeff-slider{width:100%;-webkit-appearance:none;appearance:none;height:4px;background:var(--bg3);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range].coeff-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--e);box-shadow:0 0 6px #a78bfa60;cursor:grab;}
+.coeff-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);text-align:right;}
+
+/* EIGENMODE RAIL */
+.eigenmode-rail{background:var(--bg2);border:1px solid #6bcfff25;border-radius:4px;padding:14px 18px;margin-bottom:14px;}
+.er-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--eigen);letter-spacing:2px;margin-bottom:6px;text-transform:uppercase;}
+.er-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);}
+
+/* RUMSFELD TIERS */
+.rumsfeld{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
+.rf-cell{background:var(--bg2);padding:18px;}
+.rf-tier{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;margin-bottom:4px;}
+.rf-name{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.rf-desc{font-size:12px;color:var(--muted);line-height:1.55;font-style:italic;}
+
+/* STAGE BADGE */
+.stage-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;padding:3px 10px;border-radius:2px;font-weight:500;letter-spacing:1px;margin-left:8px;transition:all 0.3s;}
+
+/* RIGHT COL: SIB */
+.right-col{display:flex;flex-direction:column;}
+.sib-header{padding:24px 28px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.sib-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--e);margin-bottom:6px;}
+.sib-subtitle{font-size:16px;font-weight:300;color:var(--text);font-style:italic;}
+
+/* API KEY */
+.api-section{padding:16px 28px;border-bottom:1px solid var(--border);background:var(--bg3);}
+.api-input-wrap{display:flex;gap:8px;align-items:center;}
+.api-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:8px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);outline:none;transition:border-color 0.2s;}
+.api-input:focus{border-color:var(--e);}
+.api-status{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:4px 8px;border-radius:2px;white-space:nowrap;}
+.api-status.ok{color:var(--s);background:#34d39915;border:1px solid #34d39930;}
+.api-status.none{color:var(--muted);background:var(--bg3);border:1px solid var(--border);}
+
+/* CHAT */
+.chat-window{flex:1;padding:20px 28px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;min-height:280px;max-height:420px;}
+.msg{display:flex;flex-direction:column;gap:4px;opacity:0;animation:fadeUp 0.3s ease forwards;}
+.msg-role{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.msg-body{font-size:14px;line-height:1.65;color:var(--text);padding:12px 14px;border-radius:3px;border:1px solid var(--border);}
+.msg.user .msg-body{background:var(--bg3);border-color:var(--border2);color:#b8c4d8;}
+.msg.assistant .msg-body{background:#a78bfa08;border-color:#a78bfa20;}
+.msg.thinking .msg-body{background:var(--bg2);border-color:var(--border);color:var(--muted);font-style:italic;font-family:'DM Mono',monospace;font-size:11px;}
+
+/* PROBES */
+.probes{padding:14px 28px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+.probe-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.probe-btn{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:8px 12px;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--muted);cursor:pointer;text-align:left;transition:all 0.15s;line-height:1.3;}
+.probe-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--e);}
+
+/* CHAT INPUT */
+.chat-input-wrap{padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:8px;}
+.chat-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:10px 14px;font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--text);outline:none;resize:none;transition:border-color 0.2s;min-height:44px;max-height:120px;}
+.chat-input:focus{border-color:var(--e);}
+.send-btn{background:var(--e);border:none;border-radius:3px;padding:0 16px;font-family:'DM Mono',monospace;font-size:12px;color:var(--bg);cursor:pointer;transition:opacity 0.15s;white-space:nowrap;}
+.send-btn:hover{opacity:0.85;}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* DECISION GATE */
+.gate{padding:20px 28px;border-top:1px solid var(--border);background:var(--bg2);}
+.gate-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.gate-track-wrap{position:relative;height:6px;margin-bottom:8px;}
+.gate-fill{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--s),var(--m),var(--g3b),var(--g4));position:absolute;top:0;left:0;transition:width 0.4s ease;}
+input[type=range]#gateSlider{position:absolute;top:0;left:0;width:100%;height:6px;opacity:0;cursor:pointer;z-index:2;-webkit-appearance:none;appearance:none;}
+input[type=range]#gateSlider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;cursor:grab;}
+.gate-states{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px;}
+.gate-decision{margin-top:10px;font-family:'DM Mono',monospace;font-size:11px;padding:8px 12px;border-radius:2px;text-align:center;transition:all 0.3s;}
+
+/* RAIL VIOLATION */
+#railViolation{margin-top:12px;display:none;background:#ef444415;border:1px solid #ef444430;border-radius:3px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;color:#ef4444;letter-spacing:1px;}
+
+/* FOOTER */
+footer{grid-column:1/-1;padding:28px 40px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;background:var(--bg2);}
+.footer-left{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--e);font-size:20px;}
+.footer-proverb{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:var(--muted);max-width:400px;line-height:1.5;}
+.footer-right{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:right;line-height:1.8;letter-spacing:1px;}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- COORDINATE BAR -->
+<div class="coord-bar">
+  <div class="coord-schema">
+    <span class="cs cs-ukb">ukb</span><span class="cs-sep">-</span>
+    <span class="cs cs-scale">3</span><span class="cs-sep">-</span>
+    <span class="cs cs-domain">N18</span><span class="cs-sep">-</span>
+    <span class="cs cs-node">e</span><span class="cs-sep">-</span>
+    <span class="cs cs-dt">dt</span><span class="cs-sep">-</span>
+    <span class="cs cs-ver">v01</span>
+  </div>
+  <div class="coord-right">θ ∈ 𝓜 &nbsp;·&nbsp; scale=System &nbsp;·&nbsp; node=Eigenmode &nbsp;·&nbsp; P(θ|D)</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="eyebrow">Ukubona LLC · CKD System Twin · Kampala 2026</div>
+  <h1>Chronic Kidney Disease<br><em>Riemannian Trajectory Twin</em></h1>
+  <div class="header-sub">ukb-3-N18-e-dt-v01 &nbsp;·&nbsp; T → M → V → <strong style="color:var(--e)">E</strong> → S &nbsp;·&nbsp; θ ∈ 𝓜, ∇𝓜L</div>
+  <div class="formula">L_tot = L₀ + Σᵢ wᵢ·Lᵢ + <span>σ²(θ,X,t)</span> + <span>λ(θ,Ω,t)</span> + <span>ε(t)</span></div>
+</header>
+
+<!-- HUMILITY BANNER -->
+<div class="humility-banner">
+  <strong>Ukubona does not predict outcomes.</strong> It maps trajectories and flags approach to irreversible regions in a curved risk space. The exact geodesic is never known — in any field. &nbsp;·&nbsp; <em>Proverbs 1:20 — Wisdom crieth without, in the streets.</em>
+</div>
+
+<div class="main-grid">
+
+<!-- ═══════════════════════ LEFT COL ═══════════════════════ -->
+<div class="left-col">
+
+  <!-- PANEL: MANIFOLD / EIGENMODE -->
+  <div class="panel">
+    <div class="panel-label">
+      <span class="node-dot" style="background:var(--e)"></span>
+      <span style="color:var(--e)">E — EIGENMODE</span>
+      <span style="color:var(--muted)">· Riemannian Trajectory Manifold · θ ∈ 𝓜</span>
+    </div>
+    <h2>eGFR Trajectory Space <span id="stageBadge" class="stage-badge"></span></h2>
+
+    <div class="riemann-box">
+      <p>The patient is <strong>not a point in flat ℝⁿ</strong>. Age × CKD × comorbidities curve the risk space. A 68yo with eGFR 32 and diabetes is not halfway between two healthier people — <strong>the manifold bends sharply at that θ.</strong> Straight-line predictions fail. Local curvature is the urgency signal. The exact geodesic is never known — that is not a failure of the model, it is <strong>the honest shape of reality.</strong></p>
+    </div>
+
+    <div class="manifold-wrap">
+      <canvas id="manifoldCanvas" height="260"></canvas>
+      <div class="manifold-legend">
+        <div class="ml-item"><div class="ml-swatch" style="background:var(--eigen);opacity:0.7;border-top:2px dashed var(--eigen)"></div>Eigenmode E (median −1.2/yr)</div>
+        <div class="ml-item"><div class="ml-swatch" style="background:var(--g4)"></div>Fast progressor rail</div>
+        <div class="ml-item"><div class="ml-swatch" style="background:var(--muted);opacity:0.4"></div>Slow progressor rail</div>
+        <div class="ml-item"><div class="ml-swatch" style="background:var(--geodesic)"></div>Patient geodesic θ</div>
+        <div class="ml-item"><div class="ml-swatch" style="background:var(--curvature);width:8px;height:8px;border-radius:50%"></div>Curvature κ(θ)</div>
+      </div>
+    </div>
+
+    <!-- ODYSSEY / PATH HUMILITY -->
+    <div class="odyssey-box">
+      <div class="od-label">∇ Path Humility — The Three Hidden Assumptions</div>
+      <p>Every clinical forecast bakes in: (1) the terrain is fully mapped, (2) the exact geodesic is known, (3) those probabilities are legible to a human. All three are wrong. This twin samples the remaining odyssey — Kisoro → Munyonyo → eastward — and alerts when θ approaches Mt. Kenya at age 87. It does not claim to know the path.</p>
+      <div class="od-scalar">Ukubona = "to see, to perceive with care" · not "to determine"</div>
+    </div>
+
+    <!-- TRAJECTORY INPUT -->
+    <div class="panel-label" style="margin-top:4px">
+      <span class="node-dot" style="background:var(--v)"></span>
+      <span style="color:var(--v)">V — DATA INPUT</span>
+      <span style="color:var(--muted)">· Enter eGFR readings (ml/min/1.73m²)</span>
+    </div>
+
+    <div class="traj-grid">
+      <div class="traj-input-wrap">
+        <div class="traj-label">t−3 (3yr ago)</div>
+        <input class="traj-input" id="egfr3" type="number" value="58" min="5" max="120" oninput="updateAll()">
+        <div class="traj-unit">ml/min/1.73m²</div>
+      </div>
+      <div class="traj-input-wrap">
+        <div class="traj-label">t−2 (2yr ago)</div>
+        <input class="traj-input" id="egfr2" type="number" value="51" min="5" max="120" oninput="updateAll()">
+        <div class="traj-unit">ml/min/1.73m²</div>
+      </div>
+      <div class="traj-input-wrap">
+        <div class="traj-label">t−1 (1yr ago)</div>
+        <input class="traj-input" id="egfr1" type="number" value="44" min="5" max="120" oninput="updateAll()">
+        <div class="traj-unit">ml/min/1.73m²</div>
+      </div>
+      <div class="traj-input-wrap" style="border-color:var(--e)40">
+        <div class="traj-label" style="color:var(--e)">t=0 (NOW)</div>
+        <input class="traj-input" id="egfr0" type="number" value="38" min="5" max="120" oninput="updateAll()">
+        <div class="traj-unit">ml/min/1.73m²</div>
+      </div>
+    </div>
+
+    <!-- SLOPE DISPLAY -->
+    <div class="slope-display">
+      <div class="slope-cell">
+        <div class="slope-val" id="slopeVal" style="color:var(--e)">—</div>
+        <div class="slope-sublabel">ml/min/yr slope</div>
+      </div>
+      <div class="slope-cell">
+        <div class="slope-val" id="yrsToESRD" style="color:var(--g3b)">—</div>
+        <div class="slope-sublabel">est. yrs → ESRD (flat ℝⁿ)</div>
+      </div>
+      <div class="slope-cell">
+        <div class="slope-val" id="manifoldYrs" style="color:var(--curvature)">—</div>
+        <div class="slope-sublabel">yrs → ESRD (manifold κ)</div>
+      </div>
+    </div>
+
+    <!-- CURVATURE SIGNAL -->
+    <div class="curvature-bar-wrap">
+      <div class="curvature-label">
+        <span>LOCAL CURVATURE κ(θ) — Riemannian urgency signal</span>
+        <span id="curvatureVal" style="color:var(--curvature)">—</span>
+      </div>
+      <div class="curvature-track">
+        <div class="curvature-fill" id="curvatureFill" style="width:0%"></div>
+      </div>
+      <div class="curvature-note" id="curvatureNote">Flat ℝⁿ ignores this. The manifold does not. The geodesic is not determined — it is observed as it is walked.</div>
+    </div>
+  </div><!-- end manifold panel -->
+
+  <!-- PANEL: COMPETING RISKS -->
+  <div class="panel">
+    <div class="panel-label">
+      <span class="node-dot" style="background:var(--m)"></span>
+      <span style="color:var(--m)">M — STUDY DESIGN</span>
+      <span style="color:var(--muted)">· Competing Risks · Cause-Specific 10yr Estimates</span>
+    </div>
+    <h2>Competing Endpoints</h2>
+
+    <div class="competing-grid">
+      <div class="risk-card">
+        <div class="risk-label">ESRD / RRT</div>
+        <div class="risk-val" id="riskESRD" style="color:var(--g4)">—</div>
+        <div class="risk-sub">dialysis or transplant</div>
+      </div>
+      <div class="risk-card">
+        <div class="risk-label">Cardiovascular death</div>
+        <div class="risk-val" id="riskCV" style="color:var(--t)">—</div>
+        <div class="risk-sub">CKD-CV competing risk</div>
+      </div>
+      <div class="risk-card">
+        <div class="risk-label">Stable / Slow</div>
+        <div class="risk-val" id="riskStable" style="color:var(--s)">—</div>
+        <div class="risk-sub">eGFR loss &lt;1/yr</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:20px;">CKD patients are more likely to die from cardiovascular disease than reach ESRD. The manifold has two attractors — not one. Flat Cox models the wrong geodesic. These numbers are not prophecy — they are <strong style="color:var(--text)">compass bearings</strong> on a curved surface.</p>
+
+    <!-- KM RAILS -->
+    <div class="panel-label" style="margin-top:4px">
+      <span class="node-dot" style="background:var(--v)"></span>
+      <span style="color:var(--v)">V — KM RAILS</span>
+      <span style="color:var(--muted)">· Drag coefficients · watch posterior update</span>
+    </div>
+
+    <div class="eigenmode-rail">
+      <div class="er-label">Eigenmode E — median CKD3b population (Muzaale / KDIGO)</div>
+      <div class="er-val">eGFR slope: −1.2 ml/min/yr &nbsp;·&nbsp; 10yr ESRD: ~8% &nbsp;·&nbsp; 10yr CV death: ~22%</div>
+    </div>
+
+    <div class="coeff-grid">
+      <div class="coeff-row">
+        <div class="coeff-label">Diabetes (β=1.43)</div>
+        <input type="range" class="coeff-slider" id="c_dm" min="0" max="2.5" step="0.05" value="1.43" oninput="updateCoeff('dm',this.value)">
+        <div class="coeff-val" id="cv_dm">1.43</div>
+      </div>
+      <div class="coeff-row">
+        <div class="coeff-label">Hypertension (β=1.32)</div>
+        <input type="range" class="coeff-slider" id="c_htn" min="0" max="2.5" step="0.05" value="1.32" oninput="updateCoeff('htn',this.value)">
+        <div class="coeff-val" id="cv_htn">1.32</div>
+      </div>
+      <div class="coeff-row">
+        <div class="coeff-label">Smoking (β=1.46)</div>
+        <input type="range" class="coeff-slider" id="c_smoke" min="0" max="2.5" step="0.05" value="0.00" oninput="updateCoeff('smoke',this.value)">
+        <div class="coeff-val" id="cv_smoke">0.00</div>
+      </div>
+      <div class="coeff-row">
+        <div class="coeff-label">Age effect (β/yr=1.08)</div>
+        <input type="range" class="coeff-slider" id="c_age" min="0.9" max="1.3" step="0.01" value="1.08" oninput="updateCoeff('age',this.value)">
+        <div class="coeff-val" id="cv_age">1.08</div>
+      </div>
+      <div class="coeff-row">
+        <div class="coeff-label">Proteinuria (β=1.6)</div>
+        <input type="range" class="coeff-slider" id="c_prot" min="0" max="3.0" step="0.05" value="1.60" oninput="updateCoeff('prot',this.value)">
+        <div class="coeff-val" id="cv_prot">1.60</div>
+      </div>
+    </div>
+
+    <div id="railViolation">⚠ RAIL VIOLATION — coefficient inconsistent with Muzaale/KDIGO eigenmode</div>
+  </div><!-- end competing risks panel -->
+
+  <!-- PANEL: RUMSFELD TIERS -->
+  <div class="panel">
+    <div class="panel-label">
+      <span class="node-dot" style="background:var(--e)"></span>
+      <span style="color:var(--e)">E — UNCERTAINTY ARCHITECTURE</span>
+      <span style="color:var(--muted)">· Rumsfeld Tiers · σ² · λ · ε</span>
+    </div>
+    <h2>The Three Tiers of Not Knowing</h2>
+
+    <div class="rumsfeld">
+      <div class="rf-cell">
+        <div class="rf-tier" style="color:var(--m)">σ²</div>
+        <div class="rf-name">Known Knowns</div>
+        <div class="rf-desc">Cox β from KDIGO/Grams. eGFR slope aleatoric scatter. CIs from SE. Real coefficients, reducible at the margin. The terrain we can measure.</div>
+      </div>
+      <div class="rf-cell">
+        <div class="rf-tier" style="color:var(--e)">λ</div>
+        <div class="rf-name">Known Unknowns</div>
+        <div class="rf-desc">Proteinuria trajectory unobserved. APOL1 genotype absent. Future DM/HTN onset timing. Between-cohort τ². Nephron endowment L₀. The map we know is incomplete.</div>
+      </div>
+      <div class="rf-cell">
+        <div class="rf-tier" style="color:var(--curvature)">ε</div>
+        <div class="rf-name">Unknown Unknowns</div>
+        <div class="rf-desc">NSAIDs at 67. Immune trigger. APOL1 second hit. Pandemic care gap. No statistical form. The Mt. Kenya we didn't see on the map. Acknowledged only on shock.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding:14px 18px;background:var(--bg3);border:1px solid var(--border2);border-left:3px solid var(--m);border-radius:0 3px 3px 0;">
+      <p style="font-size:13px;color:var(--muted);font-style:italic;line-height:1.6;">
+        The donor at 87 walking into the clinic — his life is a Kisoro → Munyonyo odyssey. Science samples one path from an uncharted terrain. The <strong style="color:var(--text)">0.06% delta</strong> (0.10% – 0.04% ESRD risk) is not "small." It is ontologically meaningless because the model assumes the map is complete and the path is known. <strong style="color:var(--text)">Both assumptions are wrong.</strong> Ukubona names this openly.
+      </p>
+    </div>
+  </div><!-- end rumsfeld panel -->
+
+</div><!-- end left-col -->
+
+<!-- ═══════════════════════ RIGHT COL: SIB ═══════════════════════ -->
+<div class="right-col">
+
+  <div class="sib-header">
+    <div class="sib-title">S — Sovereign Intelligence Broker</div>
+    <div class="sib-subtitle">E-node reasoning · P(θ|D) interpreter</div>
+  </div>
+
+  <div class="api-section">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;">Anthropic API Key</div>
+    <div class="api-input-wrap">
+      <input class="api-input" type="password" id="apiKey" placeholder="sk-ant-..." oninput="checkKey()">
+      <span class="api-status none" id="apiStatus">● no key</span>
+    </div>
+  </div>
+
+  <div class="chat-window" id="chatWindow">
+    <div class="msg assistant">
+      <div class="msg-role">SIB · ukb-3-N18-e-dt-v01</div>
+      <div class="msg-body">
+        This twin inhabits the <strong>E node</strong> — the eigenmode, the posterior. I am not an oracle. I am the inference layer that interprets where your patient's θ sits on the CKD manifold, how sharply the surface is curving at their position, and what that means for the three competing endpoints.<br><br>
+        The exact geodesic is never known. Enter eGFR readings. Adjust comorbidities. Then probe me — or ask anything about the trajectory.<br><br>
+        <em style="color:var(--muted);font-size:12px;">Wisdom crieth without, in the streets — not from ivory towers.</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="probes">
+    <div class="probe-label">Quick probes · ∇</div>
+    <button class="probe-btn" onclick="sendProbe('Interpret my current eGFR trajectory. Where does θ sit on the CKD manifold, and how sharp is the local curvature at this position?')">∇ Interpret my trajectory on 𝓜</button>
+    <button class="probe-btn" onclick="sendProbe('Explain the three competing endpoints for this patient. What is the correct clinical geodesic to track, knowing the exact path is never known?')">⊕ Competing endpoints — which geodesic?</button>
+    <button class="probe-btn" onclick="sendProbe('An 87-year-old man wants to donate a kidney to his 75-year-old neighbor. The risk delta is 0.06%. Apply the Riemannian framework to this decision. Why is that number meaningless on this manifold?')">⚑ The 87yo donor — manifold decision</button>
+    <button class="probe-btn" onclick="sendProbe('Walk me through the Rumsfeld tiers for this patient. What are the known unknowns I should act on now?')">σ² · λ · ε — Rumsfeld tiers</button>
+    <button class="probe-btn" onclick="sendProbe('What is the sovereignty statement for this patient? What must they understand to own their trajectory, knowing the exact geodesic cannot be predicted?')">✦ Sovereignty statement</button>
+  </div>
+
+  <div class="chat-input-wrap">
+    <textarea class="chat-input" id="chatInput" placeholder="Ask the SIB about this trajectory…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendChat()">∇ Send</button>
+  </div>
+
+  <div class="gate">
+    <div class="gate-label">Decision Gate η — Urgency Ladder</div>
+    <div class="gate-track-wrap">
+      <div class="gate-fill" id="gateFill" style="width:50%"></div>
+      <input type="range" id="gateSlider" min="0" max="100" value="50" oninput="updateGate(this.value)">
+    </div>
+    <div class="gate-states">
+      <span>watchful waiting</span>
+      <span>nephrology referral</span>
+      <span>RRT planning</span>
+    </div>
+    <div class="gate-decision" id="gateDecision"></div>
+  </div>
+
+</div><!-- end right-col -->
+
+</div><!-- end main-grid -->
+
+<footer>
+  <div>
+    <div class="footer-left">Ukubona</div>
+    <div class="footer-proverb" style="margin-top:6px;">"Wisdom crieth without; she uttereth her voice in the streets." — Proverbs 1:20</div>
+  </div>
+  <div class="footer-right">
+    ukb-3-N18-e-dt-v01 · Kampala 2026<br>
+    θ ∈ 𝓜 · ∇𝓜L · P(θ|D)<br>
+    T → M → V → <strong style="color:var(--e)">E</strong> → S ↺<br>
+    <span style="color:var(--dim)">The exact geodesic is never known.</span>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let state = {
+  egfr: [58, 51, 44, 38],
+  coeffs: { dm: 1.43, htn: 1.32, smoke: 0.00, age: 1.08, prot: 1.60 },
+  esrdThreshold: 15,
+  chatHistory: []
+};
+
+window.onload = () => {
+  updateAll();
+  updateGate(50);
+};
+
+// ═══════════════════════════════════════════
+// CORE UPDATE
+// ═══════════════════════════════════════════
+function updateAll() {
+  state.egfr[0] = parseFloat(document.getElementById('egfr3').value) || 0;
+  state.egfr[1] = parseFloat(document.getElementById('egfr2').value) || 0;
+  state.egfr[2] = parseFloat(document.getElementById('egfr1').value) || 0;
+  state.egfr[3] = parseFloat(document.getElementById('egfr0').value) || 0;
+
+  let cur = state.egfr[3];
+
+  // OLS slope (flat ℝⁿ)
+  let n = 4, xs = [0,1,2,3];
+  let sumX = 6, sumY = state.egfr.reduce((a,b)=>a+b,0);
+  let sumXY = xs.reduce((a,i)=>a+i*state.egfr[i],0);
+  let sumX2 = 14;
+  let slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+
+  document.getElementById('slopeVal').innerText = slope.toFixed(2);
+
+  // Flat projection
+  let yrsLinear = slope < 0 ? (state.esrdThreshold - cur)/slope : Infinity;
+  document.getElementById('yrsToESRD').innerText =
+    (yrsLinear > 0 && yrsLinear < 100) ? yrsLinear.toFixed(1) : "—";
+
+  // Riemannian curvature κ(θ)
+  let kappa = (state.coeffs.dm   * 0.15)
+            + (state.coeffs.htn  * 0.10)
+            + (state.coeffs.smoke* 0.08)
+            + (state.coeffs.prot * 0.20)
+            + ((state.coeffs.age - 1.0) * 2.0);
+  // Add eGFR-dependent curvature (worse eGFR = sharper bend)
+  kappa += Math.max(0, (45 - cur) / 45) * 0.5;
+
+  let curvePct = Math.min(Math.max(kappa * 22, 0), 100);
+  let curveColor = curvePct > 70 ? 'var(--curvature)' : curvePct > 40 ? 'var(--m)' : 'var(--s)';
+
+  document.getElementById('curvatureVal').innerText = 'κ = ' + kappa.toFixed(2);
+  document.getElementById('curvatureFill').style.width  = curvePct + '%';
+  document.getElementById('curvatureFill').style.background = curveColor;
+
+  let curveNote = curvePct > 70
+    ? 'High curvature — approaching non-recoverable region. Mt. Kenya on the horizon.'
+    : curvePct > 40
+    ? 'Moderate curvature — trajectory accelerating. Flat model underestimates urgency.'
+    : 'Low curvature — flat model approximately valid here.';
+  document.getElementById('curvatureNote').innerText = curveNote;
+
+  // Warped manifold projection
+  let warpedSlope = slope * (1 + kappa * 0.6);
+  let yrsManifold = warpedSlope < 0 ? (state.esrdThreshold - cur)/warpedSlope : Infinity;
+  document.getElementById('manifoldYrs').innerText =
+    (yrsManifold > 0 && yrsManifold < 100) ? yrsManifold.toFixed(1) : "—";
+
+  // Stage badge
+  let stg = getStage(cur);
+  let badge = document.getElementById('stageBadge');
+  badge.innerText = 'G' + stg.val;
+  badge.style.color = 'var(--bg)';
+  badge.style.background = stg.color;
+
+  // Competing risks (pseudo-Cox)
+  let baseESRD  = 8  * (1 + kappa * 0.8);
+  let baseCV    = 22 * (1 + kappa * 0.35);
+  let stableR   = Math.max(100 - baseESRD - baseCV, 1);
+
+  document.getElementById('riskESRD').innerText  = Math.min(baseESRD, 95).toFixed(1) + '%';
+  document.getElementById('riskCV').innerText    = Math.min(baseCV,   95).toFixed(1) + '%';
+  document.getElementById('riskStable').innerText = stableR.toFixed(1) + '%';
+
+  // Auto-nudge gate slider
+  let autoGate = Math.min(Math.round(curvePct), 100);
+  document.getElementById('gateSlider').value = autoGate;
+  document.getElementById('gateFill').style.width = autoGate + '%';
+  updateGate(autoGate);
+
+  // Render manifold
+  drawManifold(cur, slope, warpedSlope, kappa);
+}
+
+// ═══════════════════════════════════════════
+// STAGE
+// ═══════════════════════════════════════════
+function getStage(e) {
+  if(e>=90) return {val:'1',  color:'var(--g1)'};
+  if(e>=60) return {val:'2',  color:'var(--g2)'};
+  if(e>=45) return {val:'3a', color:'var(--g3a)'};
+  if(e>=30) return {val:'3b', color:'var(--g3b)'};
+  if(e>=15) return {val:'4',  color:'var(--g4)'};
+  return     {val:'5',  color:'var(--g5)'};
+}
+
+// ═══════════════════════════════════════════
+// SLIDERS
+// ═══════════════════════════════════════════
+function updateCoeff(id, val) {
+  document.getElementById('cv_'+id).innerText = parseFloat(val).toFixed(2);
+  state.coeffs[id] = parseFloat(val);
+  let viol = document.getElementById('railViolation');
+  if(id==='prot' && val > 2.5) {
+    viol.style.display = 'block';
+  } else {
+    viol.style.display = 'none';
+  }
+  updateAll();
+}
+
+// ═══════════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════════
+function updateGate(val) {
+  val = parseFloat(val);
+  let dec = document.getElementById('gateDecision');
+  document.getElementById('gateFill').style.width = val+'%';
+  if(val < 33) {
+    dec.innerText = 'η = 0 · Monitor · Standard primary care protocols';
+    dec.style.background='var(--s)'; dec.style.color='var(--bg)';
+  } else if(val < 66) {
+    dec.innerText = 'η = 1 · Escalate · Nephrology consultation required';
+    dec.style.background='var(--m)'; dec.style.color='var(--bg)';
+  } else {
+    dec.innerText = 'η = 2 · Critical · RRT / Transplant screening';
+    dec.style.background='var(--g4)'; dec.style.color='#fff';
+  }
+}
+
+// ═══════════════════════════════════════════
+// MANIFOLD CANVAS
+// ═══════════════════════════════════════════
+function drawManifold(cur, linearSlope, warpedSlope, kappa) {
+  const canvas = document.getElementById('manifoldCanvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight || 260;
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='#1a2030'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // eGFR → y coordinate (5–90 range)
+  const mapY = v => H - ((v-5)/(90-5)) * (H-30) - 10;
+  const nowX = W * 0.38;
+  const histStep = (nowX - 30) / 3;
+
+  // ESRD line
+  let esrdY = mapY(15);
+  ctx.strokeStyle='#ef444460'; ctx.setLineDash([4,6]); ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,esrdY); ctx.lineTo(W,esrdY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ef4444'; ctx.font='10px DM Mono, monospace';
+  ctx.fillText('ESRD threshold',8, esrdY-6);
+
+  // eGFR stage bands
+  const stages=[{lo:60,hi:90,c:'#34d39906'},{lo:45,hi:60,c:'#6bcfff06'},{lo:30,hi:45,c:'#ffd93d08'},{lo:15,hi:30,c:'#f9731610'}];
+  stages.forEach(s=>{
+    let y1=mapY(s.hi), y2=mapY(s.lo);
+    ctx.fillStyle=s.c; ctx.fillRect(0,y1,W,y2-y1);
+  });
+
+  // Eigenmode (population median rail)
+  ctx.strokeStyle='#6bcfff30'; ctx.setLineDash([6,8]); ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, mapY(60));
+  ctx.lineTo(W, mapY(60 + (-1.2/1)*(W/histStep)*3 * 0.05));
+  // draw as straight dashed line from ~60 with slope -1.2/yr across canvas
+  let eigenStart = 65, eigenSlopePerPx = -1.2 / histStep;
+  ctx.beginPath();
+  ctx.moveTo(0, mapY(eigenStart));
+  ctx.lineTo(W, mapY(eigenStart + eigenSlopePerPx * W));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#6bcfff50'; ctx.font='9px DM Mono, monospace';
+  ctx.fillText('eigenmode E',4, mapY(eigenStart)+12);
+
+  // Fast/slow rail bands
+  ctx.strokeStyle='#ef444430'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(0, mapY(eigenStart+5)); ctx.lineTo(W, mapY(eigenStart+5 + eigenSlopePerPx*W*2));
+  ctx.stroke();
+  ctx.strokeStyle='#3a455870'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(0, mapY(eigenStart-5)); ctx.lineTo(W, mapY(eigenStart-5 + eigenSlopePerPx*W*0.4));
+  ctx.stroke();
+
+  // Historical geodesic (actual data points)
+  ctx.strokeStyle='#a78bfa'; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let i=0;i<4;i++){
+    let x = 30 + i*histStep;
+    let y = mapY(state.egfr[i]);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Data dots
+  for(let i=0;i<4;i++){
+    let x=30+i*histStep, y=mapY(state.egfr[i]);
+    ctx.fillStyle= i===3 ? '#a78bfa' : '#a78bfa80';
+    ctx.beginPath(); ctx.arc(x,y,i===3?5:3.5,0,Math.PI*2); ctx.fill();
+    if(i===3){
+      ctx.strokeStyle='#a78bfa50'; ctx.lineWidth=1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='#dde4f0'; ctx.font='10px DM Mono,monospace';
+      ctx.fillText('θ now',x+8,y-8);
+    }
+  }
+
+  // LINEAR future (flat model)
+  ctx.strokeStyle='rgba(221,228,240,0.2)'; ctx.setLineDash([2,6]); ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(nowX, mapY(cur));
+  ctx.lineTo(W, mapY(cur + linearSlope * ((W-nowX)/histStep)));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#5a688060'; ctx.font='9px DM Mono,monospace';
+  ctx.fillText('flat ℝⁿ',W-52,mapY(cur + linearSlope * ((W-nowX)/histStep))-6);
+
+  // CURVED future (manifold geodesic, sampled fan)
+  // Draw a fan of sampled paths to show "geodesic not known"
+  let nSamples = 8;
+  for(let s=0;s<nSamples;s++){
+    let jitter = (s/(nSamples-1) - 0.5) * 0.8; // -0.4 to +0.4 kappa variation
+    let sampledSlope = warpedSlope * (1 + jitter * 0.5);
+    let alpha = s === Math.floor(nSamples/2) ? 0.9 : 0.2 - Math.abs(s - nSamples/2)*0.02;
+    ctx.strokeStyle = `rgba(244,114,182,${Math.max(alpha,0.06)})`;
+    ctx.lineWidth = s === Math.floor(nSamples/2) ? 2 : 1;
+    let ctrlX = nowX + (W-nowX)*0.45;
+    let ctrlY = mapY(cur + sampledSlope * ((W-nowX)/histStep) * 0.5 * (1 + jitter*0.3));
+    let endY  = mapY(cur + sampledSlope * ((W-nowX)/histStep));
+    ctx.beginPath();
+    ctx.moveTo(nowX, mapY(cur));
+    ctx.quadraticCurveTo(ctrlX, ctrlY, W, endY);
+    ctx.stroke();
+  }
+
+  // Fan label
+  ctx.fillStyle='#f472b890'; ctx.font='9px DM Mono,monospace';
+  ctx.fillText('sampled geodesics',nowX+8, mapY(cur)-18);
+  ctx.fillStyle='#f472b860'; ctx.font='9px DM Mono,monospace';
+  ctx.fillText('(exact path unknown)',nowX+8, mapY(cur)-6);
+
+  // κ annotation
+  if(kappa > 0.5){
+    let annotX = nowX + 30, annotY = mapY(cur) - 40;
+    ctx.fillStyle='#f472b8'; ctx.font='bold 11px DM Mono,monospace';
+    ctx.fillText('κ = '+kappa.toFixed(2), annotX, annotY);
+    ctx.strokeStyle='#f472b840'; ctx.lineWidth=1;
+    ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(nowX,mapY(cur)-5); ctx.lineTo(annotX,annotY+5); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ═══════════════════════════════════════════
+// API KEY
+// ═══════════════════════════════════════════
+function checkKey() {
+  let val = document.getElementById('apiKey').value;
+  let stat = document.getElementById('apiStatus');
+  if(val.startsWith('sk-ant-') && val.length > 20) {
+    stat.className='api-status ok'; stat.innerText='● authenticated';
+  } else {
+    stat.className='api-status none'; stat.innerText='● no key';
+  }
+}
+
+// ═══════════════════════════════════════════
+// SIB CHAT
+// ═══════════════════════════════════════════
+function sendProbe(text){ document.getElementById('chatInput').value=text; sendChat(); }
+
+async function sendChat() {
+  let input = document.getElementById('chatInput');
+  let text  = input.value.trim();
+  if(!text) return;
+
+  let win     = document.getElementById('chatWindow');
+  let apiKey  = document.getElementById('apiKey').value;
+  let sendBtn = document.getElementById('sendBtn');
+
+  // user msg
+  appendMsg(win,'user','Clinician',text);
+  state.chatHistory.push({role:'user',content:text});
+  input.value='';
+  sendBtn.disabled=true;
+
+  // thinking
+  let thinkId = 'think_'+Date.now();
+  win.innerHTML += `<div class="msg thinking" id="${thinkId}"><div class="msg-body">∇ Traversing the manifold… sampling geodesic fan…</div></div>`;
+  win.scrollTop = win.scrollHeight;
+
+  let cur      = state.egfr[3];
+  let slope    = parseFloat(document.getElementById('slopeVal').innerText)||0;
+  let kappa    = parseFloat((document.getElementById('curvatureVal').innerText||'0').replace('κ = ',''))||0;
+  let esrdRisk = document.getElementById('riskESRD').innerText;
+  let cvRisk   = document.getElementById('riskCV').innerText;
+  let stage    = document.getElementById('stageBadge').innerText;
+  let linYrs   = document.getElementById('yrsToESRD').innerText;
+  let maniYrs  = document.getElementById('manifoldYrs').innerText;
+
+  let systemPrompt = `You are the Sovereign Intelligence Broker (SIB) for Ukubona LLC's CKD Digital Twin (ukb-3-N18-e-dt-v01). You inhabit the E-node (Eigenmode) — you are not a calculator or an oracle. You interpret trajectories on a curved risk manifold.
+
+Core epistemic commitment: The exact geodesic is NEVER known in advance — in any field of medicine or science. Ukubona does not predict outcomes; it maps trajectories and flags approach to irreversible regions in a curved risk space. Flat ℝⁿ statistical models assume the terrain is fully mapped and the path is predetermined — both are wrong.
+
+Current patient state:
+- CKD Stage: ${stage}
+- Current eGFR: ${cur} ml/min/1.73m²
+- eGFR slope: ${slope} ml/min/yr
+- Manifold curvature κ(θ): ${kappa.toFixed(2)}
+- 10yr ESRD risk (flat model): ${esrdRisk}
+- 10yr CV death risk: ${cvRisk}
+- Years to ESRD (flat ℝⁿ): ${linYrs}
+- Years to ESRD (manifold κ-warped): ${maniYrs}
+- Comorbidity coefficients: DM=${state.coeffs.dm}, HTN=${state.coeffs.htn}, Proteinuria=${state.coeffs.prot}, Age-effect=${state.coeffs.age}
+
+Key Ukubona philosophy to embody:
+1. The Riemannian manifold bends at θ — age × CKD × comorbidities create non-linear curvature. Urgency is κ, not just the linear slope.
+2. The Uganda → Nairobi analogy: an 87yo walks a terrain shaped by 9 decades of path-dependency. Mt. Kenya (irreversible high-risk zone) may be visible in the curvature signal before the patient feels it.
+3. Wisdom crieth in the streets (Proverbs 1:20) — ground truth comes from messy reality, not ivory towers. Epistemic humility is the distinction.
+4. Competing risks: the manifold has two attractors — ESRD and CV death. Most CKD patients die of CV events before reaching dialysis. Don't track only the wrong geodesic.
+5. Rumsfeld tiers: σ² (known knowns), λ (known unknowns), ε (unknown unknowns — the NSAIDs, the immune hit, Mt. Kenya). Name the ε openly.
+
+Respond with clinical insight, philosophical grounding, and the honesty that the geodesic was never determined in advance. Be concise but profound. Use the patient's actual numbers. No false precision.`;
+
+  let messages = [
+    ...state.chatHistory.slice(0,-1),
+    {role:'user',content:text}
+  ];
+
+  if(apiKey && apiKey.startsWith('sk-ant-') && apiKey.length > 20) {
+    try {
+      let res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:600,
+          system:systemPrompt,
+          messages:messages
+        })
+      });
+      let data = await res.json();
+      let reply = data.content && data.content[0] ? data.content[0].text : 'No response from the manifold.';
+      document.getElementById(thinkId).remove();
+      appendMsg(win,'assistant','SIB · ukb-3-N18-e-dt-v01',reply);
+      state.chatHistory.push({role:'assistant',content:reply});
+    } catch(err) {
+      document.getElementById(thinkId).remove();
+      appendMsg(win,'assistant','SIB · error',
+        'Manifold traversal failed: '+err.message+'. Check API key and network.');
+    }
+  } else {
+    // Deterministic offline response grounded in state
+    setTimeout(()=>{
+      document.getElementById(thinkId).remove();
+      let offline = buildOfflineResponse(text, cur, slope, kappa, esrdRisk, cvRisk, linYrs, maniYrs, stage);
+      appendMsg(win,'assistant','SIB · ukb-3-N18-e-dt-v01',offline);
+      state.chatHistory.push({role:'assistant',content:offline});
+      sendBtn.disabled=false;
+    }, 1200);
+    return;
+  }
+  sendBtn.disabled=false;
+}
+
+function appendMsg(win, cls, role, body) {
+  let div = document.createElement('div');
+  div.className='msg '+cls;
+  div.innerHTML=`<div class="msg-role">${role}</div><div class="msg-body">${body}</div>`;
+  win.appendChild(div);
+  win.scrollTop=win.scrollHeight;
+}
+
+function buildOfflineResponse(q, cur, slope, kappa, esrdRisk, cvRisk, linYrs, maniYrs, stage) {
+  q = q.toLowerCase();
+  if(q.includes('trajectory') || q.includes('manifold') || q.includes('curvature')) {
+    return `At eGFR ${cur} ml/min/1.73m², Stage ${stage}, the flat ℝⁿ model projects ESRD in ${linYrs} years at slope ${slope.toFixed(2)} ml/min/yr. But the manifold curvature κ = ${kappa.toFixed(2)} pulls that geodesic forward to ${maniYrs} years.<br><br>The curvature is not a correction to a bad prediction — it is an acknowledgement that the comorbidity tensor warps the space itself. The 10yr CV attractor (${cvRisk}) competes with the ESRD attractor (${esrdRisk}). Most CKD patients will be drawn to the CV endpoint first.<br><br><em>The exact geodesic θ has never been known. That is the beginning of honest medicine.</em>`;
+  }
+  if(q.includes('87') || q.includes('donor') || q.includes('0.06')) {
+    return `The 0.06% delta (0.10% – 0.04% ESRD risk from donation) is <strong>ontologically meaningless</strong> — not small. It assumes: (1) the remaining terrain is fully mapped, (2) the exact geodesic he will walk is known, (3) those numbers are legible to an 87-year-old decision-maker.<br><br>All three assumptions fail. At 87, the manifold itself has transformed. Nine decades of path-dependency curve the risk space in ways population statistics cannot capture. The correct question is not "what is the probability?" but: <strong>does this choice push θ toward a high-curvature region from which there is no return?</strong><br><br>That is curvature-aware navigation. That is what Ukubona offers.`;
+  }
+  if(q.includes('rumsfeld') || q.includes('σ') || q.includes('unknown')) {
+    return `For this profile (Stage ${stage}, eGFR ${cur}, κ = ${kappa.toFixed(2)}):<br><br><strong>σ² — Known knowns:</strong> The slope (${slope.toFixed(2)}/yr), the KDIGO coefficients, the competing risk framing. These are real and reducible.<br><br><strong>λ — Known unknowns:</strong> Proteinuria trajectory unobserved. APOL1 genotype absent. Future DM/HTN onset. Between-cohort heterogeneity τ². Nephron endowment L₀ from birth.<br><br><strong>ε — Unknown unknowns:</strong> The NSAIDs at 67. The immune trigger. The pandemic care gap. No statistical form. Mt. Kenya. These are acknowledged only on shock — and they are real.<br><br>Wisdom crieth in the streets. The ε is what makes her cry.`;
+  }
+  if(q.includes('sovereignty') || q.includes('own')) {
+    return `The sovereignty statement for this patient:<br><br><em>"Your eGFR of ${cur} is a sample from one path through a curved terrain. The slope (${slope.toFixed(2)} ml/min/yr) tells us direction. The curvature (κ = ${kappa.toFixed(2)}) tells us the terrain is accelerating toward steeper ground. You are not a statistic. The 10yr CV risk (${cvRisk}) competes with the ESRD risk (${esrdRisk}) — your biggest threat may not be what you think.</em><br><br><em>What you must understand: the exact path is not predetermined. You own the decisions that shape it. This twin illuminates the terrain. It does not walk the path for you."</em>`;
+  }
+  if(q.includes('competing') || q.includes('geodesic') || q.includes('endpoint')) {
+    return `The manifold has <strong>two attractors</strong>, not one. At Stage ${stage} with κ = ${kappa.toFixed(2)}:<br><br>— ESRD attractor: ${esrdRisk} 10yr risk (flat ℝⁿ; manifold pulls this forward)<br>— CV death attractor: ${cvRisk} 10yr risk (the dominant geodesic for most CKD patients)<br><br>Flat Cox models typically track only the ESRD geodesic. But the correct clinical question is: <em>which attractor is pulling θ faster?</em> For most CKD3b patients, the cardiovascular geodesic is steeper. Statin therapy, BP control, and smoking cessation address a larger fraction of the risk than dialysis planning alone.<br><br>This is not counterintuitive — it is what the manifold shows when you stop projecting straight lines.`;
+  }
+  return `At eGFR ${cur} (Stage ${stage}), slope ${slope.toFixed(2)} ml/min/yr, κ = ${kappa.toFixed(2)}: the curvature signal is ${kappa > 1 ? 'elevated — the manifold is bending sharply at this θ. Flat projections underestimate urgency.' : 'moderate. Monitoring appropriate, but comorbidity coefficients warrant attention.'}<br><br>10yr competing risks: ESRD ${esrdRisk}, CV death ${cvRisk}. The exact geodesic has never been known. Ukubona names that openly and navigates accordingly.`;
+}
+</script>
+</body>
+</html>
