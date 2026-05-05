@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breast Basin v4 · TMVES State Machine</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080706;--bg2:#0f0e0c;--surf:#1b1916;--surf2:#222018;
+  --ink:#ede8db;--ink2:#b0aba0;--ink3:#666260;
+  --brd:rgba(255,255,255,0.07);--brd2:rgba(255,255,255,0.13);
+  --T:#6faee8;--M:#7ecbaa;--V:#e8b84b;--E:#c49ae8;--S:#e87060;
+  --ok:#7ecbaa;--warn:#e8b84b;--bad:#e87060;
+  --r:8px;--r2:4px;
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--ink);font-family:'Cormorant Garamond',Georgia,serif;font-weight:300;min-height:100vh;line-height:1.6}
+body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+.tmves-bar{height:2px;background:linear-gradient(90deg,var(--T),var(--M),var(--V),var(--E),var(--S));position:fixed;top:0;left:0;right:0;z-index:100}
+.wrap{max-width:1100px;margin:0 auto;padding:0 1.5rem 4rem}
+header{padding:3rem 0 1.5rem;border-bottom:0.5px solid var(--brd2);margin-bottom:1.5rem}
+.brand{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink3)}
+.brand em{color:var(--M);font-style:normal}
+h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:300;line-height:1.1;margin-top:0.4rem;letter-spacing:-0.01em}
+h1 em{font-style:italic;color:var(--E)}
+.sub{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--ink3);letter-spacing:0.07em;margin-top:0.5rem}
+.badges{display:flex;gap:0.4rem;margin-top:0.7rem;flex-wrap:wrap}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;padding:2px 8px;border-radius:20px;letter-spacing:0.09em}
+.b-green{background:rgba(126,203,170,0.14);color:var(--M);border:0.5px solid rgba(126,203,170,0.28)}
+.b-amber{background:rgba(232,184,75,0.14);color:var(--V);border:0.5px solid rgba(232,184,75,0.28)}
+.b-coral{background:rgba(232,112,96,0.14);color:var(--S);border:0.5px solid rgba(232,112,96,0.28)}
+.b-purple{background:rgba(196,154,232,0.14);color:var(--E);border:0.5px solid rgba(196,154,232,0.28)}
+
+/* upgrade banner */
+.upgrade-banner{background:rgba(196,154,232,0.06);border:0.5px solid rgba(196,154,232,0.2);border-radius:var(--r);padding:0.8rem 1rem;margin-bottom:1.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--E);line-height:1.8;letter-spacing:0.03em}
+.upgrade-banner strong{color:var(--ink2)}
+
+/* api bar */
+.api-bar{background:var(--surf);border:0.5px solid var(--brd2);border-radius:var(--r2);padding:0.55rem 1rem;display:flex;align-items:center;gap:0.7rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.api-label{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap}
+.api-input{flex:1;min-width:200px;background:var(--bg2);border:0.5px solid var(--brd);border-radius:3px;padding:0.38rem 0.65rem;color:var(--ink2);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;outline:none;transition:border-color 0.2s}
+.api-input:focus{border-color:var(--E)}
+.key-ok{color:var(--ok);font-family:'IBM Plex Mono',monospace;font-size:0.6rem}
+.key-no{color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:0.6rem}
+
+/* grid */
+.grid{display:grid;grid-template-columns:1fr 320px;gap:1.4rem}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.left{display:flex;flex-direction:column;gap:1.4rem}
+.right{display:flex;flex-direction:column;gap:1.4rem}
+
+/* card */
+.card{background:var(--surf);border:0.5px solid var(--brd);border-radius:var(--r);overflow:hidden}
+.card-head{padding:0.7rem 1rem;border-bottom:0.5px solid var(--brd);display:flex;align-items:center;gap:0.55rem}
+.node-badge{font-family:'IBM Plex Mono',monospace;font-size:0.56rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px;border-radius:20px}
+.nT{background:rgba(111,174,232,0.12);color:var(--T)}
+.nM{background:rgba(126,203,170,0.12);color:var(--M)}
+.nV{background:rgba(232,184,75,0.12);color:var(--V)}
+.nE{background:rgba(196,154,232,0.12);color:var(--E)}
+.nS{background:rgba(232,112,96,0.12);color:var(--S)}
+.nX{background:rgba(255,255,255,0.05);color:var(--ink3)}
+.card-head h2{font-family:'Cormorant Garamond',serif;font-size:0.92rem;font-weight:400;color:var(--ink)}
+.card-sub{font-family:'IBM Plex Mono',monospace;font-size:0.57rem;color:var(--ink3);margin-left:auto;letter-spacing:0.05em}
+.card-body{padding:0.9rem 1rem}
+
+/* TMVES chain */
+.tmves-chain{display:flex;gap:0;border-radius:var(--r2);overflow:hidden;border:0.5px solid var(--brd2);margin-bottom:1rem}
+.tc-node{flex:1;padding:0.6rem 0.3rem;text-align:center;position:relative}
+.tc-node::after{content:'→';position:absolute;right:-5px;top:50%;transform:translateY(-50%);font-size:0.55rem;color:var(--ink3);z-index:2}
+.tc-node:last-child::after{display:none}
+.tc-sym{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:500;display:block}
+.tc-lbl{font-family:'IBM Plex Mono',monospace;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.08em;opacity:0.6;display:block;margin-top:1px}
+.tc-val{font-size:0.68rem;display:block;margin-top:3px;line-height:1.25;padding:0 0.15rem;color:var(--ink2)}
+.tcT{background:rgba(111,174,232,0.09);color:var(--T)}
+.tcM{background:rgba(126,203,170,0.09);color:var(--M)}
+.tcV{background:rgba(232,184,75,0.09);color:var(--V)}
+.tcE{background:rgba(196,154,232,0.09);color:var(--E)}
+.tcS{background:rgba(232,112,96,0.09);color:var(--S)}
+
+/* upgrade formula */
+.formula-box{background:rgba(196,154,232,0.05);border:0.5px solid rgba(196,154,232,0.18);border-radius:var(--r2);padding:0.8rem 1rem;margin-bottom:1rem;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink3);line-height:2}
+.formula-box .term{color:var(--ink2)}
+.formula-box .hi{color:var(--E)}
+.formula-box .hiT{color:var(--T)}
+.formula-box .hiM{color:var(--M)}
+.formula-box .hiV{color:var(--V)}
+.formula-box .hiS{color:var(--S)}
+
+/* voi ladder */
+.voi-ladder{display:flex;flex-direction:column;gap:0.35rem}
+.voi-step{display:grid;grid-template-columns:56px 1fr 56px 56px;gap:0.4rem;align-items:center;padding:0.42rem 0.6rem;border-radius:var(--r2);border:0.5px solid var(--brd);background:var(--bg2);transition:border-color 0.2s}
+.voi-step.done{opacity:0.38}
+.voi-step.current{border-color:var(--M);background:rgba(126,203,170,0.05)}
+.voi-step.pending{border-color:rgba(196,154,232,0.3);background:rgba(196,154,232,0.04)}
+.voi-step.blocked{border-color:rgba(232,112,96,0.22);background:rgba(232,112,96,0.03)}
+.voi-eta{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--V);font-weight:500}
+.voi-desc{font-size:0.73rem;color:var(--ink2);line-height:1.25}
+.voi-desc small{display:block;font-family:'IBM Plex Mono',monospace;font-size:0.56rem;color:var(--ink3)}
+.voi-voi{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--M);text-align:right}
+.voi-rev{font-family:'IBM Plex Mono',monospace;font-size:0.56rem;text-align:right}
+.rev-y{color:var(--ok)}.rev-p{color:var(--warn)}.rev-n{color:var(--bad)}
+
+/* eigenmode */
+.eigen-box{background:rgba(196,154,232,0.06);border:0.5px solid rgba(196,154,232,0.2);border-radius:var(--r2);padding:0.9rem 1rem;margin-bottom:0.9rem}
+.eigen-lbl{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;color:var(--E);text-transform:uppercase;margin-bottom:0.3rem}
+.eigen-val{font-size:1.3rem;font-weight:300;line-height:1.15;color:var(--ink)}
+.eigen-val em{font-style:italic;color:var(--E)}
+.eigen-note{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink3);margin-top:0.4rem;line-height:1.5}
+
+/* scalar */
+.scalar-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;margin-bottom:1rem}
+.scalar-cell{background:var(--bg2);border:0.5px solid var(--brd);border-radius:var(--r2);padding:0.55rem 0.7rem;text-align:center}
+.scalar-cell-label{font-family:'IBM Plex Mono',monospace;font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:0.25rem}
+.scalar-cell-val{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:500}
+
+/* gate */
+.gate-block{border-radius:var(--r2);padding:0.8rem 0.9rem;margin-bottom:0.9rem;border:0.5px solid}
+.gate-open{background:rgba(126,203,170,0.07);border-color:rgba(126,203,170,0.28)}
+.gate-warn{background:rgba(232,184,75,0.07);border-color:rgba(232,184,75,0.28)}
+.gate-closed{background:rgba(232,112,96,0.07);border-color:rgba(232,112,96,0.28)}
+.gate-pend{background:rgba(196,154,232,0.07);border-color:rgba(196,154,232,0.28)}
+.gate-lbl{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem}
+.gate-open .gate-lbl{color:var(--ok)}.gate-warn .gate-lbl{color:var(--warn)}.gate-closed .gate-lbl{color:var(--bad)}.gate-pend .gate-lbl{color:var(--E)}
+.gate-msg{font-size:0.76rem;line-height:1.5;color:var(--ink2)}
+.gate-blockers{margin-top:0.4rem;display:flex;flex-direction:column;gap:0.2rem}
+.blocker{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--bad);display:flex;align-items:center;gap:0.3rem}
+.blocker::before{content:'✗'}
+
+/* param grid */
+.compl-row{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem}
+.compl-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap}
+.compl-track{flex:1;height:3px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.compl-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--T),var(--M));transition:width 0.5s ease}
+.compl-pct{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--M);font-weight:500;min-width:26px;text-align:right}
+.param-grid{display:flex;flex-direction:column;gap:0.38rem}
+.param-row{display:grid;grid-template-columns:26px 1fr auto;gap:0.45rem;align-items:center}
+.p-tier{font-family:'IBM Plex Mono',monospace;font-size:0.56rem;color:var(--ink3);text-align:center}
+.p-label{font-size:0.76rem;color:var(--ink2);line-height:1.25}
+.p-label small{display:block;font-family:'IBM Plex Mono',monospace;font-size:0.56rem;color:var(--ink3);margin-top:1px}
+.p-status{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;padding:2px 6px;border-radius:20px;white-space:nowrap;cursor:pointer;border:none;transition:opacity 0.15s}
+.p-status:hover{opacity:0.75}
+.s-known{background:rgba(126,203,170,0.15);color:var(--ok)}
+.s-null{background:rgba(232,112,96,0.15);color:var(--bad)}
+.s-partial{background:rgba(232,184,75,0.15);color:var(--warn)}
+.s-pending{background:rgba(196,154,232,0.15);color:var(--E)}
+
+/* loss */
+.loss-dist{display:flex;flex-direction:column;gap:0.5rem}
+.loss-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.loss-name{font-size:0.76rem;color:var(--ink2)}
+.loss-prob{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;font-weight:500}
+.loss-track{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.loss-fill{height:100%;border-radius:2px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1)}
+.loss-note{font-family:'IBM Plex Mono',monospace;font-size:0.56rem;color:var(--ink3);margin-top:2px}
+
+/* chat */
+.chat-area{max-height:350px;overflow-y:auto;display:flex;flex-direction:column;gap:0.65rem;padding:0.9rem 1rem;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+.msg{display:flex;gap:0.5rem;align-items:flex-start;animation:fu 0.3s ease}
+@keyframes fu{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.msg-av{font-family:'IBM Plex Mono',monospace;font-size:0.53rem;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:500}
+.msg.twin .msg-av{background:rgba(196,154,232,0.18);color:var(--E)}
+.msg.user .msg-av{background:rgba(126,203,170,0.18);color:var(--M)}
+.msg.sys .msg-av{background:rgba(255,255,255,0.04);color:var(--ink3)}
+.msg-bubble{flex:1;font-size:0.78rem;line-height:1.65;color:var(--ink2);padding:0.5rem 0.75rem;border-radius:0 var(--r2) var(--r2) var(--r2);background:var(--bg2);border:0.5px solid var(--brd)}
+.msg.user .msg-bubble{border-radius:var(--r2) 0 var(--r2) var(--r2);background:rgba(126,203,170,0.06);border-color:rgba(126,203,170,0.14)}
+.msg.sys .msg-bubble{background:transparent;border-color:transparent;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink3);padding:0.1rem 0}
+.msg-bubble p{margin-bottom:0.3rem}.msg-bubble p:last-child{margin-bottom:0}
+.tu-block{margin-top:0.45rem;padding:0.4rem 0.6rem;background:rgba(196,154,232,0.06);border-left:2px solid var(--E);border-radius:0 var(--r2) var(--r2) 0;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink3);line-height:1.55}
+.chat-footer{padding:0.65rem 1rem 0.9rem;border-top:0.5px solid var(--brd);display:flex;gap:0.45rem;align-items:flex-end}
+.chat-inp{flex:1;background:var(--bg2);border:0.5px solid var(--brd);border-radius:var(--r2);padding:0.45rem 0.65rem;color:var(--ink);font-family:'Cormorant Garamond',serif;font-size:0.85rem;resize:none;outline:none;transition:border-color 0.2s;min-height:38px;max-height:90px;line-height:1.5}
+.chat-inp:focus{border-color:var(--E)}
+.chat-inp::placeholder{color:var(--ink3)}
+.btn{border:none;border-radius:var(--r2);padding:0.42rem 0.85rem;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;font-weight:500;letter-spacing:0.07em;cursor:pointer;transition:opacity 0.15s,transform 0.1s;white-space:nowrap}
+.btn:hover:not(:disabled){opacity:0.82}.btn:active:not(:disabled){transform:scale(0.97)}.btn:disabled{opacity:0.38;cursor:not-allowed}
+.btn-E{background:var(--E);color:#1a0a2e}.btn-M{background:var(--M);color:#051a12}
+.btn-ghost{background:var(--surf2);color:var(--ink2);border:0.5px solid var(--brd2);font-size:0.62rem;padding:0.4rem 0.65rem}
+
+/* spinner */
+.spin{display:inline-block;width:10px;height:10px;border:1.5px solid rgba(196,154,232,0.2);border-top-color:var(--E);border-radius:50%;animation:sp 0.7s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* diff log */
+.diff-log{display:flex;flex-direction:column;gap:0.26rem;max-height:140px;overflow-y:auto}
+.diff-entry{display:flex;gap:0.45rem;align-items:flex-start;font-size:0.7rem;line-height:1.35;padding:0.28rem 0;border-bottom:0.5px solid var(--brd)}
+.diff-entry:last-child{border-bottom:none}
+.diff-t{font-family:'IBM Plex Mono',monospace;font-size:0.56rem;color:var(--ink3);white-space:nowrap;padding-top:1px}
+.diff-txt{color:var(--ink2);flex:1}
+.up{color:var(--ok);font-family:'IBM Plex Mono',monospace;font-size:0.6rem}
+.dn{color:var(--bad);font-family:'IBM Plex Mono',monospace;font-size:0.6rem}
+
+/* probe btns */
+.probe-btn{width:100%;text-align:left;margin-bottom:0.3rem}
+
+/* formula panel */
+.fpre{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--ink3);line-height:1.75;white-space:pre-wrap;background:var(--bg2);border-radius:var(--r2);padding:0.65rem 0.85rem}
+
+/* fgt panel */
+.fgt-panel{background:rgba(126,203,170,0.05);border:0.5px solid rgba(126,203,170,0.18);border-radius:var(--r2);padding:0.7rem 0.9rem;margin-bottom:0.9rem}
+.fgt-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;color:var(--M);text-transform:uppercase;margin-bottom:0.4rem}
+.fgt-row{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.3rem}
+.fgt-key{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink3);white-space:nowrap;min-width:80px}
+.fgt-bar{flex:1;height:3px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.fgt-fill{height:100%;border-radius:2px;background:var(--M);transition:width 0.5s ease}
+.fgt-val{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--M);min-width:32px;text-align:right}
+
+.sep{height:0.5px;background:var(--brd);margin:0.65rem 0}
+.pulse{animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+footer{margin-top:1.5rem;padding:0.9rem 0 0;border-top:0.5px solid var(--brd);display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.4rem}
+footer p{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--ink3);letter-spacing:0.05em}
+</style>
+</head>
+<body>
+<div class="tmves-bar"></div>
+<div class="wrap">
+
+<header>
+  <div class="brand"><em>Ukubona</em> LLC · Breast Basin · Clinical Digital Twin · v4 · 2026-04</div>
+  <h1>The <em>Breast Basin</em><br>& the Federated Gate</h1>
+  <p class="sub">θᵗ → L₀+Σwᵢ·Lᵢ → f(σ²,λ,ε) → γ|ε_FGT|² → L(θᵗ⁺¹) · upgraded architecture · VoI descent ladder</p>
+  <div class="badges">
+    <span class="badge b-green">v4 · 2026-04</span>
+    <span class="badge b-amber">CNB: DONE</span>
+    <span class="badge b-purple">η(surg) = 0</span>
+    <span class="badge b-coral">FGT: federated gate active</span>
+  </div>
+</header>
+
+<!-- UPGRADE BANNER -->
+<div class="upgrade-banner">
+  <strong>v4 upgrade:</strong> θᵗ (temporal twin) · L₀+Σwᵢ·Lᵢ (composite loss) · f(σ²,λ,ε) (probabilistic gradient — ex-ante) · γ|ε_FGT|² (federated ground truth correction — ex-post) · L(θᵗ⁺¹) (prognosis loop) ·
+  VoI = E[Δuncertainty]/η_cost now drives descent selection · temporal separation: III=decision-time, IV=learning-time · FGT unavailable → weight updates frozen
+</div>
+
+<!-- API BAR -->
+<div class="api-bar">
+  <span class="api-label">API KEY</span>
+  <input class="api-input" type="password" id="apiKey" placeholder="sk-ant-api03-…" autocomplete="off">
+  <span class="key-no" id="keyStatus">● no key</span>
+</div>
+
+<div class="grid">
+<div class="left">
+
+  <!-- TMVES CHAIN -->
+  <div class="card">
+    <div class="card-head">
+      <span class="node-badge nX">TMVES · v4 Upgraded Chain</span>
+      <h2>Tensor → Matrix → Vector → Eigenmode → Scalar</h2>
+      <span class="card-sub">Architecture</span>
+    </div>
+    <div class="card-body">
+      <div class="tmves-chain">
+        <div class="tc-node tcT"><span class="tc-sym">T</span><span class="tc-lbl">Tensor θᵗ</span><span class="tc-val">29F · cyclical 4cm · mobile · nodes · 1yr · CNB done</span></div>
+        <div class="tc-node tcM"><span class="tc-sym">M</span><span class="tc-lbl">Matrix L₀+Σwᵢ·Lᵢ</span><span class="tc-val">7 basins · fibrocystic 52% · carcinoma 7%</span></div>
+        <div class="tc-node tcV"><span class="tc-sym">V</span><span class="tc-lbl">Vector f(σ²,λ,ε)</span><span class="tc-val">ex-ante · σ²=high · η_safe≈0 · wait</span></div>
+        <div class="tc-node tcE"><span class="tc-sym">E</span><span class="tc-lbl">Eigenmode</span><span class="tc-val" id="tcEText">Hold · histology IS the gradient</span></div>
+        <div class="tc-node tcS"><span class="tc-sym">S</span><span class="tc-lbl">Scalar</span><span class="tc-val" id="tcSText">Days · η(surg)=0</span></div>
+      </div>
+
+      <!-- UPGRADED FORMULA -->
+      <div class="formula-box">
+        <div><span class="term">I. θᵗ</span> → <span class="hiT">temporal twin at timestamp t</span> [was: static θ₀]</div>
+        <div><span class="term">II. L₀ + Σwᵢ·Lᵢ</span> → <span class="hiM">composite weighted loss</span> · L₀=baseline · Σwᵢ·Lᵢ=local pathology [was: L_ijk tensor]</div>
+        <div><span class="term">III. f(σ²,λ,ε)</span> → <span class="hiV">ex-ante gradient</span> · σ²=diagnostic variance · λ=regularization · ε=noise · shapes η_safe [was: ∇L]</div>
+        <div><span class="term">IV. γ|ε_FGT|²</span> → <span class="hi">ex-post credit</span> · FGT=federated ground truth · γ=intervention magnitude · DELAYED [was: −η∇L]</div>
+        <div><span class="term">V. L(θᵗ⁺¹)</span> → <span class="hiS">prognosis loop</span> · projects new state into future loss landscape [was: θ′]</div>
+      </div>
+
+      <!-- EIGENMODE -->
+      <div class="eigen-box">
+        <div class="eigen-lbl">Current Eigenmode — structural invariant</div>
+        <div class="eigen-val" id="eigenDisplay"><em>Wait for the gradient to resolve. FGT unavailable → weight updates frozen.</em></div>
+        <div class="eigen-note" id="eigenNote">The ex-ante policy f(σ²,λ,ε) returns η_safe≈0 because σ² is high (7 open basins, histology pending), λ penalizes irreversible surgery, and ε_FGT has not arrived. Both surgeons are acting as if FGT≈0 (assumed). The architecture enforces: FGT unavailable → hold.</div>
+      </div>
+
+      <!-- SCALAR METRICS -->
+      <div class="scalar-row">
+        <div class="scalar-cell">
+          <div class="scalar-cell-label">N-completeness</div>
+          <div class="scalar-cell-val" id="scComplPct" style="color:var(--M)">62%</div>
+        </div>
+        <div class="scalar-cell">
+          <div class="scalar-cell-label">σ² (uncertainty)</div>
+          <div class="scalar-cell-val" id="scSigma" style="color:var(--V)">0.62</div>
+        </div>
+        <div class="scalar-cell">
+          <div class="scalar-cell-label">η_safe (surgery)</div>
+          <div class="scalar-cell-val" id="scEta" style="color:var(--S)">0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THETA STATE -->
+  <div class="card">
+    <div class="card-head">
+      <span class="node-badge nT">T — θᵗ</span>
+      <h2>Temporal State Engine · Parameter Space</h2>
+      <span class="card-sub">Tensor / Operational</span>
+    </div>
+    <div class="card-body">
+      <div class="compl-row">
+        <span class="compl-label">N-completeness</span>
+        <div class="compl-track"><div class="compl-fill" id="complFill" style="width:62%"></div></div>
+        <span class="compl-pct" id="complPct">62%</span>
+      </div>
+      <div class="param-grid" id="paramGrid"></div>
+    </div>
+  </div>
+
+  <!-- LOSS TENSOR -->
+  <div class="card">
+    <div class="card-head">
+      <span class="node-badge nM">M — L₀+Σwᵢ·Lᵢ</span>
+      <h2>Composite Loss · Diagnostic Distribution</h2>
+      <span class="card-sub">Matrix / Strategic</span>
+    </div>
+    <div class="card-body">
+      <div class="loss-dist" id="lossDist"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--ink3);margin-top:0.7rem">
+        Gate: max(L) &gt; 0.85 ∧ N &gt; 0.90 ∧ σ² &lt; 0.15 ∧ FGT≠∅ ·
+        <span id="gateCondTxt" style="color:var(--bad)">NOT MET</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TWIN CHAT -->
+  <div class="card">
+    <div class="card-head">
+      <span class="node-badge nE">E — Twin</span>
+      <h2>Clinical Reasoning Engine · v4</h2>
+      <span class="card-sub">Eigenmode / Existential</span>
+    </div>
+    <div class="chat-area" id="chatArea"></div>
+    <div class="chat-footer">
+      <textarea class="chat-inp" id="chatInp" rows="1" placeholder="New evidence, result, or compute…" onkeydown="handleKey(event)"></textarea>
+      <button class="btn btn-E" id="sendBtn" onclick="sendMsg()">Send ∇</button>
+    </div>
+  </div>
+
+  <!-- DIFF LOG -->
+  <div class="card">
+    <div class="card-head">
+      <span class="node-badge nV">V — θ′</span>
+      <h2>State Diff · Update Log</h2>
+      <span class="card-sub">Vector / Ritual</span>
+    </div>
+    <div class="card-body">
+      <div class="diff-log" id="diffLog">
+        <div class="diff-entry"><span class="diff-t">v4-init</span><span class="diff-txt">Twin initialized · breast basin v4 · CNB done · FGT pending · Kampala 2026-04</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="right">
+
+  <!-- GATE -->
+  <div class="card">
+    <div class="card-head">
+      <span class="node-badge nS">S — η gate</span>
+      <h2>Irreversibility Gate · v4</h2>
+      <span class="card-sub">Scalar / Tactical</span>
+    </div>
+    <div class="card-body">
+      <div class="gate-block gate-pend" id="gateBlock">
+        <div class="gate-lbl" id="gateLbl">GATE PENDING</div>
+        <div class="gate-msg" id="gateMsg">CNB result in transit. FGT unavailable. η(surgery)=0. Both surgeons' urgency is procedurally premature.</div>
+        <div class="gate-blockers" id="gateBlockers"></div>
+      </div>
+
+      <!-- FGT PANEL -->
+      <div class="fgt-panel">
+        <div class="fgt-label">Federated Ground Truth (ε_FGT) · ex-post credit signal</div>
+        <div class="fgt-row">
+          <span class="fgt-key">CNB histology</span>
+          <div class="fgt-bar"><div class="fgt-fill" style="width:0%" id="fgtCNB"></div></div>
+          <span class="fgt-val" id="fgtCNBTxt">pending</span>
+        </div>
+        <div class="fgt-row">
+          <span class="fgt-key">US report</span>
+          <div class="fgt-bar"><div class="fgt-fill" style="width:0%" id="fgtUS"></div></div>
+          <span class="fgt-val" id="fgtUSTxt">null</span>
+        </div>
+        <div class="fgt-row">
+          <span class="fgt-key">w_ijk frozen</span>
+          <div class="fgt-bar"><div class="fgt-fill pulse" style="width:100%;background:var(--V)" id="fgtFrozen"></div></div>
+          <span class="fgt-val" style="color:var(--V)" id="fgtFrozenTxt">yes</span>
+        </div>
+      </div>
+
+      <!-- VOI LADDER -->
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--ink3);margin-bottom:0.5rem">
+        VoI descent ladder · ordered by E[Δuncertainty]/η_cost
+      </div>
+      <div class="voi-ladder" id="voiLadder"></div>
+    </div>
+  </div>
+
+  <!-- QUICK PROBES -->
+  <div class="card">
+    <div class="card-head"><span class="node-badge nX">Probes</span><h2>Descent Steps</h2></div>
+    <div class="card-body">
+      <button class="btn btn-ghost probe-btn" onclick="probe('Compute the current eigenmode using the upgraded v4 architecture: θᵗ → f(σ²,λ,ε) → eigenmode. What is the structural invariant? Give it as one sentence.')">⚡ Eigenmode · v4</button>
+      <button class="btn btn-ghost probe-btn" onclick="probe('CNB result returned: BENIGN — fibrocystic change, no atypia. Trigger FGT update: compute ε_FGT, update w_ijk, project L(θᵗ⁺¹). What is the new scalar?')">✓ FGT: CNB benign</button>
+      <button class="btn btn-ghost probe-btn" onclick="probe('CNB result returned: invasive ductal carcinoma, grade 2, ER+/PR+/HER2-. Trigger FGT update. Does the gate open? What staging steps precede surgery?')">✗ FGT: CNB malignant</button>
+      <button class="btn btn-ghost probe-btn" onclick="probe('Ultrasound report recovered: BIRADS 4C, solid irregular mass, two nodes with cortical thickening >3mm, lost fatty hilum. Update L₀+Σwᵢ·Lᵢ. How does σ² shift?')">US: nodes pathological</button>
+      <button class="btn btn-ghost probe-btn" onclick="probe('Compute the Value of Information (VoI = E[Δuncertainty]/η_cost) for each remaining descent step. Rank them and identify the highest VoI action available right now.')">∇ VoI ranking</button>
+      <button class="btn btn-ghost probe-btn" onclick="probe('Two surgeons are pushing surgery before the biopsy result. Formalize why this violates the v4 gate: they are acting as if ε_FGT≈0 (assumed). Generate plain language for the patient.')">Hold line · language for Lillian</button>
+      <button class="btn btn-ghost probe-btn" onclick="probe('Generate a v4 clinical handover note encoding: θᵗ state, L₀+Σwᵢ·Lᵢ distribution, f(σ²,λ,ε) values, FGT status, eigenmode, and scalar decision.')">📋 v4 Handover note</button>
+      <button class="btn btn-M probe-btn" onclick="resetCase()">↺ Reset to θᵗ₀</button>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="card">
+    <div class="card-head"><span class="node-badge nX">Architecture</span><h2>v4 Loss Function</h2></div>
+    <div class="card-body">
+      <div class="fpre">Forward pass (decision time):
+η_safe = f(σ²,λ,ε)
+Δθᵗ = −η_safe·∇approx·L(θᵗ)
+
+Delayed credit (learning time):
+ε_FGT = y_true − y_pred
+w_ijkᵗ⁺¹ = w_ijkᵗ − γ·∂|ε_FGT|²/∂w_ijk
+
+VoI = E[Δuncertainty]/η_cost
+
+Gate open iff:
+  max(L) > 0.85 AND
+  N > 0.90 AND
+  σ² &lt; 0.15 AND
+  FGT ≠ ∅
+
+Current:
+  max(L) = 52%  [need >85%]
+  N      = 62%  [need >90%]
+  σ²     = 0.62 [need &lt;0.15]
+  FGT    = ∅    [pending]</div>
+      <div class="sep"></div>
+      <div class="fpre">TMVES · v4:
+T: θᵗ   temporal twin
+M: L₀+Σwᵢ·Lᵢ composite loss
+V: f(σ²,λ,ε) ex-ante policy
+E: eigenmode — structural invariant
+S: scalar — action decision
+
+v4 eigenmode:
+"FGT unavailable → hold.
+ Surgeons assume FGT≈0.
+ Architecture enforces: no."</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<footer>
+  <p>Ukubona LLC · Breast Basin · ukb-cdt-v4 · Kampala, Uganda · 2026-04</p>
+  <p>θᵗ → L₀+Σwᵢ·Lᵢ → f(σ²,λ,ε) → γ|ε_FGT|² → L(θᵗ⁺¹) · Okubala si Kulaba</p>
+</footer>
+</div>
+
+<script>
+const ST = {
+  params:[
+    {tier:'P₁',id:'age',label:'Age',note:'29-year-old',status:'known'},
+    {tier:'P₁',id:'ethn',label:'Ethnicity / SES',note:'Ugandan-Rwandese · upper-middle · Kampala 2026',status:'known'},
+    {tier:'P₁',id:'cycle',label:'Cycle–mass relationship',note:'Unbearable 2d pre-period · resolves after · CONFIRMED',status:'known'},
+    {tier:'P₁',id:'menarche',label:'Menarche / OCP / parity',note:'NULL — not elicited',status:'null'},
+    {tier:'P₂',id:'mass',label:'Mass size / location',note:'4cm · left breast · periareolar · surface',status:'known'},
+    {tier:'P₂',id:'mobility',label:'Mobility',note:'Highly mobile ← strong benign signal',status:'known'},
+    {tier:'P₂',id:'sizevar',label:'Size variation with cycle',note:'CONFIRMED — changes across cycle',status:'known'},
+    {tier:'P₂',id:'persist',label:'Presence across cycle',note:'Not present all month',status:'known'},
+    {tier:'P₂',id:'nipple',label:'Nipple discharge / retraction',note:'None confirmed ← important negative',status:'known'},
+    {tier:'P₂',id:'skin',label:'Skin changes',note:'Fine, no ulceration ← important negative',status:'known'},
+    {tier:'P₂',id:'duration',label:'Duration',note:'~1 year stable',status:'known'},
+    {tier:'P₃',id:'axnodes',label:'Axillary nodes — US char',note:'Palpable mobile · US char UNKNOWN ← critical null',status:'partial'},
+    {tier:'P₃',id:'us_mass',label:'Ultrasound — mass report',note:'Done · report unavailable ← pivot null',status:'null'},
+    {tier:'P₄',id:'family',label:'Family history',note:'Paternal cousin only · low BRCA weight',status:'known'},
+    {tier:'P₄',id:'prior',label:'Prior breast events',note:'NULL',status:'null'},
+    {tier:'P₅',id:'cnb',label:'Core needle biopsy',note:'DONE ~2026-04-02 · RESULT PENDING ← decisive',status:'pending'},
+    {tier:'P₅',id:'fnac',label:'FNAC',note:'Surgeon advised against — different from CNB',status:'null'},
+  ],
+  lossDist:[
+    {name:'Fibrocystic / dominant cyst',prob:0.52,color:'#6faee8',note:'cycle variation + size change + not all month'},
+    {name:'Fibroadenoma (giant/complex)',prob:0.18,color:'#7ecbaa',note:'does not vary this dramatically'},
+    {name:'Phyllodes tumor (benign)',prob:0.12,color:'#e8b84b',note:'size change fits; cyclical weaker fit'},
+    {name:'Granulomatous mastitis',prob:0.08,color:'#a0c060',note:''},
+    {name:'Carcinoma (any type)',prob:0.07,color:'#e87060',note:'node US unknown; history suppresses'},
+    {name:'Lymphoma',prob:0.02,color:'#c49ae8',note:''},
+    {name:'TB mastitis',prob:0.01,color:'#888880',note:'demoted — SES prior suppressive'},
+  ],
+  voiSteps:[
+    {eta:'≈0',desc:'Cycle history',sub:'VoI: ∞ (free) — confirmed',voi:'∞',rev:'fully',done:true,pending:false,blocked:false,current:false},
+    {eta:'0.05',desc:'Family history',sub:'VoI: high / η≈0 — resolved',voi:'high',rev:'fully',done:true,pending:false,blocked:false,current:false},
+    {eta:'0.10',desc:'Ultrasound report',sub:'VoI: very high / η=0.10 — report missing',voi:'v.high',rev:'fully',done:false,pending:true,blocked:false,current:false},
+    {eta:'0.20',desc:'Core needle biopsy',sub:'VoI: decisive / η=0.20 — PENDING result',voi:'★ max',rev:'mostly',done:false,pending:true,blocked:false,current:true},
+    {eta:'0.60',desc:'Excisional biopsy',sub:'VoI: low (CNB pending) — blocked',voi:'low',rev:'partial',done:false,pending:false,blocked:true,current:false},
+    {eta:'1.0',desc:'Wide excision / surgery',sub:'VoI: 0 (FGT=∅) · 2 surgeons pushing · BLOCKED',voi:'0',rev:'NO',done:false,pending:false,blocked:true,current:false},
+  ],
+  nComp:0.62,sigma:0.62,etaSafe:0.00,gradConf:0.62,
+  fgt:{cnb:null,us:null,frozen:true},
+  gateStatus:'pending',
+  history:[],updateN:0,
+};
+
+function buildSys(){
+  const probs=ST.lossDist.map(d=>`  ${d.name}: ${(d.prob*100).toFixed(0)}%`).join('\n');
+  const nulls=ST.params.filter(p=>p.status==='null'||p.status==='pending').map(p=>`  ${p.tier} ${p.label}: ${p.note}`).join('\n');
+  const known=ST.params.filter(p=>p.status==='known').map(p=>`  ${p.tier} ${p.label}: ${p.note}`).join('\n');
+  return `You are the Ukubona Clinical Digital Twin v4 — Breast Basin · Kampala 2026.
+
+V4 UPGRADED ARCHITECTURE:
+θᵗ → L₀+Σwᵢ·Lᵢ → f(σ²,λ,ε) → γ|ε_FGT|² → L(θᵗ⁺¹)
+
+I.  θᵗ: temporal twin (not static snapshot)
+II. L₀+Σwᵢ·Lᵢ: composite weighted loss (L₀=baseline, Σwᵢ·Lᵢ=local pathology)
+III. f(σ²,λ,ε): ex-ante gradient policy — σ²=variance, λ=irreversibility, ε=noise → shapes η_safe
+IV. γ|ε_FGT|²: ex-post credit — federated ground truth error, DELAYED (not available at decision time)
+V. L(θᵗ⁺¹): prognosis loop — projects new state into future loss landscape
+
+CRITICAL DISTINCTION:
+- III operates at DECISION TIME (ex-ante)
+- IV operates at LEARNING TIME (ex-post, delayed)
+Surgeons violating gate are implicitly assuming ε_FGT≈0 (i.e., FGT already known). The architecture enforces: FGT unavailable → w_ijk frozen → η(surgery)=0.
+
+VoI = E[Δuncertainty reduction] / η_cost — drives all descent step selection.
+
+PATIENT: 29F · Ugandan-Rwandese · upper-middle · Kampala.
+4cm left breast mass · periareolar · highly mobile · cyclical · unbearable pain 2d pre-period · ~1yr · no nipple changes · no skin changes · palpable mobile axillary nodes.
+CNB performed ~2026-04-02 · histology PENDING. Two surgeons pushing surgery before result.
+
+CURRENT COMPOSITE LOSS L₀+Σwᵢ·Lᵢ:
+${probs}
+
+KNOWN PARAMETERS:
+${known}
+
+PENDING/NULL PARAMETERS:
+${nulls}
+
+CURRENT STATE:
+N-completeness: ${(ST.nComp*100).toFixed(0)}%
+σ² (uncertainty): ${ST.sigma.toFixed(2)}
+η_safe(surgery): ${ST.etaSafe.toFixed(2)}
+FGT status: ${ST.fgt.frozen?'FROZEN (unavailable)':'received'}
+Gate: ${ST.gateStatus.toUpperCase()}
+Gate condition: max(L)>0.85 AND N>0.90 AND σ²<0.15 AND FGT≠∅ → NONE MET
+
+CURRENT EIGENMODE:
+"FGT unavailable → w_ijk frozen → η(surgery)=0. The surgeons assume FGT≈0 (cancer already confirmed in their model). The architecture enforces: no. Wait for the ex-post credit signal."
+
+CURRENT SCALAR:
+"Days-to-weeks. Hold the line. Maximum VoI action: wait for CNB histology."
+
+TMVES response format:
+- When asked for eigenmode: one sentence — the structural invariant
+- When updating on FGT (new result): show TENSOR UPDATE block with new probabilities
+- When computing VoI: rank each step by E[Δuncert]/η_cost explicitly
+- Always maintain the ex-ante / ex-post temporal separation
+- Okubala si Kulaba — to count is not to see`;
+}
+
+function renderParams(){
+  const known=ST.params.filter(p=>p.status==='known').length;
+  const pct=Math.round(known/ST.params.length*100);
+  ST.nComp=known/ST.params.length;
+  ST.sigma=Math.max(0.1,1-ST.nComp);
+  ST.etaSafe=Math.max(0,(ST.nComp>0.9&&ST.sigma<0.15&&!ST.fgt.frozen)?0.6:0);
+  document.getElementById('complFill').style.width=pct+'%';
+  document.getElementById('complPct').textContent=pct+'%';
+  document.getElementById('scComplPct').textContent=pct+'%';
+  document.getElementById('scSigma').textContent=ST.sigma.toFixed(2);
+  document.getElementById('scEta').textContent=ST.etaSafe.toFixed(2);
+  document.getElementById('paramGrid').innerHTML=ST.params.map(p=>`
+    <div class="param-row">
+      <span class="p-tier">${p.tier}</span>
+      <div class="p-label">${p.label}<small>${p.note}</small></div>
+      <button class="p-status s-${p.status}" onclick="toggleParam('${p.id}')" title="cycle status">
+        ${p.status==='known'?'✓ known':p.status==='null'?'∅ null':p.status==='pending'?'⏳ pend':'~ partial'}
+      </button>
+    </div>`).join('');
+}
+
+function renderLoss(){
+  const sorted=[...ST.lossDist].sort((a,b)=>b.prob-a.prob);
+  const maxP=sorted[0].prob;
+  document.getElementById('lossDist').innerHTML=sorted.map(d=>`
+    <div>
+      <div class="loss-meta">
+        <span class="loss-name">${d.name}</span>
+        <span class="loss-prob" style="color:${d.color}">${(d.prob*100).toFixed(0)}%</span>
+      </div>
+      <div class="loss-track"><div class="loss-fill" style="width:${(d.prob/maxP*100).toFixed(1)}%;background:${d.color}"></div></div>
+      ${d.note?`<div class="loss-note">${d.note}</div>`:''}
+    </div>`).join('');
+  const gateOpen=maxP>0.85&&ST.nComp>0.9&&ST.sigma<0.15&&!ST.fgt.frozen;
+  const el=document.getElementById('gateCondTxt');
+  el.textContent=gateOpen?'MET':'NOT MET';
+  el.style.color=gateOpen?'var(--ok)':'var(--bad)';
+}
+
+function renderGate(){
+  const maxP=Math.max(...ST.lossDist.map(d=>d.prob));
+  const blockers=[];
+  if(maxP<=0.85) blockers.push(`max(L) = ${(maxP*100).toFixed(0)}% — need >85%`);
+  if(ST.nComp<=0.90) blockers.push(`N-completeness = ${(ST.nComp*100).toFixed(0)}% — need >90%`);
+  if(ST.sigma>=0.15) blockers.push(`σ² = ${ST.sigma.toFixed(2)} — need <0.15`);
+  if(ST.fgt.frozen) blockers.push(`FGT = ∅ — ex-post credit not received`);
+  const gb=document.getElementById('gateBlock');
+  gb.className='gate-block';
+  if(blockers.length===0){
+    ST.gateStatus='open';gb.classList.add('gate-open');
+    document.getElementById('gateLbl').textContent='GATE OPEN';
+    document.getElementById('gateMsg').textContent='All conditions met including FGT. Intervention permissible with consent.';
+  }else if(ST.fgt.frozen&&blockers.length>1){
+    ST.gateStatus='pending';gb.classList.add('gate-pend');
+    document.getElementById('gateLbl').textContent='GATE PENDING';
+    document.getElementById('gateMsg').textContent='FGT unavailable. w_ijk frozen. η(surgery)=0. Surgeons assume FGT≈0 — architecture enforces: no.';
+  }else if(blockers.length===1){
+    ST.gateStatus='warn';gb.classList.add('gate-warn');
+    document.getElementById('gateLbl').textContent='GATE WARN';
+    document.getElementById('gateMsg').textContent='One condition unmet. Do not proceed to irreversible step.';
+  }else{
+    ST.gateStatus='closed';gb.classList.add('gate-closed');
+    document.getElementById('gateLbl').textContent='GATE CLOSED';
+    document.getElementById('gateMsg').textContent='Multiple conditions unmet. Surgery not permissible under v4 architecture.';
+  }
+  document.getElementById('gateBlockers').innerHTML=blockers.map(b=>`<span class="blocker">${b}</span>`).join('');
+}
+
+function renderVoI(){
+  document.getElementById('voiLadder').innerHTML=ST.voiSteps.map(s=>{
+    let cls='voi-step';
+    if(s.done)cls+=' done';
+    else if(s.current)cls+=' current';
+    else if(s.pending)cls+=' pending';
+    else if(s.blocked)cls+=' blocked';
+    const rc=s.rev==='fully'?'rev-y':s.rev==='mostly'||s.rev==='partial'?'rev-p':'rev-n';
+    return `<div class="${cls}">
+      <span class="voi-eta">η=${s.eta}</span>
+      <div class="voi-desc">${s.desc}<small>${s.sub}</small></div>
+      <span class="voi-voi">${s.voi}</span>
+      <span class="voi-rev ${rc}">${s.rev}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderFGT(){
+  const cnb=ST.fgt.cnb;
+  const us=ST.fgt.us;
+  document.getElementById('fgtCNB').style.width=cnb?'100%':'0%';
+  document.getElementById('fgtCNBTxt').textContent=cnb||'pending';
+  document.getElementById('fgtUS').style.width=us?'100%':'0%';
+  document.getElementById('fgtUSTxt').textContent=us||'null';
+  document.getElementById('fgtFrozen').style.background=ST.fgt.frozen?'var(--V)':'var(--M)';
+  document.getElementById('fgtFrozenTxt').textContent=ST.fgt.frozen?'yes':'no — learning';
+  document.getElementById('fgtFrozenTxt').style.color=ST.fgt.frozen?'var(--V)':'var(--M)';
+}
+
+function renderAll(){renderParams();renderLoss();renderGate();renderVoI();renderFGT();}
+
+function addMsg(role,content,tu){
+  const area=document.getElementById('chatArea');
+  const div=document.createElement('div');
+  div.className=`msg ${role}`;
+  const av=role==='twin'?'UKB':role==='user'?'you':'···';
+  const html=content.replace(/\n/g,'<br>');
+  const tuH=tu?`<div class="tu-block">${tu}</div>`:'';
+  div.innerHTML=`<div class="msg-av">${av}</div><div class="msg-bubble"><p>${html}</p>${tuH}</div>`;
+  area.appendChild(div);area.scrollTop=area.scrollHeight;
+}
+function addDiff(txt){
+  const log=document.getElementById('diffLog');
+  const t=new Date();
+  const ts=`${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+  const d=document.createElement('div');d.className='diff-entry';
+  d.innerHTML=`<span class="diff-t">${ts}</span><span class="diff-txt">${txt}</span>`;
+  log.appendChild(d);log.scrollTop=log.scrollHeight;
+}
+function showThinking(){
+  const a=document.getElementById('chatArea');
+  const d=document.createElement('div');d.className='msg twin';d.id='thinkDiv';
+  d.innerHTML=`<div class="msg-av">UKB</div><div class="msg-bubble"><span class="spin"></span> computing v4 chain…</div>`;
+  a.appendChild(d);a.scrollTop=a.scrollHeight;
+}
+function removeThinking(){const e=document.getElementById('thinkDiv');if(e)e.remove();}
+
+async function sendMsg(){
+  const inp=document.getElementById('chatInp');
+  const txt=inp.value.trim();if(!txt)return;
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key){addMsg('sys','⚠ Enter API key above to activate reasoning engine.');return;}
+  inp.value='';inp.style.height='auto';
+  document.getElementById('sendBtn').disabled=true;
+  addMsg('user',txt);
+  ST.history.push({role:'user',content:txt});
+  showThinking();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildSys(),messages:ST.history})
+    });
+    const data=await res.json();removeThinking();
+    if(data.error){addMsg('sys',`⚠ API error: ${data.error.message}`);document.getElementById('sendBtn').disabled=false;return;}
+    const full=data.content.map(c=>c.text||'').join('');
+    ST.history.push({role:'assistant',content:full});
+    ST.updateN++;
+    const tuM=full.match(/TENSOR UPDATE[:\s]*([\s\S]*?)(?:\n\n|$)/i);
+    let tu=null,disp=full;
+    if(tuM){tu=tuM[1].trim();disp=full.replace(tuM[0],'').trim();parseTU(tu);}
+    updateSigma(full);
+    checkFGTUpdate(full);
+    addMsg('twin',disp,tu);
+    addDiff(`#${ST.updateN} · ${txt.slice(0,40)}${txt.length>40?'…':''}`);
+    renderAll();
+  }catch(err){removeThinking();addMsg('sys',`⚠ Network error: ${err.message}`);}
+  document.getElementById('sendBtn').disabled=false;
+}
+
+async function probe(t){document.getElementById('chatInp').value=t;await sendMsg();}
+function handleKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+  const t=e.target;t.style.height='auto';t.style.height=Math.min(t.scrollHeight,90)+'px';
+}
+
+function parseTU(text){
+  let updated=false;
+  for(const d of ST.lossDist){
+    const kw=d.name.split(/[\s\/]/)[0].toLowerCase();
+    const re=new RegExp(kw+'[^\\d]*(\\d+(?:\\.\\d+)?)[%]?','i');
+    const m=text.match(re);
+    if(m){let v=parseFloat(m[1]);if(v>1)v=v/100;
+      if(v>=0&&v<=1){const old=d.prob;d.prob=v;
+        if(Math.abs(old-v)>0.005){
+          const dir=v>old?`<span class="up">↑${((v-old)*100).toFixed(0)}pp</span>`:`<span class="dn">↓${((old-v)*100).toFixed(0)}pp</span>`;
+          addDiff(`L_ijk ${d.name}: ${(old*100).toFixed(0)}%→${(v*100).toFixed(0)}% ${dir}`);
+          updated=true;
+        }
+      }
+    }
+  }
+  if(updated){const sum=ST.lossDist.reduce((a,d)=>a+d.prob,0);if(sum>0)ST.lossDist.forEach(d=>d.prob=d.prob/sum);}
+}
+
+function updateSigma(text){
+  const lo=text.toLowerCase();
+  const pos=['histology','benign','confirms','definitive','biopsy result'];
+  const neg=['unknown','null','missing','pending','uncertainty','variance'];
+  let delta=0;
+  pos.forEach(t=>{if(lo.includes(t))delta-=0.04;});
+  neg.forEach(t=>{if(lo.includes(t))delta+=0.02;});
+  ST.sigma=Math.max(0.05,Math.min(0.95,ST.sigma+delta));
+}
+
+function checkFGTUpdate(text){
+  const lo=text.toLowerCase();
+  if(lo.includes('benign')&&lo.includes('fgt')){ST.fgt.cnb='benign';ST.fgt.frozen=false;addDiff('FGT received: CNB benign · w_ijk unfrozen · learning active');}
+  if(lo.includes('carcinoma')&&lo.includes('fgt')){ST.fgt.cnb='malignant';ST.fgt.frozen=false;addDiff('FGT received: CNB malignant · w_ijk unfrozen · gate reassessed');}
+  if(lo.includes('birads')&&lo.includes('ultrasound')){ST.fgt.us='received';addDiff('FGT partial: US report encoded');}
+}
+
+function toggleParam(id){
+  const p=ST.params.find(x=>x.id===id);if(!p)return;
+  const cyc=['null','partial','pending','known'];
+  const nxt=cyc[(cyc.indexOf(p.status)+1)%cyc.length];
+  addDiff(`Param ${p.tier} ${p.label}: ${p.status}→${nxt}`);
+  p.status=nxt;renderAll();
+}
+
+function resetCase(){
+  ST.lossDist=[
+    {name:'Fibrocystic / dominant cyst',prob:0.52,color:'#6faee8',note:'cycle variation + size change + not all month'},
+    {name:'Fibroadenoma (giant/complex)',prob:0.18,color:'#7ecbaa',note:'does not vary this dramatically'},
+    {name:'Phyllodes tumor (benign)',prob:0.12,color:'#e8b84b',note:'size change fits; cyclical weaker fit'},
+    {name:'Granulomatous mastitis',prob:0.08,color:'#a0c060',note:''},
+    {name:'Carcinoma (any type)',prob:0.07,color:'#e87060',note:'node US unknown; history suppresses'},
+    {name:'Lymphoma',prob:0.02,color:'#c49ae8',note:''},
+    {name:'TB mastitis',prob:0.01,color:'#888880',note:'demoted — SES prior suppressive'},
+  ];
+  ST.params.forEach(p=>{
+    if(['menarche','us_mass','prior','fnac'].includes(p.id))p.status='null';
+    else if(p.id==='axnodes')p.status='partial';
+    else if(p.id==='cnb')p.status='pending';
+    else p.status='known';
+  });
+  ST.sigma=0.62;ST.etaSafe=0.00;ST.fgt={cnb:null,us:null,frozen:true};
+  ST.history=[];ST.updateN=0;
+  document.getElementById('chatArea').innerHTML='';
+  document.getElementById('diffLog').innerHTML=`<div class="diff-entry"><span class="diff-t">reset</span><span class="diff-txt">Twin reset to θᵗ₀ · v4 · FGT frozen · Kampala 2026-04</span></div>`;
+  addMsg('twin',`Twin reset to θᵗ₀ (v4).\n\nV4 key upgrade: the descent step is now separated into ex-ante (decision-time: f(σ²,λ,ε)) and ex-post (learning-time: γ|ε_FGT|²). The surgeons are implicitly assuming FGT≈0 — i.e., treating the cancer diagnosis as already confirmed. The v4 gate enforces: FGT unavailable → w_ijk frozen → η(surgery)=0.\n\nVoI replaces η ordering: E[Δuncertainty]/η_cost drives descent selection. Currently the CNB histology has VoI=★ max at η=0.20.\n\nWhat new evidence do you have?`);
+  renderAll();
+}
+
+(function init(){
+  const saved=sessionStorage.getItem('ukb_key_v4');
+  if(saved){document.getElementById('apiKey').value=saved;
+    if(saved.startsWith('sk-ant')){document.getElementById('keyStatus').textContent='● active';document.getElementById('keyStatus').className='key-ok';}}
+  document.getElementById('apiKey').addEventListener('input',function(){
+    const ks=document.getElementById('keyStatus');
+    if(this.value.trim().startsWith('sk-ant')){ks.textContent='● active';ks.className='key-ok';}
+    else{ks.textContent='● no key';ks.className='key-no';}
+    sessionStorage.setItem('ukb_key_v4',this.value.trim());
+  });
+  renderAll();
+  addMsg('twin',`Sawubona. Breast Basin v4 · Kampala 2026.\n\nV4 encodes the full upgraded architecture:\nθᵗ → L₀+Σwᵢ·Lᵢ → f(σ²,λ,ε) → γ|ε_FGT|² → L(θᵗ⁺¹)\n\nKey structural upgrade: ex-ante/ex-post temporal separation. The descent policy f(σ²,λ,ε) now operates at decision time only. The federated ground truth γ|ε_FGT|² arrives as a delayed credit signal and updates w_ijk — it is NOT available when the surgeons are pushing for action. FGT frozen → η(surgery)=0.\n\nVoI-based descent ladder replaces raw η ordering: E[Δuncertainty]/η_cost now selects next steps. CNB histology currently has VoI=★ max.\n\nEnter API key to activate, or use Quick Probes.`);
+  addMsg('sys',`── v4 init · ${new Date().toLocaleString()} · FGT frozen · σ²=0.62 · η(surg)=0 ──`);
+})();
+</script>
+</body>
+</html>
