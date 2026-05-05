@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukubona · Breast Basin · v3 · CNB Pending</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=Cormorant:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:    #080706;
+  --bg2:   #0f0e0c;
+  --bg3:   #161412;
+  --surf:  #1c1a17;
+  --surf2: #222018;
+  --ink:   #ede8db;
+  --ink2:  #b5b0a3;
+  --ink3:  #6b6760;
+  --brd:   rgba(255,255,255,0.06);
+  --brd2:  rgba(255,255,255,0.11);
+
+  /* TMVES — tighter palette */
+  --T: #6faee8;   /* Tensor      — steel blue    */
+  --M: #7ecbaa;   /* Matrix      — jade          */
+  --V: #e8b84b;   /* Vector      — amber         */
+  --E: #c49ae8;   /* Eigenmode   — orchid        */
+  --S: #e87060;   /* Scalar      — coral         */
+
+  --ok:   #7ecbaa;
+  --warn: #e8b84b;
+  --bad:  #e87060;
+
+  --r:  10px;
+  --r2: 5px;
+}
+
+html { scroll-behavior: smooth; font-size: 15px; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+  min-height: 100vh;
+  line-height: 1.65;
+}
+
+/* ── grain ── */
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* ── TMVES bar ── */
+.tmves-bar {
+  height: 2px;
+  background: linear-gradient(90deg, var(--T), var(--M), var(--V), var(--E), var(--S));
+  position: fixed; top:0; left:0; right:0; z-index:100;
+}
+
+/* ── HEADER ── */
+header {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 3.5rem 2rem 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: start;
+}
+.brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.brand em { color: var(--M); font-style: normal; }
+
+h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--ink);
+  margin-top: 0.5rem;
+  letter-spacing: -0.01em;
+}
+h1 em { font-style: italic; color: var(--E); }
+
+.subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--ink3);
+  letter-spacing: 0.07em;
+  margin-top: 0.6rem;
+}
+
+/* ── VERSION BADGE ── */
+.v-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-end;
+  padding-top: 0.3rem;
+}
+.vb-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.1em;
+}
+.vb-v3   { background: rgba(126,203,170,0.15); color: var(--M); border: 0.5px solid rgba(126,203,170,0.3); }
+.vb-cnb  { background: rgba(232,180,75,0.15);  color: var(--V); border: 0.5px solid rgba(232,180,75,0.3); }
+.vb-gate { background: rgba(232,112,96,0.12);  color: var(--S); border: 0.5px solid rgba(232,112,96,0.3); }
+
+/* ── STATE BANNER ── */
+.state-banner {
+  max-width: 1060px;
+  margin: 0 auto 1.5rem;
+  padding: 0 2rem;
+}
+.state-inner {
+  background: rgba(232,180,75,0.07);
+  border: 0.5px solid rgba(232,180,75,0.25);
+  border-radius: var(--r);
+  padding: 0.9rem 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.state-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--V);
+  box-shadow: 0 0 8px var(--V);
+  flex-shrink: 0;
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.state-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--V);
+  letter-spacing: 0.07em;
+}
+.state-text strong { color: var(--ink); }
+
+/* ── API BAR ── */
+.api-wrap {
+  max-width: 1060px;
+  margin: 0 auto 1.5rem;
+  padding: 0 2rem;
+}
+.api-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: var(--surf);
+  border: 0.5px solid var(--brd2);
+  border-radius: var(--r2);
+  padding: 0.6rem 1rem;
+}
+.api-row label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.api-row input {
+  flex: 1;
+  background: var(--bg2);
+  border: 0.5px solid var(--brd);
+  border-radius: 3px;
+  padding: 0.4rem 0.7rem;
+  color: var(--ink2);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.api-row input:focus { border-color: var(--E); }
+.key-status { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; }
+.key-status.ok { color: var(--ok); }
+.key-status.empty { color: var(--ink3); }
+
+/* ── MAIN GRID ── */
+main {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+}
+@media(max-width:720px){ main { grid-template-columns: 1fr; } }
+
+/* ── CARD ── */
+.card {
+  background: var(--surf);
+  border: 0.5px solid var(--brd);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.card-head {
+  padding: 0.8rem 1.2rem;
+  border-bottom: 0.5px solid var(--brd);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.node-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.nT { background:rgba(111,174,232,0.12); color:var(--T); }
+.nM { background:rgba(126,203,170,0.12); color:var(--M); }
+.nV { background:rgba(232,184,75,0.12);  color:var(--V); }
+.nE { background:rgba(196,154,232,0.12); color:var(--E); }
+.nS { background:rgba(232,112,96,0.12);  color:var(--S); }
+.nX { background:rgba(255,255,255,0.05); color:var(--ink3); }
+
+.card-head h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ink);
+}
+.card-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ink3);
+  margin-left: auto;
+  letter-spacing: 0.05em;
+}
+.card-body { padding: 1rem 1.2rem; }
+
+/* ── TMVES CHAIN — the eigenmode display ── */
+.tmves-chain {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.2rem;
+  border-radius: var(--r2);
+  overflow: hidden;
+  border: 0.5px solid var(--brd2);
+}
+.tc-node {
+  flex: 1;
+  padding: 0.7rem 0.4rem;
+  text-align: center;
+  cursor: default;
+  position: relative;
+}
+.tc-node::after {
+  content: '→';
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6rem;
+  color: var(--ink3);
+  z-index: 2;
+}
+.tc-node:last-child::after { display: none; }
+.tc-sym {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: block;
+}
+.tc-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.65;
+  display: block;
+  margin-top: 2px;
+}
+.tc-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.72rem;
+  display: block;
+  margin-top: 3px;
+  line-height: 1.2;
+  padding: 0 0.2rem;
+}
+.tcT { background:rgba(111,174,232,0.09); color:var(--T); }
+.tcM { background:rgba(126,203,170,0.09); color:var(--M); }
+.tcV { background:rgba(232,184,75,0.09);  color:var(--V); }
+.tcE { background:rgba(196,154,232,0.09); color:var(--E); }
+.tcS { background:rgba(232,112,96,0.09);  color:var(--S); }
+
+/* ── SCALAR DISPLAY ── */
+.scalar-box {
+  background: rgba(196,154,232,0.06);
+  border: 0.5px solid rgba(196,154,232,0.2);
+  border-radius: var(--r2);
+  padding: 1rem 1.2rem;
+  margin-bottom: 1rem;
+}
+.scalar-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--E);
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+.scalar-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.scalar-value em { font-style: italic; color: var(--E); }
+.scalar-note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--ink3);
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+/* ── PARAM GRID ── */
+.completeness-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+.cl-label { font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--ink3); letter-spacing:0.06em; white-space:nowrap; }
+.cl-track { flex:1; height:3px; background:var(--bg2); border-radius:2px; overflow:hidden; }
+.cl-fill  { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--T),var(--M)); transition:width 0.5s ease; }
+.cl-pct   { font-family:'IBM Plex Mono',monospace; font-size:0.65rem; color:var(--M); font-weight:500; min-width:28px; text-align:right; }
+
+.param-grid { display:flex; flex-direction:column; gap:0.45rem; }
+.param-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.p-tier { font-family:'IBM Plex Mono',monospace; font-size:0.58rem; color:var(--ink3); text-align:center; }
+.p-label { font-size:0.8rem; color:var(--ink2); line-height:1.3; }
+.p-label small { display:block; font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--ink3); margin-top:1px; }
+.p-status {
+  font-family:'IBM Plex Mono',monospace; font-size:0.62rem;
+  padding:2px 7px; border-radius:20px; white-space:nowrap;
+  cursor:pointer; border:none; transition:opacity 0.15s;
+}
+.p-status:hover{opacity:0.75}
+.s-known   { background:rgba(126,203,170,0.16); color:var(--ok); }
+.s-null    { background:rgba(232,112,96,0.16);  color:var(--bad); }
+.s-partial { background:rgba(232,184,75,0.16);  color:var(--warn); }
+.s-pending { background:rgba(196,154,232,0.16); color:var(--E); }
+
+/* ── LOSS TENSOR ── */
+.loss-dist { display:flex; flex-direction:column; gap:0.55rem; }
+.loss-item {}
+.loss-meta { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
+.loss-name { font-size:0.8rem; color:var(--ink2); }
+.loss-prob { font-family:'IBM Plex Mono',monospace; font-size:0.72rem; font-weight:500; }
+.loss-bar-track { height:4px; background:var(--bg2); border-radius:2px; overflow:hidden; }
+.loss-bar-fill  { height:100%; border-radius:2px; transition:width 0.6s cubic-bezier(0.4,0,0.2,1); }
+.loss-note { font-family:'IBM Plex Mono',monospace; font-size:0.58rem; color:var(--ink3); margin-top:2px; }
+
+/* ── ETA GATE ── */
+.gate-display {
+  border-radius: var(--r2);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.9rem;
+  border: 0.5px solid;
+  transition: all 0.4s ease;
+}
+.gate-open   { background:rgba(126,203,170,0.07); border-color:rgba(126,203,170,0.28); }
+.gate-warn   { background:rgba(232,184,75,0.07);  border-color:rgba(232,184,75,0.28); }
+.gate-closed { background:rgba(232,112,96,0.07);  border-color:rgba(232,112,96,0.28); }
+.gate-pend   { background:rgba(196,154,232,0.07); border-color:rgba(196,154,232,0.28); }
+
+.gate-label { font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:0.3rem; }
+.gate-open   .gate-label { color:var(--ok); }
+.gate-warn   .gate-label { color:var(--warn); }
+.gate-closed .gate-label { color:var(--bad); }
+.gate-pend   .gate-label { color:var(--E); }
+.gate-msg { font-size:0.78rem; line-height:1.5; color:var(--ink2); }
+.gate-blockers { margin-top:0.4rem; display:flex; flex-direction:column; gap:0.2rem; }
+.blocker { font-family:'IBM Plex Mono',monospace; font-size:0.62rem; color:var(--bad); display:flex; align-items:center; gap:0.35rem; }
+.blocker::before { content:'✗'; }
+
+/* ── ETA LADDER ── */
+.eta-ladder { display:flex; flex-direction:column; gap:0.35rem; }
+.eta-step {
+  display:grid; grid-template-columns:58px 1fr 52px;
+  gap:0.5rem; align-items:center;
+  padding:0.45rem 0.6rem;
+  border-radius:var(--r2);
+  border:0.5px solid var(--brd);
+  background:var(--bg2);
+  transition:border-color 0.2s;
+}
+.eta-step.done    { opacity:0.38; }
+.eta-step.current { border-color:var(--M); background:rgba(126,203,170,0.05); }
+.eta-step.blocked { border-color:rgba(232,112,96,0.25); background:rgba(232,112,96,0.03); }
+.eta-step.pending { border-color:rgba(196,154,232,0.3); background:rgba(196,154,232,0.04); }
+.eta-val  { font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--V); font-weight:500; }
+.eta-desc { font-size:0.76rem; color:var(--ink2); line-height:1.3; }
+.eta-desc small { display:block; font-family:'IBM Plex Mono',monospace; font-size:0.58rem; color:var(--ink3); }
+.eta-rev  { font-family:'IBM Plex Mono',monospace; font-size:0.56rem; text-align:right; }
+.rev-y{color:var(--ok)} .rev-p{color:var(--warn)} .rev-n{color:var(--bad)}
+
+/* ── CHAT ── */
+.chat-area {
+  max-height: 380px; overflow-y:auto;
+  display:flex; flex-direction:column; gap:0.7rem;
+  padding:1rem 1.2rem;
+  scroll-behavior:smooth;
+}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+
+.msg { display:flex; gap:0.55rem; align-items:flex-start; animation:fadeUp 0.3s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+.msg-av {
+  font-family:'IBM Plex Mono',monospace; font-size:0.55rem;
+  width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; letter-spacing:0.04em; font-weight:500;
+}
+.msg.twin .msg-av  { background:rgba(196,154,232,0.18); color:var(--E); }
+.msg.user .msg-av  { background:rgba(126,203,170,0.18); color:var(--M); }
+.msg.sys  .msg-av  { background:rgba(255,255,255,0.04); color:var(--ink3); }
+
+.msg-bubble {
+  flex:1; font-size:0.82rem; line-height:1.7; color:var(--ink2);
+  padding:0.55rem 0.8rem; border-radius:0 var(--r2) var(--r2) var(--r2);
+  background:var(--bg2); border:0.5px solid var(--brd);
+}
+.msg.user .msg-bubble {
+  border-radius:var(--r2) 0 var(--r2) var(--r2);
+  background:rgba(126,203,170,0.06); border-color:rgba(126,203,170,0.14);
+}
+.msg.sys .msg-bubble {
+  background:transparent; border-color:transparent;
+  font-family:'IBM Plex Mono',monospace; font-size:0.62rem; color:var(--ink3); padding:0.15rem 0;
+}
+.msg-bubble p{margin-bottom:0.35rem} .msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble code { font-family:'IBM Plex Mono',monospace; font-size:0.7rem; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px; color:var(--V); }
+.tensor-update {
+  margin-top:0.5rem; padding:0.45rem 0.65rem;
+  background:rgba(196,154,232,0.06); border-left:2px solid var(--E);
+  border-radius:0 var(--r2) var(--r2) 0;
+  font-family:'IBM Plex Mono',monospace; font-size:0.62rem; color:var(--ink3); line-height:1.6;
+}
+
+.chat-input-row {
+  padding:0.7rem 1.2rem 1rem; border-top:0.5px solid var(--brd);
+  display:flex; gap:0.5rem; align-items:flex-end;
+}
+.chat-input {
+  flex:1; background:var(--bg2); border:0.5px solid var(--brd);
+  border-radius:var(--r2); padding:0.5rem 0.7rem;
+  color:var(--ink); font-family:'Cormorant Garamond',serif; font-size:0.9rem;
+  resize:none; outline:none; transition:border-color 0.2s;
+  min-height:40px; max-height:100px; line-height:1.5;
+}
+.chat-input:focus{border-color:var(--E)}
+.chat-input::placeholder{color:var(--ink3)}
+
+.btn {
+  border:none; border-radius:var(--r2);
+  padding:0.48rem 1rem;
+  font-family:'IBM Plex Mono',monospace; font-size:0.68rem; font-weight:500;
+  letter-spacing:0.07em; cursor:pointer;
+  transition:opacity 0.15s, transform 0.1s; white-space:nowrap;
+}
+.btn:hover:not(:disabled){opacity:0.82}
+.btn:active:not(:disabled){transform:scale(0.97)}
+.btn:disabled{opacity:0.38; cursor:not-allowed}
+.btn-E { background:var(--E); color:#1a0a2e; }
+.btn-M { background:var(--M); color:#051a12; }
+.btn-ghost { background:var(--surf2); color:var(--ink2); border:0.5px solid var(--brd2); }
+
+/* ── SPINNER ── */
+.spinner { display:inline-block; width:11px; height:11px; border:1.5px solid rgba(196,154,232,0.25); border-top-color:var(--E); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; }
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── DIFF LOG ── */
+.diff-log { display:flex; flex-direction:column; gap:0.28rem; max-height:150px; overflow-y:auto; }
+.diff-entry { display:flex; gap:0.5rem; align-items:flex-start; font-size:0.72rem; line-height:1.4; padding:0.3rem 0; border-bottom:0.5px solid var(--brd); }
+.diff-entry:last-child{border-bottom:none}
+.diff-time { font-family:'IBM Plex Mono',monospace; font-size:0.58rem; color:var(--ink3); white-space:nowrap; padding-top:1px; }
+.diff-text { color:var(--ink2); flex:1; }
+.up{color:var(--ok); font-family:'IBM Plex Mono',monospace; font-size:0.62rem;}
+.dn{color:var(--bad); font-family:'IBM Plex Mono',monospace; font-size:0.62rem;}
+
+/* ── QUICK PROBES ── */
+.probe-btn {
+  width:100%; text-align:left; font-size:0.66rem; padding:0.5rem 0.7rem; margin-bottom:0.35rem;
+}
+
+/* ── FORMULA PANEL ── */
+.formula-pre {
+  font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--ink3);
+  line-height:1.75; white-space:pre-wrap; background:var(--bg2);
+  border-radius:var(--r2); padding:0.75rem 0.9rem;
+}
+
+/* ── SEPARATOR ── */
+.sep { height:0.5px; background:var(--brd); margin:0.7rem 0; }
+
+/* ── FOOTER ── */
+footer {
+  max-width:1060px; margin:0 auto;
+  padding:1rem 2rem 2rem;
+  display:flex; justify-content:space-between; align-items:center;
+  flex-wrap:wrap; gap:0.5rem;
+  border-top:0.5px solid var(--brd);
+}
+footer p { font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--ink3); letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+
+<div class="tmves-bar"></div>
+
+<header>
+  <div>
+    <div class="brand"><em>Ukubona</em> LLC · Clinical Digital Twin · 2026-04 · Kampala</div>
+    <h1>The <em>Breast Basin</em><br>& the Pending Gradient</h1>
+    <p class="subtitle">θ → L_ijk → ∇L → −η∇L → θ′ · CNB done · histology in transit · gate PENDING</p>
+  </div>
+  <div class="v-badge">
+    <span class="vb-tag vb-v3">v3 · 2026-04</span>
+    <span class="vb-tag vb-cnb">CNB: DONE</span>
+    <span class="vb-tag vb-gate">η(surg) = 0</span>
+  </div>
+</header>
+
+<!-- STATE BANNER -->
+<div class="state-banner">
+  <div class="state-inner">
+    <div class="state-dot"></div>
+    <div class="state-text">
+      <strong>System state:</strong> Core needle biopsy performed 2026-04-02 · Histology <strong>PENDING</strong> · 
+      Two surgeons have recommended immediate surgery · η gate remains closed until result arrives · 
+      Okubala si Kulaba — to count is not to see
+    </div>
+  </div>
+</div>
+
+<!-- API BAR -->
+<div class="api-wrap">
+  <div class="api-row">
+    <label>API KEY</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-…" autocomplete="off">
+    <span class="key-status empty" id="keyStatus">● no key</span>
+  </div>
+</div>
+
+<main>
+  <!-- LEFT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- TMVES CHAIN — Tensor→Matrix→Vector→Eigenmode→Scalar -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nX">TMVES · Real-World Chain</span>
+        <h2>From Raw Data to Clinical Scalar</h2>
+        <span class="card-sub">Architecture</span>
+      </div>
+      <div class="card-body">
+        <div class="tmves-chain">
+          <div class="tc-node tcT">
+            <span class="tc-sym">T</span>
+            <span class="tc-label">Tensor</span>
+            <span class="tc-value">29F · cyclical 4cm mass · mobile · nodes · 1yr · CNB done</span>
+          </div>
+          <div class="tc-node tcM">
+            <span class="tc-sym">M</span>
+            <span class="tc-label">Matrix</span>
+            <span class="tc-value">L_ijk: fibrocystic 52% · carcinoma 7% · 7 basins open</span>
+          </div>
+          <div class="tc-node tcV">
+            <span class="tc-sym">V</span>
+            <span class="tc-label">Vector</span>
+            <span class="tc-value">∇L: dominant gradient = histology result · η(surg) = 0</span>
+          </div>
+          <div class="tc-node tcE">
+            <span class="tc-sym">E</span>
+            <span class="tc-label">Eigenmode</span>
+            <span class="tc-value" id="eigenText">Awaiting histology · hold position · sovereignty intact</span>
+          </div>
+          <div class="tc-node tcS">
+            <span class="tc-sym">S</span>
+            <span class="tc-label">Scalar</span>
+            <span class="tc-value" id="scalarText">Days, not hours · wait for result</span>
+          </div>
+        </div>
+
+        <!-- EIGENMODE PANEL -->
+        <div class="scalar-box">
+          <div class="scalar-label">Current Eigenmode — the structural invariant of this case</div>
+          <div class="scalar-value" id="eigenDisplay">
+            <em>Hold position until the gradient resolves.</em>
+          </div>
+          <div class="scalar-note" id="eigenNote">
+            The dominant eigenvector of L_ijk, given all current evidence, is not a diagnosis.
+            It is a temporal instruction: the histology result is the only measurement that will force
+            basin collapse. All other signals are subleading. The correct action is non-action on
+            the body until the credit signal arrives. This is not passivity — it is discipline.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THETA STATE -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nT">T — θ₀</span>
+        <h2>State Engine · Parameter Space</h2>
+        <span class="card-sub">Tensor / Operational</span>
+      </div>
+      <div class="card-body">
+        <div class="completeness-row">
+          <span class="cl-label">N-completeness</span>
+          <div class="cl-track"><div class="cl-fill" id="clFill" style="width:62%"></div></div>
+          <span class="cl-pct" id="clPct">62%</span>
+        </div>
+        <div class="param-grid" id="paramGrid"></div>
+      </div>
+    </div>
+
+    <!-- LOSS TENSOR -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nM">M — L_ijk</span>
+        <h2>Loss Tensor · Diagnostic Distribution</h2>
+        <span class="card-sub">Matrix / Strategic</span>
+      </div>
+      <div class="card-body">
+        <div class="loss-dist" id="lossDist"></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink3);margin-top:0.75rem;">
+          Gate: max(L) &gt; 0.85 ∧ N &gt; 0.90 ∧ conf &gt; 0.85 to collapse ·
+          <span id="gateCondText" style="color:var(--bad)">NOT MET</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TWIN CHAT -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nE">E — Twin</span>
+        <h2>Clinical Reasoning Engine</h2>
+        <span class="card-sub">Eigenmode / Existential</span>
+      </div>
+      <div class="chat-area" id="chatArea"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" rows="1"
+          placeholder="Share new evidence, a result, or ask the twin to compute…"
+          onkeydown="handleKey(event)"></textarea>
+        <button class="btn btn-E" id="sendBtn" onclick="sendMsg()">Send ∇</button>
+      </div>
+    </div>
+
+    <!-- STATE DIFF LOG -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nV">V — θ′</span>
+        <h2>State Diff · Update Log</h2>
+        <span class="card-sub">Vector / Ritual</span>
+      </div>
+      <div class="card-body">
+        <div class="diff-log" id="diffLog">
+          <div class="diff-entry">
+            <span class="diff-time">v3-init</span>
+            <span class="diff-text">Twin initialized · breast basin v3 · CNB done, histology pending · Kampala 2026-04</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- ETA GATE -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nS">S — η gate</span>
+        <h2>Irreversibility Gate</h2>
+        <span class="card-sub">Scalar / Tactical</span>
+      </div>
+      <div class="card-body">
+        <div class="gate-display gate-pend" id="gateDisplay">
+          <div class="gate-label" id="gateLabel">GATE PENDING</div>
+          <div class="gate-msg" id="gateMsg">CNB result in transit. η(surgery) = 0 until histology returns. Both surgeons' urgency is procedurally unjustified at this moment.</div>
+          <div class="gate-blockers" id="gateBlockers"></div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink3);margin-bottom:0.5rem;">
+          η Descent Ladder — reversibility ordered
+        </div>
+        <div class="eta-ladder" id="etaLadder"></div>
+      </div>
+    </div>
+
+    <!-- QUICK PROBES -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nX">Quick Probes</span>
+        <h2>Descent Steps</h2>
+      </div>
+      <div class="card-body">
+        <button class="btn btn-ghost probe-btn" onclick="probe('What is the eigenmode of this case right now? Give me the single structural fact — the invariant — that governs all decisions until the biopsy returns.')">⚡ Current eigenmode</button>
+        <button class="btn btn-ghost probe-btn" onclick="probe('The CNB result has returned: BENIGN — fibrocystic change, no atypia. Update the loss tensor, recompute the gradient, and give me the new scalar.')">✓ CNB: benign result</button>
+        <button class="btn btn-ghost probe-btn" onclick="probe('The CNB result has returned: invasive ductal carcinoma, grade 2, ER+/PR+/HER2-. Update the loss tensor, recompute the gradient, and give me the new scalar. Does the gate open?')">✗ CNB: malignancy confirmed</button>
+        <button class="btn btn-ghost probe-btn" onclick="probe('Ultrasound report recovered: mass is solid, irregular margins, BIRADS 4C. Axillary nodes: two nodes with cortical thickening >3mm, lost fatty hilum. Update the tensor.')">US: nodes pathological (Scenario B)</button>
+        <button class="btn btn-ghost probe-btn" onclick="probe('Ultrasound report recovered: mass appears complex cystic, lobulated, BIRADS 3. Axillary nodes: normal architecture, oval, echogenic hilum, cortex <2mm. Update the tensor.')">US: nodes normal (Scenario A)</button>
+        <button class="btn btn-ghost probe-btn" onclick="probe('Two surgeons are pushing surgery before the biopsy result. Formalize exactly why this violates the η gate condition, and give me the language I can use with the patient to hold the line.')">Hold the line — language for Lillian</button>
+        <button class="btn btn-ghost probe-btn" onclick="probe('Generate a clinical handover note for the next clinician, encoding the full state vector θ, the loss distribution, and the current gate status.')">📋 Handover note</button>
+        <button class="btn btn-M probe-btn" onclick="resetCase()">↺ Reset to θ₀ (v3)</button>
+      </div>
+    </div>
+
+    <!-- ARCHITECTURE PANEL -->
+    <div class="card">
+      <div class="card-head">
+        <span class="node-badge nX">Architecture</span>
+        <h2>Loss Function</h2>
+      </div>
+      <div class="card-body">
+        <div class="formula-pre">L_tot = L₀
+  + Σ w_ijk · L_ijk
+  + ε_ijk
+  + p·σ^q
+  + r·λ^s
+
+L₀     = bedrock prior
+ε_ijk  = NULL as gravity well
+σ      = uncertainty penalty
+λ      = irreversibility penalty
+𝕀_consent · L_tot ← hard gate</div>
+        <div class="sep"></div>
+        <div class="formula-pre">TMVES chain:
+T: raw tensor (all features)
+M: matrix (weighted interactions)
+V: vector (gradient direction)
+E: eigenmode (structural invariant)
+S: scalar (action decision)
+
+v3 eigenmode:
+"Wait for histology —
+ then compute."
+
+η_safe = f(
+  reversibility,
+  gradient_conf,    [0.62]
+  N_completeness    [0.62]
+)
+
+Gate open iff:
+  max(L) &gt; 0.85 AND
+  N &gt; 0.90 AND
+  conf &gt; 0.85</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <p>Ukubona LLC · Breast Basin Digital Twin · ukb-cdt-v3 · Kampala, Uganda · 2026-04</p>
+  <p>θ → L_ijk → ∇L → −η∇L → θ′ ↺ · Not a substitute for clinical judgement · Okubala si Kulaba</p>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE — v3: CNB done, result pending
+// ═══════════════════════════════════════════════════════
+
+let S = {
+  params: [
+    {tier:'P₁',id:'age',      label:'Age',                    note:'29-year-old',                                        status:'known'},
+    {tier:'P₁',id:'ethn',     label:'Ethnicity / SES',        note:'Ugandan-Rwandese · upper-middle · Kampala 2026',     status:'known'},
+    {tier:'P₁',id:'cycle',    label:'Cycle–mass relationship', note:'Unbearable 2d pre-period · resolves after · CONFIRMED',status:'known'},
+    {tier:'P₁',id:'menarche', label:'Menarche / OCP / parity',note:'NULL — not elicited',                               status:'null'},
+    {tier:'P₂',id:'mass',     label:'Mass size / location',   note:'4cm · left breast · periareolar · surface',         status:'known'},
+    {tier:'P₂',id:'mobility', label:'Mobility',               note:'Highly mobile ← strong benign signal',              status:'known'},
+    {tier:'P₂',id:'sizevar',  label:'Size variation with cycle',note:'CONFIRMED — changes across cycle ← malignancy nearly excluded',status:'known'},
+    {tier:'P₂',id:'persist',  label:'Presence across cycle',  note:'Not present all month ← cyst / fibrocystic strongly',status:'known'},
+    {tier:'P₂',id:'nipple',   label:'Nipple discharge / retraction',note:'None confirmed ← important negative',         status:'known'},
+    {tier:'P₂',id:'skin',     label:'Skin changes / ulceration',note:'Skin fine, no ulceration ← important negative',  status:'known'},
+    {tier:'P₂',id:'duration', label:'Duration',               note:'~1 year stable ← argues against aggressive malignancy',status:'known'},
+    {tier:'P₃',id:'axnodes',  label:'Axillary nodes — US char',note:'Palpable mobile · US characterization UNKNOWN ← critical null',status:'partial'},
+    {tier:'P₃',id:'us_mass',  label:'Ultrasound — mass report',note:'Done · report unavailable to us ← pivot parameter',status:'null'},
+    {tier:'P₄',id:'family',   label:'Family history',         note:'Paternal cousin only · low BRCA weight',            status:'known'},
+    {tier:'P₄',id:'prior',    label:'Prior breast events',    note:'NULL',                                              status:'null'},
+    {tier:'P₅',id:'cnb',      label:'Core needle biopsy',     note:'DONE ~2026-04-02 ← RESULT PENDING ← decisive parameter',status:'pending'},
+    {tier:'P₅',id:'fnac',     label:'FNAC',                   note:'Surgeon advised against — different instrument from CNB',status:'null'},
+  ],
+
+  lossDist: [
+    {name:'Fibrocystic / dominant cyst',  prob:0.52, color:'#6faee8', note:'cycle variation + size change + not all month'},
+    {name:'Fibroadenoma (giant/complex)', prob:0.18, color:'#7ecbaa', note:'less likely — does not vary this dramatically'},
+    {name:'Phyllodes tumor (benign)',     prob:0.12, color:'#e8b84b', note:'size change fits; cyclical pattern weaker fit'},
+    {name:'Granulomatous mastitis',       prob:0.08, color:'#a0c060', note:''},
+    {name:'Carcinoma (any type)',         prob:0.07, color:'#e87060', note:'node US unknown; history suppresses strongly'},
+    {name:'Lymphoma',                     prob:0.02, color:'#c49ae8', note:''},
+    {name:'TB mastitis',                  prob:0.01, color:'#888880', note:'demoted — SES prior suppressive'},
+  ],
+
+  etaSteps: [
+    {eta:'≈0',   desc:'Cycle history',         sub:'FREE · confirmed · fibrocystic +0.10',  rev:'fully',   done:true,  blocked:false, pending:false, current:false},
+    {eta:'0.05', desc:'Family history',         sub:'Near-free · BRCA prior resolved',        rev:'fully',   done:true,  blocked:false, pending:false, current:false},
+    {eta:'0.10', desc:'Ultrasound report',      sub:'Done · report unavailable ← OPEN NULL', rev:'fully',   done:false, blocked:false, pending:true,  current:false},
+    {eta:'0.20', desc:'Core needle biopsy',     sub:'DONE · histology result PENDING',        rev:'mostly',  done:false, blocked:false, pending:true,  current:true},
+    {eta:'0.60', desc:'Excisional biopsy',      sub:'Only if CNB inconclusive',               rev:'partial', done:false, blocked:true,  pending:false, current:false},
+    {eta:'1.0',  desc:'Wide excision / surgery',sub:'BLOCKED · 2 surgeons pushing · gate CLOSED',rev:'NO', done:false, blocked:true,  pending:false, current:false},
+  ],
+
+  nComp: 0.62,
+  gradConf: 0.62,
+  gateStatus: 'pending',
+  history: [],
+  updateN: 0,
+};
+
+// ═══════════════════════════════════════════════════════
+// SYSTEM PROMPT
+// ═══════════════════════════════════════════════════════
+
+function buildSys() {
+  const probs = S.lossDist.map(d=>`  ${d.name}: ${(d.prob*100).toFixed(0)}%`).join('\n');
+  const nulls = S.params.filter(p=>p.status==='null'||p.status==='pending').map(p=>`  ${p.tier} ${p.label}: ${p.note}`).join('\n');
+  const known = S.params.filter(p=>p.status==='known').map(p=>`  ${p.tier} ${p.label}: ${p.note}`).join('\n');
+
+  return `You are the Ukubona Clinical Digital Twin for the Breast Basin case — Kampala, Uganda, 2026.
+
+ARCHITECTURE: Tensor → Matrix → Vector → Eigenmode → Scalar (TMVES)
+Your job is to compute and narrate this chain for every update.
+
+PATIENT: 29-year-old Ugandan-Rwandese woman · upper-middle class · Kampala.
+PRESENTATION: 4cm left breast mass · periareolar · highly mobile · cyclical (varies and resolves with menstrual cycle, not present all month) · unbearable pain 2d pre-period · ~1yr duration · no nipple retraction · no skin changes · palpable mobile axillary nodes.
+KEY UPDATE (v3): Core needle biopsy was performed ~2026-04-02. Histology result is PENDING. Two surgeons have already recommended immediate surgery — one before any biopsy (η=1.0 catastrophic), one after CNB but before results return (still violates gate). The patient (Lillian) is under financial and emotional pressure.
+
+CURRENT LOSS TENSOR L_ijk:
+${probs}
+
+KNOWN PARAMETERS:
+${known}
+
+PENDING / NULL PARAMETERS:
+${nulls}
+
+N-COMPLETENESS: ${(S.nComp*100).toFixed(0)}%
+GRADIENT CONFIDENCE: ${(S.gradConf*100).toFixed(0)}%
+GATE STATUS: ${S.gateStatus.toUpperCase()}
+
+CURRENT EIGENMODE:
+"Hold position until the histology gradient resolves. The dominant eigenvector of the current loss tensor is not a diagnosis — it is a temporal instruction. Firing before the credit signal arrives is the same error as firing before it was collected."
+
+CURRENT SCALAR:
+"Days-to-weeks. Time-scale: outpatient, anchored to biopsy result."
+
+TMVES RULES you must enforce in every response:
+1. T (Tensor): What raw data points are present? What are the nulls?
+2. M (Matrix): How do they interact? What is the current L_ijk distribution?
+3. V (Vector): What is ∇L pointing toward? What is the dominant gradient?
+4. E (Eigenmode): What is the structural invariant? What is the irreducible truth of this case?
+5. S (Scalar): What is the time-scale decision? What action — or non-action — does the system output?
+
+When updating on new evidence, show a TENSOR UPDATE block with new probabilities.
+When asked for the eigenmode, give it as a single clear sentence — the structural invariant that survives all basin configurations.
+When asked for the scalar, give a time-scale and an action recommendation.
+
+Core principles:
+- Unknown ≠ zero. Every null pointer is a gravity well.
+- η gate for surgery = 0 until histology returns.
+- The patient owns the gradient sovereignty.
+- Okubala si Kulaba — to count is not to see.`;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+
+function renderParams() {
+  const known = S.params.filter(p=>p.status==='known').length;
+  const pct = Math.round(known/S.params.length*100);
+  S.nComp = known/S.params.length;
+  document.getElementById('clFill').style.width = pct+'%';
+  document.getElementById('clPct').textContent = pct+'%';
+
+  document.getElementById('paramGrid').innerHTML = S.params.map(p=>`
+    <div class="param-row">
+      <span class="p-tier">${p.tier}</span>
+      <div class="p-label">${p.label}<small>${p.note}</small></div>
+      <button class="p-status s-${p.status}" onclick="toggleParam('${p.id}')" title="Click to cycle status">
+        ${p.status==='known'?'✓ known':p.status==='null'?'∅ null':p.status==='pending'?'⏳ pend':'~ partial'}
+      </button>
+    </div>`).join('');
+}
+
+function renderLoss() {
+  const sorted = [...S.lossDist].sort((a,b)=>b.prob-a.prob);
+  const maxP = sorted[0].prob;
+  document.getElementById('lossDist').innerHTML = sorted.map(d=>`
+    <div class="loss-item">
+      <div class="loss-meta">
+        <span class="loss-name">${d.name}</span>
+        <span class="loss-prob" style="color:${d.color}">${(d.prob*100).toFixed(0)}%</span>
+      </div>
+      <div class="loss-bar-track">
+        <div class="loss-bar-fill" style="width:${(d.prob/maxP*100).toFixed(1)}%;background:${d.color}"></div>
+      </div>
+      ${d.note?`<div class="loss-note">${d.note}</div>`:''}
+    </div>`).join('');
+
+  const maxProb = sorted[0].prob;
+  const gateOpen = maxProb>0.85 && S.nComp>0.90 && S.gradConf>0.85;
+  const gc = document.getElementById('gateCondText');
+  gc.textContent = gateOpen ? 'MET' : 'NOT MET';
+  gc.style.color = gateOpen ? 'var(--ok)' : 'var(--bad)';
+}
+
+function renderGate() {
+  const gd = document.getElementById('gateDisplay');
+  const maxP = Math.max(...S.lossDist.map(d=>d.prob));
+  const blockers = [];
+  if (maxP<=0.85)      blockers.push(`max(L) = ${(maxP*100).toFixed(0)}% — need >85%`);
+  if (S.nComp<=0.90)   blockers.push(`N-completeness = ${(S.nComp*100).toFixed(0)}% — need >90%`);
+  if (S.gradConf<=0.85) blockers.push(`gradient confidence = ${(S.gradConf*100).toFixed(0)}% — need >85%`);
+
+  gd.className = 'gate-display';
+  const hasCNBPending = S.params.find(p=>p.id==='cnb')?.status === 'pending';
+
+  if (blockers.length===0) {
+    S.gateStatus='open'; gd.classList.add('gate-open');
+    document.getElementById('gateLabel').textContent='GATE OPEN';
+    document.getElementById('gateMsg').textContent='All conditions met. Irreversible intervention permissible with informed consent.';
+    document.getElementById('gateBlockers').innerHTML='';
+  } else if (hasCNBPending) {
+    S.gateStatus='pending'; gd.classList.add('gate-pend');
+    document.getElementById('gateLabel').textContent='GATE PENDING';
+    document.getElementById('gateMsg').textContent='CNB result in transit. η(surgery) = 0. Surgeons\' urgency is procedurally premature.';
+    document.getElementById('gateBlockers').innerHTML=blockers.map(b=>`<span class="blocker">${b}</span>`).join('');
+  } else if (blockers.length===1) {
+    S.gateStatus='warn'; gd.classList.add('gate-warn');
+    document.getElementById('gateLabel').textContent='GATE WARN';
+    document.getElementById('gateMsg').textContent='One condition unmet. Do not proceed to irreversible step.';
+    document.getElementById('gateBlockers').innerHTML=blockers.map(b=>`<span class="blocker">${b}</span>`).join('');
+  } else {
+    S.gateStatus='closed'; gd.classList.add('gate-closed');
+    document.getElementById('gateLabel').textContent='GATE CLOSED';
+    document.getElementById('gateMsg').textContent='Multiple conditions unmet. Surgery not permissible.';
+    document.getElementById('gateBlockers').innerHTML=blockers.map(b=>`<span class="blocker">${b}</span>`).join('');
+  }
+}
+
+function renderEta() {
+  document.getElementById('etaLadder').innerHTML = S.etaSteps.map(s=>{
+    let cls='eta-step';
+    if(s.done) cls+=' done';
+    else if(s.current) cls+=' current';
+    else if(s.pending) cls+=' pending';
+    else if(s.blocked) cls+=' blocked';
+    const rc = s.rev==='fully'?'rev-y':s.rev==='mostly'||s.rev==='partial'?'rev-p':'rev-n';
+    return `<div class="${cls}">
+      <span class="eta-val">η=${s.eta}</span>
+      <div class="eta-desc">${s.desc}<small>${s.sub}</small></div>
+      <span class="eta-rev ${rc}">${s.rev}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderAll() { renderParams(); renderLoss(); renderGate(); renderEta(); }
+
+// ═══════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════
+
+function addMsg(role, content, tu) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const av = role==='twin'?'UKB':role==='user'?'you':'···';
+  const html = content.replace(/\n/g,'<br>');
+  const tuHtml = tu ? `<div class="tensor-update">${tu}</div>` : '';
+  div.innerHTML = `<div class="msg-av">${av}</div><div class="msg-bubble"><p>${html}</p>${tuHtml}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addDiff(text) {
+  const log = document.getElementById('diffLog');
+  const t = new Date();
+  const ts = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+  const div = document.createElement('div');
+  div.className = 'diff-entry';
+  div.innerHTML = `<span class="diff-time">${ts}</span><span class="diff-text">${text}</span>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showThinking() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className='msg twin'; div.id='thinkDiv';
+  div.innerHTML=`<div class="msg-av">UKB</div><div class="msg-bubble"><span class="spinner"></span> computing TMVES chain…</div>`;
+  area.appendChild(div); area.scrollTop=area.scrollHeight;
+}
+function removeThinking() { const el=document.getElementById('thinkDiv'); if(el) el.remove(); }
+
+async function sendMsg() {
+  const inp = document.getElementById('chatInput');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  const key = document.getElementById('apiKey').value.trim();
+  if(!key) { addMsg('sys','⚠ Enter API key above to activate the reasoning engine.'); return; }
+
+  inp.value=''; inp.style.height='auto';
+  document.getElementById('sendBtn').disabled=true;
+  addMsg('user', txt);
+  S.history.push({role:'user', content:txt});
+  showThinking();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: buildSys(),
+        messages: S.history,
+      })
+    });
+    const data = await res.json();
+    removeThinking();
+
+    if(data.error){ addMsg('sys',`⚠ API error: ${data.error.message}`); document.getElementById('sendBtn').disabled=false; return; }
+
+    const full = data.content.map(c=>c.text||'').join('');
+    S.history.push({role:'assistant', content:full});
+    S.updateN++;
+
+    const tuM = full.match(/TENSOR UPDATE[:\s]*([\s\S]*?)(?:\n\n|$)/i);
+    let tu=null, disp=full;
+    if(tuM){ tu=tuM[1].trim(); disp=full.replace(tuM[0],'').trim(); parseTU(tu); }
+
+    updateConf(full);
+
+    // Try to extract eigenmode from response
+    const eigenM = full.match(/eigenmode[:\s]*[""']?([^.\n]+[.][^.\n]*)/i);
+    if(eigenM) {
+      const eigenEl = document.getElementById('eigenDisplay');
+      if(eigenEl) eigenEl.innerHTML = `<em>${eigenM[1].trim()}</em>`;
+    }
+
+    addMsg('twin', disp, tu);
+    addDiff(`Update #${S.updateN} · ${txt.slice(0,42)}${txt.length>42?'…':''}`);
+    renderAll();
+  } catch(err) {
+    removeThinking();
+    addMsg('sys',`⚠ Network error: ${err.message}`);
+  }
+  document.getElementById('sendBtn').disabled=false;
+}
+
+async function probe(text) {
+  document.getElementById('chatInput').value=text;
+  await sendMsg();
+}
+
+function handleKey(e) {
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); }
+  const t=e.target; t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,100)+'px';
+}
+
+function parseTU(text) {
+  let updated=false;
+  for(const d of S.lossDist){
+    const kw=d.name.split(/[\s\/]/)[0].toLowerCase();
+    const re=new RegExp(kw+'[^\\d]*(\\d+(?:\\.\\d+)?)[%]?','i');
+    const m=text.match(re);
+    if(m){
+      let v=parseFloat(m[1]); if(v>1) v=v/100;
+      if(v>=0&&v<=1){ const old=d.prob; d.prob=v;
+        if(Math.abs(old-v)>0.005){
+          const dir=v>old?`<span class="up">↑${((v-old)*100).toFixed(0)}pp</span>`:`<span class="dn">↓${((old-v)*100).toFixed(0)}pp</span>`;
+          addDiff(`L_ijk ${d.name}: ${(old*100).toFixed(0)}% → ${(v*100).toFixed(0)}% ${dir}`);
+          updated=true;
+        }
+      }
+    }
+  }
+  if(updated){
+    const sum=S.lossDist.reduce((a,d)=>a+d.prob,0);
+    if(sum>0) S.lossDist.forEach(d=>d.prob=d.prob/sum);
+  }
+}
+
+function updateConf(text) {
+  const lo=text.toLowerCase();
+  const pos=['histology','confirms','strongly suggests','high confidence','biopsy result','tissue diagnosis'];
+  const neg=['uncertainty','unknown','unclear','null','missing','pending'];
+  let d=0;
+  pos.forEach(t=>{if(lo.includes(t)) d+=0.03;});
+  neg.forEach(t=>{if(lo.includes(t)) d-=0.015;});
+  S.gradConf=Math.max(0.1,Math.min(0.99,S.gradConf+d));
+}
+
+function toggleParam(id) {
+  const p=S.params.find(x=>x.id===id); if(!p) return;
+  const cyc=['null','partial','pending','known'];
+  const i=cyc.indexOf(p.status);
+  const nxt=cyc[(i+1)%cyc.length];
+  addDiff(`Param ${p.tier} ${p.label}: ${p.status} → ${nxt}`);
+  p.status=nxt; renderAll();
+}
+
+function resetCase() {
+  S.lossDist=[
+    {name:'Fibrocystic / dominant cyst',  prob:0.52, color:'#6faee8', note:'cycle variation + size change + not all month'},
+    {name:'Fibroadenoma (giant/complex)', prob:0.18, color:'#7ecbaa', note:'less likely — does not vary this dramatically'},
+    {name:'Phyllodes tumor (benign)',     prob:0.12, color:'#e8b84b', note:'size change fits; cyclical pattern weaker fit'},
+    {name:'Granulomatous mastitis',       prob:0.08, color:'#a0c060', note:''},
+    {name:'Carcinoma (any type)',         prob:0.07, color:'#e87060', note:'node US unknown; history suppresses strongly'},
+    {name:'Lymphoma',                     prob:0.02, color:'#c49ae8', note:''},
+    {name:'TB mastitis',                  prob:0.01, color:'#888880', note:'demoted — SES prior suppressive'},
+  ];
+  S.params.forEach(p=>{
+    if(['menarche','us_mass','prior','fnac'].includes(p.id)) p.status='null';
+    else if(p.id==='axnodes') p.status='partial';
+    else if(p.id==='cnb') p.status='pending';
+    else p.status='known';
+  });
+  S.gradConf=0.62; S.history=[]; S.updateN=0;
+  document.getElementById('chatArea').innerHTML='';
+  document.getElementById('diffLog').innerHTML=`
+    <div class="diff-entry">
+      <span class="diff-time">reset</span>
+      <span class="diff-text">Twin reset to θ₀ · v3 · CNB pending · Kampala 2026-04</span>
+    </div>`;
+  document.getElementById('eigenDisplay').innerHTML=`<em>Hold position until the gradient resolves.</em>`;
+  document.getElementById('eigenNote').textContent=`The dominant eigenvector of L_ijk, given all current evidence, is not a diagnosis. It is a temporal instruction: the histology result is the only measurement that will force basin collapse. All other signals are subleading.`;
+
+  addMsg('twin', `Twin reset to θ₀ (v3).\n\nv3 state update: Core needle biopsy was performed ~2026-04-02. Histology is pending. Two surgeons have recommended surgery — one catastrophically early (η=1.0 before imaging), one procedurally premature (before biopsy result returns).\n\nThe η gate is PENDING, not open. The current eigenmode is temporal: wait for the credit signal before any irreversible step.\n\nTwo null pointers dominate:\n1. Ultrasound report — done but unavailable\n2. CNB histology — in transit\n\nWhat new evidence do you have?`);
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+
+(function init() {
+  const saved = sessionStorage.getItem('ukb_key_v3');
+  if(saved) {
+    document.getElementById('apiKey').value=saved;
+    const ks=document.getElementById('keyStatus');
+    if(saved.startsWith('sk-ant')){ ks.textContent='● active'; ks.className='key-status ok'; }
+  }
+
+  document.getElementById('apiKey').addEventListener('input', function(){
+    const ks=document.getElementById('keyStatus');
+    if(this.value.trim().startsWith('sk-ant')){ ks.textContent='● active'; ks.className='key-status ok'; }
+    else { ks.textContent='● no key'; ks.className='key-status empty'; }
+    sessionStorage.setItem('ukb_key_v3', this.value.trim());
+  });
+
+  renderAll();
+
+  addMsg('twin', `Sawubona. Breast Basin Clinical Twin — v3 · Kampala 2026.\n\nThis version encodes the real-world state as of 2026-04:\n\n• Doctor 1 (Mwesige): exam → surgery (η=1.0 catastrophic, no imaging)\n• Doctor 2: CNB performed ~Apr 2 (η=0.2 correct step)\n• Doctor 2 also pushing surgery before result (still violates gate)\n• Histology: PENDING\n• Patient (Lillian): financial stress + authority pressure + fear spiral\n\nCurrent eigenmode: "Wait for the gradient to resolve. The histology IS the dominant gradient. Firing before it returns is the same error as firing before it was collected."\n\nCurrent scalar: Days-to-weeks. Hold the line.\n\nEnter API key to activate the reasoning engine, or use Quick Probes to run scenario forks.`);
+
+  addMsg('sys', `── v3 init · ${new Date().toLocaleString()} · CNB pending · η(surg)=0 ──`);
+})();
+</script>
+</body>
+</html>
